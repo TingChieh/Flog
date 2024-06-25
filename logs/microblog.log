@@ -1,0 +1,16 @@
+2024-06-25 13:11:08,401 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:44]
+2024-06-25 13:16:01,396 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:44]
+2024-06-25 13:16:28,587 ERROR: Exception on /edit_profile [POST] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py:838]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 883, in full_dispatch_request
+    return self.finalize_request(rv)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 902, in finalize_request
+    response = self.make_response(rv)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 1174, in make_response
+    raise TypeError(
+TypeError: The view function for 'edit_profile' did not return a valid response. The function either returned None or ended without a return statement.
