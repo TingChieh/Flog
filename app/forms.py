@@ -49,3 +49,8 @@ class EditProfileForm(FlaskForm):
             
 class EmptyForm(FlaskForm):
     sumbit = SubmitField('submit')
+    
+class PostForm(FlaskForm):
+    post = TextAreaField('Say someting', validators=[
+        DataRequired(), Length(min=1, max=140)])
+    submit = SubmitField('Submit')
