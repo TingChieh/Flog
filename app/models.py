@@ -126,6 +126,12 @@ class Post(db.Model):
                                                index=True)
 
     author: so.Mapped[User] = so.relationship(back_populates='posts')
+    language: so.Mapped[Optional[str]] = so.mapped_column(sa.String(5))
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+    
+class Movie(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    title: so.Mapped[str] = so.mapped_column(sa.String(60))
+    year: so.Mapped[str] = so.mapped_column(sa.String(5))

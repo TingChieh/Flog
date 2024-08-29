@@ -6,12 +6,33 @@
             </a>
         </td>
         <td>
-            <a href="{{ url_for('user', username=post.author.username) }}">
-                {{ post.author.username }}
-            </a>
-            said {{ moment(post.timestamp).fromNow() }}:
+            {% set user_link %}
+                <a href="{{ url_for('user', username=post.author.username) }}">
+                    {{ post.author.username }}
+                </a>
+            {% endset %}
+            {{ _('%(username)s said %(when)s',
+                username=user_link, when=moment(post.timestamp).fromNow()) }}
             <br>
-            {{ post.body }}
+            <!-- Render the post body with |safe to ensure HTML is not escaped -->
+            <span id="post{{ post.id }}">{{ post.body|safe }}</span>
+            {% if post.language and post.language != g.locale %}
+            <br><br>
+            <span id="translation{{ post.id }}">
+                <a href="javascript:translate(
+                            'post{{ post.id }}',
+                            'translation{{ post.id }}',
+                            '{{ post.language }}',
+                            '{{ g.locale }}');">{{ _('Translate') }}</a>
+            </span>
+            {% endif %}
+            <br><br>
+            <!-- 添加删除按钮 -->
+            {% if current_user.is_authenticated and current_user.id == post.author.id %}
+            <form method="post" action="{{ url_for('delete_post', post_id=post.id) }}" style="display:inline;">
+                <input type="submit" class="btn btn-danger" value="{{ _('Delete') }}" onclick="return confirm('{{ _('Are you sure you want to delete this post?') }}');">
+            </form>
+            {% endif %}
         </td>
     </tr>
 </table>

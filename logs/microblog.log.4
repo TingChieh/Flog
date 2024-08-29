@@ -1,0 +1,82 @@
+2024-06-25 13:11:08,401 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:44]
+2024-06-25 13:16:01,396 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:44]
+2024-06-25 13:16:28,587 ERROR: Exception on /edit_profile [POST] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py:838]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 883, in full_dispatch_request
+    return self.finalize_request(rv)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 902, in finalize_request
+    response = self.make_response(rv)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.11/site-packages/flask/app.py", line 1174, in make_response
+    raise TypeError(
+TypeError: The view function for 'edit_profile' did not return a valid response. The function either returned None or ended without a return statement.
+2024-07-24 17:24:02,440 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:46]
+2024-08-29 23:26:53,823 INFO: Microblog startup [in /home/tingchieh/Documents/history/flask-study-main/app/__init__.py:55]
+2024-08-29 23:26:58,901 INFO: Microblog startup [in /home/tingchieh/Documents/history/flask-study-main/app/__init__.py:55]
+2024-08-29 23:27:09,671 INFO: Microblog startup [in /home/tingchieh/Documents/history/flask-study-main/app/__init__.py:55]
+2024-08-29 23:27:25,591 ERROR: Exception on /index [POST] [in /home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py:825]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/app/routes.py", line 34, in index
+    post = Post(body=form.post.data, author=current_user,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 4, in __init__
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state.py", line 566, in _initialize_instance
+    with util.safe_reraise():
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state.py", line 564, in _initialize_instance
+    manager.original_init(*mixed[1:], **kwargs)
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/orm/decl_base.py", line 2142, in _declarative_constructor
+    raise TypeError(
+TypeError: 'language' is an invalid keyword argument for Post
+2024-08-29 23:27:44,262 ERROR: Exception on /index [POST] [in /home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py:825]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/history/flask-study-main/app/routes.py", line 34, in index
+    post = Post(body=form.post.data, author=current_user,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 4, in __init__
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state.py", line 566, in _initialize_instance
+    with util.safe_reraise():
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state.py", line 564, in _initialize_instance
+    manager.original_init(*mixed[1:], **kwargs)
+  File "/home/tingchieh/Documents/history/flask-study-main/.venv/lib/python3.12/site-packages/sqlalchemy/orm/decl_base.py", line 2142, in _declarative_constructor
+    raise TypeError(
+TypeError: 'language' is an invalid keyword argument for Post
+2024-08-30 01:50:46,633 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-08-30 01:51:04,288 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
