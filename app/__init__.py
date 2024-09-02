@@ -40,7 +40,7 @@ if not app.debug:
             toaddrs=app.config['ADMINS'], subject='Microblog Failure',
             credentials=auth, secure=())
         print((app.config['MAIL_SERVER'], app.config['MAIL_PORT']))
-        print(app.config['MAIL_USERNAME'])
+        print(app.config['MAIL_USERNAME'], app.config['ADMINS'])
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
 

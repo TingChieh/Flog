@@ -36,3 +36,32 @@ Traceback (most recent call last):
 AttributeError: 'AnonymousUserMixin' object has no attribute 'following_posts'
 2024-08-30 02:10:23,498 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
 2024-08-30 02:17:40,855 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-08-30 15:36:04,127 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-08-30 15:55:15,126 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-08-30 15:57:11,892 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-08-30 16:00:46,234 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-01 15:03:19,255 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:11:28,185 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:12:30,259 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:13:12,901 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:13:24,234 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:13:25,446 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:32:07,751 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+2024-09-02 16:32:18,944 ERROR: Exception on /comment [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 289, in comment
+    if form.validate_on_submit():
+       ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Message' object has no attribute 'validate_on_submit'

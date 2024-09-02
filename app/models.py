@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from email.policy import default
 from hashlib import md5
 from typing import Optional
 from venv import logger
@@ -135,3 +136,15 @@ class Movie(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     title: so.Mapped[str] = so.mapped_column(sa.String(60))
     year: so.Mapped[str] = so.mapped_column(sa.String(5))
+    
+class Message(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    email: so.Mapped[str] = so.mapped_column(sa.String(120))
+    name: so.Mapped[str] = so.mapped_column(sa.String(64))
+    body: so.Mapped[str] = so.mapped_column(sa.String(240))
+    timestamp: so.Mapped[datetime] = so.mapped_column(
+        index=True, default=lambda: datetime.now(timezone.utc))
+
+    def avatar(self, size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'

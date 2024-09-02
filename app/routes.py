@@ -6,9 +6,9 @@ from flask_babel import _, get_locale
 import sqlalchemy as sa
 from langdetect import detect, LangDetectException
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, \
+from app.forms import CommentForm, LoginForm, RegistrationForm, EditProfileForm, \
     EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
-from app.models import User, Post, Movie
+from app.models import Message, User, Post, Movie
 from app.email import send_password_reset_email
 from app.translate import translate
 
@@ -282,3 +282,29 @@ def delete_post(post_id):
     db.session.commit()
     flash('Post deleted.')
     return redirect(url_for('index'))
+
+@app.route('/comment', methods=['GET', 'POST'])
+def comment():
+    form = CommentForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        email = form.email.data
+        body = form.body.data
+        message = Message(body=body, name=name, email=email)
+        
+        db.session.add(message)
+        db.session.commit()
+        flash(_('Your message have been sent to the world!'))
+        return redirect(url_for('comment'))
+    
+    page = request.args.get('page', 1, type=int)
+    query = sa.select(Message).order_by(Message.timestamp.desc())
+    messages = db.paginate(query, page=page,
+                           per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # messages = Message.query.order_by(Message.timestamp.desc()).all()
+    next_url = url_for('comment', page=messages.next_num) \
+        if messages.has_next else None
+    prev_url = url_for('comment', page=messages.prev_num) \
+        if messages.has_prev else None
+    return render_template('comment.html', form=form, messages=messages.items,
+                           next_url=next_url, prev_url=prev_url)

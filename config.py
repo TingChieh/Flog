@@ -8,10 +8,11 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SERVER = 'smtp.hedwi.net'
     MAIL_PORT = 465
-    # MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
-    MAIL_USERNAME = 'Administrator'
+    MAIL_USE_SSL = True
+    # MAIL_USE_TLS = True
+    MAIL_USERNAME = 'admin@aisaka.cc'
     MAIL_PASSWORD = 'bad06669c6eeca005caf5c3a6b3efd1d'
     ADMINS = ['admin@aisaka.cc']
     LANGUAGES = ['en', 'zh']
     MS_TRANSLATOR_KEY = os.environ.get('MS_TRANSLATOR_KEY')
-    POSTS_PER_PAGE = 25
+    POSTS_PER_PAGE = 1

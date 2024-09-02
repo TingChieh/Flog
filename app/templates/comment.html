@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<body>
+    <div class="container">
+        <h1>Leave a Comment</h1>
+
+        <!-- Comment Form -->
+        <form method="POST" action="{{ url_for('comment') }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.name.label }}<br>
+                {{ form.name(class="form-control") }}
+            </div>
+            
+            <div class="form-group">
+                {{ form.email.label }}<br>
+                {{ form.email(class="form-control") }}
+            </div>
+            
+            <div class="form-group">
+                {{ form.body.label }}<br>
+                {{ form.body(class="form-control", rows=5) }}
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+        <!-- Flash Message -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-success" role="alert">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+    <!-- List of Comments -->
+    <h2>Comments</h2>
+    <ul class="list-group">
+        {% for message in messages %}
+            <li class="list-group-item d-flex align-items-start">
+                <!-- 显示用户头像 -->
+                <img src="{{ message.avatar(70) }}" class="img-thumbnail" alt="avatar" style="width: 70px; height: 70px; margin-right: 10px;"/>
+    
+                <!-- 包裹名称和正文的div -->
+                <div>
+                    <strong>{{ message.name }}</strong> ({{ message.email }})<br>
+                    <small>{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small><br>
+                    <p style="margin-top: 5px;">{{ message.body|safe }}</p>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>    
+
+    <nav aria-label="Post navigation">
+        <ul class="pagination">
+            <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Newer posts') }}
+                </a>
+            </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url }}">
+                    {{ _('Older posts') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</body>
+{% endblock %}
