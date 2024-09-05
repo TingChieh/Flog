@@ -148,3 +148,8 @@ class Message(db.Model):
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+
+class Todo(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    title: so.Mapped[str] = so.mapped_column(sa.String(120))
+    complete : so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)

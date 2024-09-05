@@ -36,6 +36,15 @@
             <li class="nav-item">
               <a class="nav-link" aria-current="page" href="{{ url_for('comment') }}">{{ _('Comment') }}</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="{{ url_for('todo') }}">{{ _('Todo') }}</a>
+            </li>
+            <form class="search-icon" method="GET" action="{{ url_for('search') }}">
+              <input class="form-control" type="search" placeholder="{{ _('Search') }}" aria-label="{{ _('Search') }}" name="q">
+              <button class="btn btn-outline-success" type="submit">
+                  <img src="{{ url_for('static', filename='images/search.png') }}" alt="">
+              </button>
+          </form>                          
           </ul>
           <ul class="navbar-nav mb-2 mb-lg-0">
             {% if current_user.is_anonymous %}

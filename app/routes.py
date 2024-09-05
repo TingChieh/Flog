@@ -7,8 +7,8 @@ import sqlalchemy as sa
 from langdetect import detect, LangDetectException
 from app import app, db
 from app.forms import CommentForm, LoginForm, RegistrationForm, EditProfileForm, \
-    EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
-from app.models import Message, User, Post, Movie
+    EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, TodoForm
+from app.models import Message, Todo, User, Post, Movie
 from app.email import send_password_reset_email
 from app.translate import translate
 
@@ -305,6 +305,75 @@ def comment():
     next_url = url_for('comment', page=messages.next_num) \
         if messages.has_next else None
     prev_url = url_for('comment', page=messages.prev_num) \
-        if messages.has_prev else None
+        if messages.has_prev else None   
     return render_template('comment.html', form=form, messages=messages.items,
                            next_url=next_url, prev_url=prev_url)
+    
+@app.route('/todo', methods=['GET', 'POST'])
+def todo():
+    form = TodoForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        todo = Todo(title=title, complete=False)
+        
+        db.session.add(todo)
+        db.session.commit()
+        flash(_('Your todo have been added!'))
+        return redirect(url_for('todo'))
+    
+    page = request.args.get('page', 1, type=int)
+    query = sa.select(Todo).order_by(Todo.id.desc())
+    todos = db.paginate(query, page=page,
+                           per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    next_url = url_for('todo', page=todos.next_num) \
+        if todos.has_next else None
+    prev_url = url_for('todo', page=todos.prev_num) \
+        if todos.has_prev else None
+    
+    return render_template('todo.html', form=form, todos=todos.items,
+                           next_url=next_url, prev_url=prev_url)
+        
+@app.route('/todo/update/<int:todo_id>', methods=['POST'])
+@login_required
+def update_todo(todo_id):
+    todo = Todo.query.filter_by(id=todo_id).first()
+    todo.complete = not todo.complete
+    db.session.commit()
+    return redirect(url_for("todo"))
+
+@app.route('/todo/delete/<int:todo_id>', methods=['POST'])
+@login_required
+def delete_todo(todo_id):
+    todo = Todo.query.get_or_404(todo_id)
+    db.session.delete(todo)
+    db.session.commit()
+    flash('Todo Deleted.')
+    return redirect(url_for('todo'))
+
+@app.route('/todo/edit/<int:todo_id>', methods=['GET', 'POST'])
+@login_required
+def todo_edit(todo_id):
+    todo = Todo.query.get_or_404(todo_id)
+    form = TodoForm(obj=todo)  # Initialize the form with the existing todo data
+
+    if form.validate_on_submit():  # Check if the form was submitted and is valid
+        todo.title = form.title.data  # Update the todo title with form data
+        todo.complete = form.complete.data  # Update the completion status
+        db.session.commit()
+        flash('Todo updated.')
+        return redirect(url_for('todo'))
+
+    return render_template('todo_edit.html', form=form, todo=todo)
+
+
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    form = SearchForm()
+    posts = Post.query.all()  # Default to showing all posts
+
+    if form.validate_on_submit() and form.query.data:
+        query = form.query.data
+        # Search in the 'body' of the posts
+        posts = Post.query.filter(Post.body.contains(query)).all()
+
+    return render_template('search_results.html', form=form, posts=posts)

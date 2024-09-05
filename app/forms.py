@@ -4,7 +4,7 @@ from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, \
     TextAreaField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, \
-    Length
+    Length, Optional
 import sqlalchemy as sa
 from app import db
 from app.models import User
@@ -84,3 +84,17 @@ class CommentForm(FlaskForm):
     email = StringField(_l('email'), validators=[DataRequired()])
     body = CKEditorField(_l('Message'), validators=[DataRequired(), Length(1, 240)])
     submit = SubmitField(_l('Submit'))
+    
+class TodoForm(FlaskForm):
+    title = StringField(_l('title'), validators=[DataRequired(), Length(1, 120)])
+    complete = BooleanField(validators=[DataRequired()])
+    submit = SubmitField(_l('Submit'))
+    
+class TodoEditForm(FlaskForm):
+    title = StringField(_l('title'), validators=[DataRequired(), Length(1, 120)])
+    complete = BooleanField(validators=[DataRequired()])
+    submit = SubmitField(_l('Update'))
+    
+class SearchForm(FlaskForm):
+    query = StringField('Search', validators=[Optional()])
+    submit = SubmitField('Search')

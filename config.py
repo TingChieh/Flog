@@ -14,5 +14,6 @@ class Config:
     MAIL_PASSWORD = 'bad06669c6eeca005caf5c3a6b3efd1d'
     ADMINS = ['admin@aisaka.cc']
     LANGUAGES = ['en', 'zh']
-    MS_TRANSLATOR_KEY = os.environ.get('MS_TRANSLATOR_KEY')
-    POSTS_PER_PAGE = 1
+    MS_TRANSLATOR_KEY = '19dc547d60e6421ab862b8ea304ac0ff'
+    ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL') or 'http://localhost:9200'
+    POSTS_PER_PAGE = 15

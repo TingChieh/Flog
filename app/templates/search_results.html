@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Search Results</h1>
+    <form method="POST" action="{{ url_for('search') }}">
+        {{ form.hidden_tag() }}
+        {{ form.query.label }} {{ form.query(size=32) }}
+        {{ form.submit() }}
+    </form>
+
+    {% if posts %}
+        {% for post in posts %}
+            {% include '_post.html' %}
+        {% endfor %}
+    {% else %}
+        <p>No results found for "{{ form.query.data }}".</p>
+    {% endif %}
+{% endblock %}

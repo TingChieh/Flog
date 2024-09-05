@@ -11,6 +11,7 @@ from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
 from config import Config
 from flask_ckeditor import CKEditor
+from elasticsearch import Elasticsearch
 
 
 def get_locale():
@@ -28,6 +29,7 @@ mail = Mail(app)
 moment = Moment(app)
 babel = Babel(app, locale_selector=get_locale)
 ckeditor = CKEditor(app)
+
 
 if not app.debug:
     if app.config['MAIL_SERVER']:
@@ -55,6 +57,6 @@ if not app.debug:
 
     app.logger.setLevel(logging.INFO)
     app.logger.info('Microblog startup')
-
+    app.logger.info(app.config['MS_TRANSLATOR_KEY'])
 
 from app import routes, models, errors

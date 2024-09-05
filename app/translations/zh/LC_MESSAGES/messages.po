@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-29 23:24+0800\n"
+"POT-Creation-Date: 2024-09-04 09:54+0800\n"
 "PO-Revision-Date: 2024-08-29 23:18+0800\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -18,130 +18,162 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.13.1\n"
 
-#: app/__init__.py:25
+#: app/__init__.py:26
 msgid "Please log in to access this page."
 msgstr "强登录后访问此页面。"
 
-#: app/forms.py:13 app/forms.py:20 app/forms.py:55
+#: app/forms.py:14 app/forms.py:21 app/forms.py:56
 msgid "Username"
 msgstr "用户名"
 
-#: app/forms.py:14 app/forms.py:22 app/forms.py:47
+#: app/forms.py:15 app/forms.py:23 app/forms.py:48
 msgid "Password"
 msgstr "密码"
 
-#: app/forms.py:15
+#: app/forms.py:16
 msgid "Remember Me"
 msgstr "记住我"
 
-#: app/forms.py:16 app/routes.py:84 app/templates/login.html:5
+#: app/forms.py:17 app/routes.py:83 app/templates/login.html:5
 msgid "Sign In"
 msgstr "登录"
 
-#: app/forms.py:21 app/forms.py:42
+#: app/forms.py:22 app/forms.py:43
 msgid "Email"
 msgstr "电子邮箱"
 
-#: app/forms.py:24 app/forms.py:49
+#: app/forms.py:25 app/forms.py:50
 msgid "Repeat Password"
 msgstr "重复密码"
 
-#: app/forms.py:26 app/routes.py:105 app/templates/register.html:5
+#: app/forms.py:27 app/routes.py:104 app/templates/register.html:5
 msgid "Register"
 msgstr "注册"
 
-#: app/forms.py:32 app/forms.py:69
+#: app/forms.py:33 app/forms.py:70
 msgid "Please use a different username."
 msgstr "请用一个不同的用户名。"
 
-#: app/forms.py:38
+#: app/forms.py:39
 msgid "Please use a different email address."
 msgstr "请用一个不同的电子邮箱。"
 
-#: app/forms.py:43 app/forms.py:51
+#: app/forms.py:44 app/forms.py:52
 msgid "Request Password Reset"
 msgstr "请求重置密码"
 
-#: app/forms.py:56
+#: app/forms.py:57
 msgid "About me"
 msgstr "关于我"
 
-#: app/forms.py:58 app/forms.py:79
+#: app/forms.py:59 app/forms.py:80 app/forms.py:86 app/forms.py:91
 msgid "Submit"
 msgstr "提交"
 
-#: app/forms.py:77
+#: app/forms.py:78
 msgid "Say something"
 msgstr "说点什么"
+
+#: app/forms.py:83
+#, fuzzy
+msgid "name"
+msgstr "用户名"
+
+#: app/forms.py:84
+#, fuzzy
+msgid "email"
+msgstr "电子邮箱"
+
+#: app/forms.py:85
+msgid "Message"
+msgstr "信息"
+
+#: app/forms.py:89 app/forms.py:94
+msgid "title"
+msgstr "标题"
+
+#: app/forms.py:96
+msgid "Update"
+msgstr "更新"
 
 #: app/routes.py:38
 msgid "Your post is now live!"
 msgstr "你的文章已提交"
 
-#: app/routes.py:47 app/templates/base.html:27
+#: app/routes.py:47 app/templates/base.html:28
 msgid "Home"
 msgstr "首页"
 
-#: app/routes.py:63 app/templates/base.html:30
+#: app/routes.py:62 app/templates/base.html:31
 msgid "Explore"
 msgstr "探索"
 
-#: app/routes.py:77
+#: app/routes.py:76
 msgid "Invalid username or password"
 msgstr "无效的用户名或密码"
 
-#: app/routes.py:103
+#: app/routes.py:102
 msgid "Congratulations, you are now a registered user!"
 msgstr "恭喜你，已注册成功！"
 
-#: app/routes.py:119
+#: app/routes.py:118
 msgid "Check your email for the instructions to reset your password"
 msgstr "检查你的电子邮箱来帮助你重置密码"
 
-#: app/routes.py:122 app/templates/reset_password.html:5
+#: app/routes.py:121 app/templates/reset_password.html:5
 msgid "Reset Password"
 msgstr "重置密码"
 
-#: app/routes.py:136
+#: app/routes.py:135
 msgid "Your password has been reset."
 msgstr "你的密码已被重置。"
 
-#: app/routes.py:167
+#: app/routes.py:166
 msgid "Your changes have been saved."
 msgstr "你的更改已被保存。"
 
-#: app/routes.py:172 app/templates/edit_profile.html:5
+#: app/routes.py:171 app/templates/edit_profile.html:5
 msgid "Edit Profile"
 msgstr "编辑资料"
 
-#: app/routes.py:184 app/routes.py:205
+#: app/routes.py:183 app/routes.py:204
 #, python-format
 msgid "User %(username)s not found."
 msgstr "用户 %(username)s 未被找到。"
 
-#: app/routes.py:187
+#: app/routes.py:186
 msgid "You cannot follow yourself!"
 msgstr "你不能关注你自己！"
 
-#: app/routes.py:191
+#: app/routes.py:190
 #, python-format
 msgid "You are following %(username)s!"
 msgstr "你正在关注 %(username)s！"
 
-#: app/routes.py:208
+#: app/routes.py:207
 msgid "You cannot unfollow yourself!"
 msgstr "你不能取消关注你自己！"
 
-#: app/routes.py:212
+#: app/routes.py:211
 #, python-format
 msgid "You are not following %(username)s."
 msgstr "你没有关注 %(username)s。"
 
-#: app/translate.py:9
+#: app/routes.py:297
+#, fuzzy
+msgid "Your message have been sent to the world!"
+msgstr "你的更改已被保存。"
+
+#: app/routes.py:321
+#, fuzzy
+msgid "Your todo have been added!"
+msgstr "你的更改已被保存。"
+
+#: app/translate.py:8
 msgid "Error: the translation service is not configured."
 msgstr "错误：翻译服务没有被配置"
 
-#: app/translate.py:20
+#: app/translate.py:18
 msgid "Error: the translation service failed."
 msgstr "错误：翻译服务失败"
 
@@ -166,38 +198,60 @@ msgstr "The administrator has been notified. Sorry for the inconvenience!"
 msgid "%(username)s said %(when)s"
 msgstr "%(username)s 在 %(when)s 发表"
 
-#: app/templates/_post.html:25
+#: app/templates/_post.html:26
 msgid "Translate"
 msgstr "翻译"
+
+#: app/templates/_post.html:33
+msgid "Delete"
+msgstr "删除"
+
+#: app/templates/_post.html:33
+msgid "Are you sure you want to delete this post?"
+msgstr "你确定要删除这个推文吗？"
 
 #: app/templates/base.html:9
 msgid "Welcome to Microblog"
 msgstr "欢迎"
 
-#: app/templates/base.html:36
+#: app/templates/base.html:34
+msgid "Movie"
+msgstr "影视"
+
+#: app/templates/base.html:37
+msgid "Comment"
+msgstr "留言板"
+
+#: app/templates/base.html:40
+msgid "Todo"
+msgstr "Todo"
+
+#: app/templates/base.html:46
 msgid "Login"
 msgstr "登录"
 
-#: app/templates/base.html:40
+#: app/templates/base.html:50
 msgid "Profile"
 msgstr "资料"
 
-#: app/templates/base.html:43
+#: app/templates/base.html:53
 msgid "Logout"
 msgstr "登出"
+
+#: app/templates/comment.html:60 app/templates/index.html:16
+#: app/templates/user.html:41
+msgid "Newer posts"
+msgstr "上一页"
+
+#: app/templates/comment.html:65 app/templates/index.html:21
+#: app/templates/user.html:46
+msgid "Older posts"
+msgstr "下一页"
 
 #: app/templates/index.html:5
 #, python-format
 msgid "Hi, %(username)s!"
 msgstr "嗨，%(username)s！"
-
-#: app/templates/index.html:16 app/templates/user.html:41
-msgid "Newer posts"
-msgstr "上一页"
-
-#: app/templates/index.html:21 app/templates/user.html:46
-msgid "Older posts"
-msgstr "下一页"
 
 #: app/templates/login.html:7
 msgid "New User?"

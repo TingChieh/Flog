@@ -1,7 +1,7 @@
 /* 页面整体 */
 body {
     margin: auto;
-    max-width: 580px;
+    max-width: 880px;
     font-size: 14px;
     font-family: Helvetica, Arial, sans-serif;
 }
@@ -129,4 +129,112 @@ input[name=year] {
 
 .inline-form {
     display: inline;
+}
+
+/* Custom button colors */
+.btn-complete {
+    background-color: #28a745 !important; /* Green */
+    color: white !important;
+    border: none;
+}
+
+.btn-incomplete {
+    background-color: #ffc107 !important; /* Yellow */
+    color: black !important;
+    border: none;
+}
+
+/* Disable hover effect on disabled buttons */
+.btn[disabled] {
+    background-color: inherit !important;
+    color: inherit !important;
+    cursor: not-allowed;
+}
+
+/* Optional: Style for disabled buttons */
+.btn[disabled].btn-complete {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.btn[disabled].btn-incomplete {
+    background-color: #ffc107 !important;
+    color: black !important;
+}
+
+.top-nav .search-icon {
+    top: 22%;
+    height: 38px;
+    display: flex;
+    border-radius: 3px;
+}
+
+.top-nav .search-icon input {
+    height: 72%;
+    width: 52px;
+    border: none;
+    outline: none;
+    color: #000;
+    font-size: 16px;
+    border-radius: 3px 0px 0px 3px;
+}
+
+.top-nav .search-icon .top-nav a:hover {
+    background-color: var(--dark-green);
+}
+
+/* 确保搜索框和按钮完全贴合 */
+.search-icon {
+    display: flex; /* 使用flex布局确保输入框和按钮在同一行 */
+    align-items: center; /* 垂直居中对齐 */
+    margin: 0;
+}
+
+.search-icon input[type=search] {
+    border-radius: 3px 0 0 3px;
+    border: 1px solid #ddd;
+    border-right: none; /* 去掉右边框，确保与按钮紧密贴合 */
+    height: 38px; /* 确保与按钮一致 */
+    margin: 0;
+    padding: 0 10px; /* 内边距设置为 0 */
+    box-sizing: border-box;
+}
+
+.search-icon button {
+    border-radius: 0 3px 3px 0;
+    height: 38px; /* 确保与输入框一致 */
+    margin: 0;
+    padding: 0;
+    background: hsl(162, 87%, 21%);
+    border: 1px solid #ddd; /* 确保与输入框一致 */
+    border-left: none; /* 去掉左边框，确保与输入框紧密贴合 */
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-icon button img {
+    width: 24px;
+    height: auto;
+}
+
+
+/* 根据屏幕尺寸设置不同的样式 */
+@media screen and (max-width: 460px) {
+    .home-link {
+        display: none;
+    }
+
+    body { 
+        font-size: 12px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    p {
+        font-size: 16px;
+    }
 }
