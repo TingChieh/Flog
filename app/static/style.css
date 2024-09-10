@@ -219,6 +219,23 @@ input[name=year] {
     height: auto;
 }
 
+.scrollTop {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 10px 12px;
+    background-color: hsl(162, 73%, 46%);
+    color: hsl(162, 87%, 21%);
+    border-radius: 5px;
+    border-radius: 1px solid hsl(162, 87%, 21%);
+    cursor: pointer;
+    transition: all 0.5s ease 0s;
+}
+
+.scrollTop:hover {
+    background-color: hsl(162, 87%, 21%);
+    color: hsl(162, 73%, 46%);
+}
 
 /* 根据屏幕尺寸设置不同的样式 */
 @media screen and (max-width: 460px) {

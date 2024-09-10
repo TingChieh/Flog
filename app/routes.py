@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
-from flask import render_template, flash, redirect, url_for, request, g
+from flask import render_template, flash, redirect, send_from_directory, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_babel import _, get_locale
 import sqlalchemy as sa
@@ -11,6 +11,8 @@ from app.forms import CommentForm, LoginForm, RegistrationForm, EditProfileForm,
 from app.models import Message, Todo, User, Post, Movie
 from app.email import send_password_reset_email
 from app.translate import translate
+from flask_ckeditor import upload_success, upload_fail
+import os
 
 
 @app.before_request
@@ -366,14 +368,28 @@ def todo_edit(todo_id):
     return render_template('todo_edit.html', form=form, todo=todo)
 
 
-@app.route('/search', methods=['GET', 'POST'])
+@app.route('/search', methods=['GET'])
 def search():
-    form = SearchForm()
+    query = request.args.get('q', '')  # Get the search query from the URL
     posts = Post.query.all()  # Default to showing all posts
 
-    if form.validate_on_submit() and form.query.data:
-        query = form.query.data
+    if query:
         # Search in the 'body' of the posts
         posts = Post.query.filter(Post.body.contains(query)).all()
 
-    return render_template('search_results.html', form=form, posts=posts)
+    return render_template('search_results.html', query=query, posts=posts)
+
+@app.route('/files/<path:filename>')
+def uploaded_files(filename):
+    path = '/file/upload/directory/'
+    return send_from_directory(path, filename)
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files.get('post')
+    extension = file.filename.split('.')[1].lower()
+    if extension not in ['jpg', 'gif', 'png', 'jpeg']:
+        return upload_fail(message='Image only!')
+    file.save(os.path.join('/file/upload/directory', file.filename))
+    url = url_for('uploaded_files', filename=file.filename)
+    return upload_success(url=url)
