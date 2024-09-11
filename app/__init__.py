@@ -11,7 +11,8 @@ from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
 from config import Config
 from flask_ckeditor import CKEditor
-from elasticsearch import Elasticsearch
+from redis import Redis
+import rq
 
 
 def get_locale():
@@ -29,6 +30,8 @@ mail = Mail(app)
 moment = Moment(app)
 babel = Babel(app, locale_selector=get_locale)
 ckeditor = CKEditor(app)
+app.redis = Redis.from_url(app.config['REDIS_URL'])
+app.task_queue = rq.Queue('microblog-task', connection=app.redis)
 
 
 if not app.debug:

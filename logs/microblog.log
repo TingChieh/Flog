@@ -1,67 +1,102 @@
-2024-08-30 02:03:41,932 ERROR: Exception on /index [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+2024-09-11 14:49:29,000 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:49:29,002 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:51:54,222 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:51:54,222 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:51:54,558 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:51:54,558 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:51:54,893 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:51:54,893 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:51:55,220 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:51:55,220 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:51:55,544 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:51:55,544 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:53:01,696 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:53:01,697 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:53:06,062 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:53:06,062 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:53:11,379 ERROR: Unhandled exception [in /home/tingchieh/Documents/flask-study/app/tasks.py:64]
 Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 40, in index
-    posts = db.paginate(current_user.following_posts(), page=page,
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'AnonymousUserMixin' object has no attribute 'following_posts'
-2024-08-30 02:03:48,056 ERROR: Exception on /index [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 492, in send
+    message.send(connection)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 427, in send
+    connection.send(self)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 188, in send
+    self.host.sendmail(sanitize_address(envelope_from or message.sender),
+  File "/usr/lib/python3.12/smtplib.py", line 891, in sendmail
+    (code, resp) = self.data(msg)
+                   ^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 580, in data
+    (code, msg) = self.getreply()
+                  ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 405, in getreply
+    raise SMTPServerDisconnected("Connection unexpectedly closed")
+smtplib.SMTPServerDisconnected: Connection unexpectedly closed
+
+During handling of the above exception, another exception occurred:
+
 Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 40, in index
-    posts = db.paginate(current_user.following_posts(), page=page,
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'AnonymousUserMixin' object has no attribute 'following_posts'
-2024-08-30 02:10:23,498 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-08-30 02:17:40,855 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-08-30 15:36:04,127 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-08-30 15:55:15,126 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-08-30 15:57:11,892 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-08-30 16:00:46,234 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-01 15:03:19,255 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:11:28,185 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:12:30,259 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:13:12,901 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:13:24,234 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:13:25,446 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:32:07,751 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
-2024-09-02 16:32:18,944 ERROR: Exception on /comment [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+  File "/home/tingchieh/Documents/flask-study/app/tasks.py", line 54, in export_posts
+    send_email(
+  File "/home/tingchieh/Documents/flask-study/app/email.py", line 38, in send_email
+    mail.send(msg)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 491, in send
+    with self.connect() as connection:
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 152, in __exit__
+    self.host.quit()
+  File "/usr/lib/python3.12/smtplib.py", line 993, in quit
+    res = self.docmd("quit")
+          ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 431, in docmd
+    self.putcmd(cmd, args)
+  File "/usr/lib/python3.12/smtplib.py", line 378, in putcmd
+    self.send(f'{s}{CRLF}')
+  File "/usr/lib/python3.12/smtplib.py", line 365, in send
+    raise SMTPServerDisconnected('please run connect() first')
+smtplib.SMTPServerDisconnected: please run connect() first
+2024-09-11 14:58:16,618 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:58:16,618 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:58:22,642 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 14:58:22,642 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 14:58:27,943 ERROR: Unhandled exception [in /home/tingchieh/Documents/flask-study/app/tasks.py:64]
 Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 289, in comment
-    if form.validate_on_submit():
-       ^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'Message' object has no attribute 'validate_on_submit'
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 492, in send
+    message.send(connection)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 427, in send
+    connection.send(self)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 188, in send
+    self.host.sendmail(sanitize_address(envelope_from or message.sender),
+  File "/usr/lib/python3.12/smtplib.py", line 891, in sendmail
+    (code, resp) = self.data(msg)
+                   ^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 580, in data
+    (code, msg) = self.getreply()
+                  ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 405, in getreply
+    raise SMTPServerDisconnected("Connection unexpectedly closed")
+smtplib.SMTPServerDisconnected: Connection unexpectedly closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/app/tasks.py", line 54, in export_posts
+    send_email(
+  File "/home/tingchieh/Documents/flask-study/app/email.py", line 45, in send_email
+    mail.send(msg)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 491, in send
+    with self.connect() as connection:
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 152, in __exit__
+    self.host.quit()
+  File "/usr/lib/python3.12/smtplib.py", line 993, in quit
+    res = self.docmd("quit")
+          ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 431, in docmd
+    self.putcmd(cmd, args)
+  File "/usr/lib/python3.12/smtplib.py", line 378, in putcmd
+    self.send(f'{s}{CRLF}')
+  File "/usr/lib/python3.12/smtplib.py", line 365, in send
+    raise SMTPServerDisconnected('please run connect() first')
+smtplib.SMTPServerDisconnected: please run connect() first
+2024-09-11 15:01:50,781 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 15:01:50,781 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 15:58:25,671 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 15:58:25,671 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]

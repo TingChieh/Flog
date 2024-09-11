@@ -1,32 +1,4 @@
-2024-08-30 01:52:12,392 ERROR: Exception on /index [POST] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
-Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
-    self.dialect.do_execute(
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
-    cursor.execute(statement, parameters)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/cursors.py", line 153, in execute
-    result = self._query(query)
-             ^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/cursors.py", line 322, in _query
-    conn.query(q)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 563, in query
-    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 825, in _read_query_result
-    result.read()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 1199, in read
-    first_packet = self.connection._read_packet()
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 775, in _read_packet
-    packet.raise_for_error()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/protocol.py", line 219, in raise_for_error
-    err.raise_mysql_exception(self._data)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/err.py", line 150, in raise_mysql_exception
-    raise errorclass(errno, errval)
-pymysql.err.DataError: (1406, "Data too long for column 'body' at row 1")
-
-The above exception was the direct cause of the following exception:
-
+2024-09-11 13:45:44,418 ERROR: Exception on /index [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
 Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
     response = self.full_dispatch_request()
@@ -40,83 +12,75 @@ Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 36, in index
-    db.session.commit()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/scoping.py", line 598, in commit
-    return self._proxied.commit()
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1969, in commit
-    trans.commit(_to_root=True)
-  File "<string>", line 2, in commit
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1256, in commit
-    self._prepare_impl()
-  File "<string>", line 2, in _prepare_impl
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1231, in _prepare_impl
-    self.session.flush()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4312, in flush
-    self._flush(objects)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4447, in _flush
-    with util.safe_reraise():
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4408, in _flush
-    flush_context.execute()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
-    rec.execute(self)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
-    util.preloaded.orm_persistence.save_obj(
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
-    _emit_insert_statements(
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 1226, in _emit_insert_statements
-    result = connection.execute(
-             ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
-    return meth(
-           ^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 516, in _execute_on_connection
-    return connection._execute_clauseelement(
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 44, in index
+    per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+             ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+KeyError: 'POSTS_PER_PAGE'
+2024-09-11 13:45:45,366 ERROR: Exception on /index [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 44, in index
+    per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+             ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+KeyError: 'POSTS_PER_PAGE'
+2024-09-11 13:45:49,528 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 13:45:49,528 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 13:46:03,713 ERROR: Exception on /user/tingchieh [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 156, in user
+    return render_template('user.html', user=user, posts=posts.items,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/templating.py", line 151, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 1081, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 1010, in get_template
+    return self._load_template(name, globals)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1639, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2343, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
-    self.dialect.do_execute(
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
-    cursor.execute(statement, parameters)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/cursors.py", line 153, in execute
-    result = self._query(query)
-             ^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/cursors.py", line 322, in _query
-    conn.query(q)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 563, in query
-    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 825, in _read_query_result
-    result.read()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 1199, in read
-    first_packet = self.connection._read_packet()
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 775, in _read_packet
-    packet.raise_for_error()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/protocol.py", line 219, in raise_for_error
-    err.raise_mysql_exception(self._data)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/err.py", line 150, in raise_mysql_exception
-    raise errorclass(errno, errval)
-sqlalchemy.exc.DataError: (pymysql.err.DataError) (1406, "Data too long for column 'body' at row 1")
-[SQL: INSERT INTO post (`body`, timestamp, user_id, language) VALUES (%(body)s, %(timestamp)s, %(user_id)s, %(language)s)]
-[parameters: {'body': '<p>你好呀<img alt="" src="https://i0.hdslb.com/bfs/new_dyn/a44f5eea4c81a46d636e24dd2015eab639627524.png@1052w_!web-dynamic.avif" /></p>\r\n\r\n<p><img a ... (99 characters truncated) ... -dynamic.avif" /><img alt="你好" src="https://i0.hdslb.com/bfs/new_dyn/a44f5eea4c81a46d636e24dd2015eab639627524.png@1052w_!web-dynamic.avif" /></p>\r\n', 'timestamp': datetime.datetime(2024, 8, 29, 17, 52, 12, 391302, tzinfo=datetime.timezone.utc), 'user_id': 1, 'language': 'cy'}]
-(Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-08-30 01:59:38,696 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:57]
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 969, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 768, in compile
+    self.handle_exception(source=source_hint)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/tingchieh/Documents/flask-study/app/templates/user.html", line 69, in template
+    {% endblock %}
+jinja2.exceptions.TemplateSyntaxError: Encountered unknown tag 'endblock'. You probably made a nesting mistake. Jinja is expecting this tag, but currently looking for 'elif' or 'else' or 'endif'. The innermost block that needs to be closed is 'if'.

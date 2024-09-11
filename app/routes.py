@@ -6,9 +6,9 @@ from flask_babel import _, get_locale
 import sqlalchemy as sa
 from langdetect import detect, LangDetectException
 from app import app, db
-from app.forms import CommentForm, LoginForm, RegistrationForm, EditProfileForm, \
+from app.forms import CommentForm, LoginForm, MessageForm, RegistrationForm, EditProfileForm, \
     EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, TodoForm
-from app.models import Message, Todo, User, Post, Movie
+from app.models import Notification, Comment, Message, Todo, User, Post, Movie
 from app.email import send_password_reset_email
 from app.translate import translate
 from flask_ckeditor import upload_success, upload_fail
@@ -156,6 +156,12 @@ def user(username):
     return render_template('user.html', user=user, posts=posts.items,
                            next_url=next_url, prev_url=prev_url, form=form)
 
+@app.route('/user/<username>/popup')
+def user_popup(username):
+    user = db.first_or_404(sa.select(User).where(User.username == username))
+    form = EmptyForm()
+    return render_template('user_popup.html', user=user, form=form)
+
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
@@ -292,24 +298,24 @@ def comment():
         name = form.name.data
         email = form.email.data
         body = form.body.data
-        message = Message(body=body, name=name, email=email)
+        comment = Comment(body=body, name=name, email=email)
         
-        db.session.add(message)
+        db.session.add(comment)
         db.session.commit()
-        flash(_('Your message have been sent to the world!'))
+        flash(_('Your comment has been sent to the world!'))
         return redirect(url_for('comment'))
     
     page = request.args.get('page', 1, type=int)
-    query = sa.select(Message).order_by(Message.timestamp.desc())
-    messages = db.paginate(query, page=page,
+    query = sa.select(Comment).order_by(Comment.timestamp.desc())
+    comments = db.paginate(query, page=page,
                            per_page=app.config['POSTS_PER_PAGE'], error_out=False)
-    # messages = Message.query.order_by(Message.timestamp.desc()).all()
-    next_url = url_for('comment', page=messages.next_num) \
-        if messages.has_next else None
-    prev_url = url_for('comment', page=messages.prev_num) \
-        if messages.has_prev else None   
-    return render_template('comment.html', form=form, messages=messages.items,
+    next_url = url_for('comment', page=comments.next_num) \
+        if comments.has_next else None
+    prev_url = url_for('comment', page=comments.prev_num) \
+        if comments.has_prev else None   
+    return render_template('comment.html', form=form, comments=comments.items,
                            next_url=next_url, prev_url=prev_url)
+
     
 @app.route('/todo', methods=['GET', 'POST'])
 def todo():
@@ -393,3 +399,71 @@ def upload():
     file.save(os.path.join('/file/upload/directory', file.filename))
     url = url_for('uploaded_files', filename=file.filename)
     return upload_success(url=url)
+
+@app.route('/send_message/<recipient>', methods=['GET', 'POST'])
+@login_required
+def send_message(recipient):
+    user = db.first_or_404(sa.select(User).where(User.username == recipient))
+    form = MessageForm()
+    if form.validate_on_submit():
+        msg = Message(author=current_user, recipient=user,
+                      body=form.message.data)
+        db.session.add(msg)
+        user.add_notification('unread_message_count',
+                              user.unread_message_count())
+        db.session.commit()
+        flash(_('Your message has been sent.'))
+        return redirect(url_for('user', username=recipient))
+    return render_template('send_message.html', title=_('Send Message'),
+                           form=form, recipient=recipient)
+    
+@app.route('/messages')
+@login_required
+def messages():
+    current_user.last_message_read_time = datetime.now(timezone.utc)
+    current_user.add_notification('unread_message_count', 0)
+    db.session.commit()
+    page = request.args.get('page', 1, type=int)
+    query = current_user.messages_received.select().order_by(
+        Message.timestamp.desc())
+    messages = db.paginate(query, page=page,
+                           per_page=app.config['POSTS_PER_PAGE'],
+                           error_out=False)
+    next_url = url_for('messages', page=messages.next_num) \
+        if messages.has_next else None
+    prev_url = url_for('messages', page=messages.prev_num) \
+        if messages.has_prev else None
+    return render_template('messages.html', messages=messages.items,
+                           next_url=next_url, prev_url=prev_url)
+    
+@app.route('/notifications')
+@login_required
+def notifications():
+    since = request.args.get('since', 0.0, type=float)
+    query = current_user.notifications.select().where(
+        Notification.timestamp > since).order_by(Notification.timestamp.asc())
+    notifications = db.session.scalars(query)
+    return [{
+        'name': n.name,
+        'data': n.get_data(),
+        'timestamp': n.timestamp
+    } for n in notifications]
+    
+@app.route('/export_posts')
+@login_required
+def export_posts():
+    if current_user.get_task_in_progress('export_posts'):
+        flash(_('An export task is currently in progress'))
+    else:
+        current_user.launch_task('export_posts', _('Exporting posts...'))
+        db.session.commit()
+    return redirect(url_for('user', username=current_user.username))
+
+@app.route('/test_redis')
+def test_redis():
+    try:
+        app.redis.ping()
+        return "Redis is connected!"
+    except Exception as e:
+        app.logger.error(f"Redis connection error: {e}")
+        return "Redis connection failed."

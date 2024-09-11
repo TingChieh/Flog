@@ -6,13 +6,13 @@
 <!-- List of Comments -->
 <h2>Comments</h2>
 <ul class="list-group">
-    {% for message in messages %}
+    {% for comment in comments %}
         <li class="list-group-item d-flex align-items-start">
-            <img src="{{ message.avatar(70) }}" class="img-thumbnail" alt="avatar" style="width: 70px; height: 70px; margin-right: 10px;"/>
+            <img src="{{ comment.avatar(70) }}" class="img-thumbnail" alt="avatar" style="width: 70px; height: 70px; margin-right: 10px;"/>
             <div>
-                <strong>{{ message.name }}</strong> ({{ message.email }})<br>
-                <small>{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small><br>
-                <p style="margin-top: 5px;">{{ message.body|safe }}</p>
+                <strong>{{ comment.name }}</strong> ({{ comment.email }})<br>
+                <small>{{ comment.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small><br>
+                <p style="margin-top: 5px;">{{ comment.body|safe }}</p>
             </div>
         </li>
     {% endfor %}
@@ -42,12 +42,12 @@
     <ul class="pagination">
         <li class="page-item{% if not prev_url %} disabled{% endif %}">
             <a class="page-link" href="{{ prev_url }}">
-                <span aria-hidden="true">&larr;</span> {{ _('Newer posts') }}
+                <span aria-hidden="true">&larr;</span> {{ _('Newer comments') }}
             </a>
         </li>
         <li class="page-item{% if not next_url %} disabled{% endif %}">
             <a class="page-link" href="{{ next_url }}">
-                {{ _('Older posts') }} <span aria-hidden="true">&rarr;</span>
+                {{ _('Older comments') }} <span aria-hidden="true">&rarr;</span>
             </a>
         </li>
     </ul>
