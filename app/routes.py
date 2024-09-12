@@ -527,7 +527,6 @@ def posts_by_category(category_id):
     return render_template('posts_by_category.html', category=category, posts=posts)
 
 @app.route('/post/<int:post_id>', methods=['GET'])
-@login_required
 def post(post_id):
     # Query the database to get the post by its id
     post = Post.query.get_or_404(post_id)
@@ -634,5 +633,3 @@ def edit_post(post_id):
     form.category.data = post.category_id
 
     return render_template('edit_post.html', title=_('Edit Post'), form=form, post=post)
-
-
