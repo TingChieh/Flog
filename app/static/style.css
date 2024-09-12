@@ -460,7 +460,7 @@ tr:hover td {
 }
 
 /* 根据屏幕尺寸设置不同的样式 */
-@media screen and (max-width: 460px) {
+@media screen and (max-width: 768px) {
     .home-link {
         display: none;
     }
@@ -475,6 +475,10 @@ tr:hover td {
 
     p {
         font-size: 16px;
+    }
+
+    .row {
+        flex-wrap: wrap;
     }
 }
 
@@ -640,4 +644,9 @@ code {
 .btn[disabled].btn-incomplete {
     background-color: #ffc107 !important;
     color: black !important;
+}
+
+.row {
+    display: flex;
+    flex-wrap: nowrap;
 }
