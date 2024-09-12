@@ -612,24 +612,27 @@ def delete_link(id):
     flash(_('Link deleted successfully!'))
     return redirect(url_for('links'))
 
-@app.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])
+@app.route('/post/<int:post_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_post(post_id):
     post = Post.query.get_or_404(post_id)
-    
-    # Ensure the current user is the author of the post
+
     if post.author != current_user:
-        abort(403)
-    
-    form = PostForm(obj=post)
-    
+        abort(403)  # Unauthorized access
+
+    form = PostForm()
+
     if form.validate_on_submit():
-        # Fetch the category instance
-        category = Category.query.get_or_404(form.category.data)
-        post.category = category  # Assign the category instance
         post.body = form.post.data
+        post.category_id = form.category.data
         db.session.commit()
-        flash(_('Post updated successfully!'))
+        flash(_('Your post has been updated!'))
         return redirect(url_for('post', post_id=post.id))
-    
+
+    # Populate form with the current post data
+    form.post.data = post.body
+    form.category.data = post.category_id
+
     return render_template('edit_post.html', title=_('Edit Post'), form=form, post=post)
+
+
