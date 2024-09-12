@@ -1,39 +1,148 @@
-<table class="table table-hover">
-    <tr>
-        <td width="70px">
-            <a href="{{ url_for('user', username=post.author.username) }}">
-                <img src="{{ post.author.avatar(70) }}" />
-            </a>
-        </td>
-        <td>
+<style>
+    /* 文章容器样式 */
+    .post-item {
+        border: 1px solid #ddd; /* 边框颜色 */
+        border-radius: 8px; /* 圆角效果 */
+        padding: 15px; /* 内边距 */
+        margin-bottom: 15px; /* 下边距 */
+        background-color: #fff; /* 背景颜色 */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+    }
+
+    /* 头像和用户名的布局 */
+    .post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .post-header img {
+        border-radius: 50%;
+        margin-right: 15px;
+        border: 2px solid #ddd; /* 头像边框 */
+    }
+
+    /* 文章内容区域 */
+    .post-body {
+        margin-top: 10px;
+    }
+
+    /* 按钮的布局 */
+    .post-footer {
+        margin-top: 15px;
+        text-align: right;
+    }
+    .post-footer .btn {
+        margin-left: 5px; /* 按钮之间的间距 */
+    }
+</style>
+
+<!-- Post item -->
+<div class="post-item">
+    <!-- 文章顶部的头像和用户名 -->
+    <div class="post-header">
+        <a href="{{ url_for('user', username=post.author.username) }}">
+            <img src="{{ post.author.avatar(70) }}" width="70" height="70" />
+        </a>
+        <div>
             {% set user_link %}
-                <a class="user_popup"
-                href="{{ url_for('user', username=post.author.username) }}">
+                <a class="user_popup" href="{{ url_for('user', username=post.author.username) }}">
                     {{ post.author.username }}
                 </a>
             {% endset %}
-            {{ _('%(username)s said %(when)s',
-                username=user_link, when=moment(post.timestamp).fromNow()) }}
-            <br>
-            <!-- Render the post body with |safe to ensure HTML is not escaped -->
-            <span id="post{{ post.id }}">{{ post.body|safe }}</span>
-            {% if post.language and post.language != g.locale %}
-            <br><br>
-            <span id="translation{{ post.id }}">
-                <a href="javascript:translate(
-                            'post{{ post.id }}',
-                            'translation{{ post.id }}',
-                            '{{ post.language }}',
-                            '{{ g.locale }}');">{{ _('Translate') }}</a>
-            </span>
-            {% endif %}
-            <br><br>
-            <!-- 添加删除按钮 -->
-            {% if current_user.is_authenticated and current_user.id == post.author.id %}
+            <strong>{{ user_link }}</strong><br>
+            <small>{{ moment(post.timestamp).fromNow() }}</small>
+        </div>
+    </div>
+
+    <!-- 文章内容 -->
+    <a href="{{ url_for('post', post_id=post.id) }}" class="text-decoration-none text-dark">
+        <div class="post-body mt-3">
+            <p>{{ post.body[:240]|safe }}</p>
+        </div>
+    </a>
+
+    
+    <!-- 文章底部的按钮 -->
+    <div class="post-footer">
+        <!-- 翻译功能 -->
+        {% if post.language and post.language != g.locale %}
+            <button class="btn btn-info btn-sm" id="translate{{ post.id }}" 
+                onclick="translate('post{{ post.id }}', 'translation{{ post.id }}', '{{ post.language }}', '{{ g.locale }}')">
+                {{ _('Translate') }}
+            </button>
+        {% endif %}
+
+        <!-- 分享和 QR 码生成按钮 -->
+        <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{ request.url_root }}post/{{ post.id }}')">
+            Copy Link
+        </button>
+        <button class="btn btn-secondary btn-sm qr-code-btn" data-bs-toggle="popover" data-bs-html="true"
+                data-bs-content="<div id='qrcode-container-{{ post.id }}' style='width: 128px; height: 128px;'></div>"
+                data-url="{{ request.url_root }}post/{{ post.id }}">
+            Generate QR Code
+        </button>
+        <div id="qrcode-{{ post.id }}" style="display: none;"></div>
+
+        <!-- 编辑按钮 -->
+        {% if current_user.is_authenticated and current_user.id == post.author.id %}
+            <a href="{{ url_for('edit_post', post_id=post.id) }}" class="btn btn-secondary btn-sm me-2">
+                {{ _('Edit') }}
+            </a>
+            <!-- 删除按钮 -->
             <form method="post" action="{{ url_for('delete_post', post_id=post.id) }}" style="display:inline;">
-                <input type="submit" class="btn btn-danger" value="{{ _('Delete') }}" onclick="return confirm('{{ _('Are you sure you want to delete this post?') }}');">
+                <input type="submit" class="btn btn-danger btn-sm" value="{{ _('Delete') }}"
+                    onclick="return confirm('{{ _('Are you sure you want to delete this post?') }}');">
             </form>
-            {% endif %}
-        </td>
-    </tr>
-</table>
+        {% endif %}
+
+    </div>
+</div>
+
+
+<script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+<script>
+    // Function to copy post URL to clipboard
+    function copyToClipboard(url) {
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Link copied to clipboard: ' + url);
+        }, function() {
+            alert('Failed to copy the link.');
+        });
+    }
+
+    function initialize_popovers() {
+        // Select all elements with the class 'qr-code-btn'
+        const qrCodeButtons = document.querySelectorAll('.qr-code-btn');
+
+        // Iterate over each button and initialize popovers
+        qrCodeButtons.forEach(button => {
+            // Initialize the Bootstrap popover
+            const popover = new bootstrap.Popover(button);
+
+            // Add event listener for when the popover is shown
+            button.addEventListener('shown.bs.popover', async (ev) => {
+                const postId = ev.target.getAttribute('data-url').split('/').pop();
+                const qrCodeContainerId = `qrcode-container-${postId}`;
+                const qrCodeContainer = document.getElementById(qrCodeContainerId);
+
+                // Check if the QR code container exists
+                if (qrCodeContainer && !qrCodeContainer.qrCodeGenerated) {
+                    const url = ev.target.getAttribute('data-url');
+                    
+                    // Generate QR code inside the container
+                    new QRCode(qrCodeContainer, {
+                        text: url,
+                        width: 128,
+                        height: 128
+                    });
+
+                    // Mark the container as having the QR code generated
+                    qrCodeContainer.qrCodeGenerated = true;
+                }
+            });
+        });
+    }
+
+    // Initialize popovers when the document is ready
+    document.addEventListener('DOMContentLoaded', initialize_popovers);
+</script>

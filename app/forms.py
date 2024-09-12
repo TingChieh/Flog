@@ -1,13 +1,13 @@
 from flask_wtf import FlaskForm
 from flask_ckeditor import CKEditorField
 from flask_babel import _, lazy_gettext as _l
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, \
+from wtforms import SelectField, StringField, PasswordField, BooleanField, SubmitField, \
     TextAreaField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, \
     Length, Optional
 import sqlalchemy as sa
 from app import db
-from app.models import User
+from app.models import Category, User
 
 
 class LoginForm(FlaskForm):
@@ -73,12 +73,17 @@ class EditProfileForm(FlaskForm):
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')
 
-
 class PostForm(FlaskForm):
+    category = SelectField(_l('Category'), coerce=int, default=1)
     post = CKEditorField(_l('Say something'), validators=[
         DataRequired()])
     submit = SubmitField(_l('Submit'))
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        categories = db.session.execute(sa.select(Category).order_by(Category.name)).scalars()
+        self.category.choices = [(category.id, category.name) for category in categories]
+
 class CommentForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired(), Length(1, 20)])
     email = StringField(_l('email'), validators=[DataRequired()])
@@ -102,4 +107,23 @@ class SearchForm(FlaskForm):
 class MessageForm(FlaskForm):
     message = TextAreaField(_l('Message'), validators=[
         DataRequired(), Length(min=0, max=140)])
+    submit = SubmitField(_l('Submit'))
+    
+class CategoryForm(FlaskForm):
+    name = StringField(_l('Name'), validators=[DataRequired(), Length(1, 128)])
+    submit = SubmitField(_l('Submit'))
+    
+    def validate_name(self, field):
+        if db.session.execute(sa.select(Category).filter_by(name=field.data)).scalar():
+            raise ValidationError('Name already in use.')
+        
+class AboutForm(FlaskForm):
+    body = CKEditorField(_l('About'), validators=[DataRequired()])
+    submit = SubmitField(_l('Submit'))
+    
+class LinkForm(FlaskForm):
+    name = StringField(_l('Name'), validators=[DataRequired(), Length(1, 128)])
+    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
+    url = StringField(_l('URL'), validators=[DataRequired(), Length(1, 255)])
+    text = StringField(_l('Text'), validators=[DataRequired(), Length(1, 128)])
     submit = SubmitField(_l('Submit'))

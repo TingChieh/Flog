@@ -14,7 +14,6 @@ from flask_ckeditor import CKEditor
 from redis import Redis
 import rq
 
-
 def get_locale():
     return request.accept_languages.best_match(app.config['LANGUAGES'])
 
@@ -32,7 +31,6 @@ babel = Babel(app, locale_selector=get_locale)
 ckeditor = CKEditor(app)
 app.redis = Redis.from_url(app.config['REDIS_URL'])
 app.task_queue = rq.Queue('microblog-task', connection=app.redis)
-
 
 if not app.debug:
     if app.config['MAIL_SERVER']:

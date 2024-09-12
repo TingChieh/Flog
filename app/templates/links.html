@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Friendly Links{% endblock %}
+
+{% block content %}
+<h1>Friendly Links</h1>
+
+{% if current_user.is_authenticated %}
+<div class="container">
+    <div class="card p-4 mb-4">
+        <h4 class="card-title">Add a New Link</h4>
+        <form method="POST" action="{{ url_for('links') }}">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ form.email.label(class="form-label") }}
+                {{ form.email(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ form.text.label(class="form-label") }}
+                {{ form.text(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ form.url.label(class="form-label") }}
+                {{ form.url(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="container">
+    <div class="row">
+        {% for link in links %}
+        <div class="col-md-4 mb-4">
+            <div class="tile p-3 border rounded">
+                <img class="addimg mb-2" src="{{ link.avatar(40) }}" alt="avatar" width="40px" align="left">
+                <h4>{{ link.name }}</h4>
+                <p>{{ link.text }}</p>
+                <a href="{{ link.url }}" class="button" target="_blank">Visit Website</a>
+                {% if current_user.is_authenticated %}
+                <div class="d-flex mt-2">
+                    <a href="{{ url_for('edit_link', id=link.id) }}" class="btn btn-sm btn-secondary me-2">Edit</a>
+                    <form method="POST" action="{{ url_for('delete_link', id=link.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

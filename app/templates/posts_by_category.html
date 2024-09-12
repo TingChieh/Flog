@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Posts in {{ category.name }}
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Posts in {{ category.name }}</h1>
+
+    {% if posts %}
+        <ul class="list-group">
+            {% for post in posts %}
+                <li class="list-group-item">
+                    {% include '_post.html' %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No posts available in this category.</p>
+    {% endif %}
+{% endblock %}

@@ -158,6 +158,11 @@ class User(UserMixin, db.Model):
 def load_user(id):
     return db.session.get(User, int(id))
 
+class Category(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(120), unique=True, nullable=False)
+    # Relationship with Post
+    posts: so.Mapped[list["Post"]] = so.relationship('Post', back_populates='category', lazy='dynamic')    
 
 class Post(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -169,6 +174,8 @@ class Post(db.Model):
 
     author: so.Mapped[User] = so.relationship(back_populates='posts')
     language: so.Mapped[Optional[str]] = so.mapped_column(sa.String(5))
+    category_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(Category.id), nullable=True)
+    category: so.Mapped[Category] = so.relationship('Category',back_populates='posts')
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
@@ -247,3 +254,20 @@ class Task(db.Model):
     def get_progress(self):
         job = self.get_rq_job()
         return job.meta.get('progress', 0) if job is not None else 100
+    
+class About(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    body: so.Mapped[str] = so.mapped_column(sa.Text)
+    
+class Link(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(64))
+    email: so.Mapped[str] = so.mapped_column(sa.String(128))
+    text: so.Mapped[str] = so.mapped_column(sa.String(128))
+    url: so.Mapped[str] = so.mapped_column(sa.String(255))
+    created_at: so.Mapped[Optional[datetime]] = so.mapped_column(
+        default=lambda: datetime.now(timezone.utc))
+    
+    def avatar(self, size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'

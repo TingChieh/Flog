@@ -1,14 +1,14 @@
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
-from flask import render_template, flash, redirect, send_from_directory, url_for, request, g
+from flask import abort, current_app, render_template, flash, redirect, send_from_directory, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_babel import _, get_locale
 import sqlalchemy as sa
 from langdetect import detect, LangDetectException
 from app import app, db
-from app.forms import CommentForm, LoginForm, MessageForm, RegistrationForm, EditProfileForm, \
+from app.forms import AboutForm, CategoryForm, CommentForm, LinkForm, LoginForm, MessageForm, RegistrationForm, EditProfileForm, \
     EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, TodoForm
-from app.models import Notification, Comment, Message, Todo, User, Post, Movie
+from app.models import About, Category, Link, Notification, Comment, Message, Todo, User, Post, Movie
 from app.email import send_password_reset_email
 from app.translate import translate
 from flask_ckeditor import upload_success, upload_fail
@@ -34,19 +34,20 @@ def index():
         except LangDetectException:
             language = ''
         post = Post(body=form.post.data, author=current_user,
-                    language=language)
+                    language=language, category_id=form.category.data)
         db.session.add(post)
         db.session.commit()
         flash(_('Your post is now live!'))
         return redirect(url_for('index'))
     page = request.args.get('page', 1, type=int)
+    categories = Category.query.order_by(Category.id.asc()).all()
     posts = db.paginate(current_user.following_posts(), page=page,
                         per_page=app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('index', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('index', page=posts.prev_num) \
         if posts.has_prev else None
-    return render_template('index.html', title=_('Home'), form=form,
+    return render_template('index.html', title=_('Home'), form=form,categories=categories,
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
 
@@ -55,6 +56,7 @@ def index():
 def explore():
     page = request.args.get('page', 1, type=int)
     query = sa.select(Post).order_by(Post.timestamp.desc())
+    categories = Category.query.order_by(Category.id.asc()).all()
     posts = db.paginate(query, page=page,
                         per_page=app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('explore', page=posts.next_num) \
@@ -62,7 +64,7 @@ def explore():
     prev_url = url_for('explore', page=posts.prev_num) \
         if posts.has_prev else None
     return render_template('index.html', title=_('Explore'),
-                           posts=posts.items, next_url=next_url,
+                           posts=posts.items, categories=categories, next_url=next_url,
                            prev_url=prev_url)
 
 
@@ -153,7 +155,7 @@ def user(username):
     prev_url = url_for('user', username=user.username, page=posts.prev_num) \
         if posts.has_prev else None
     form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts.items,
+    return render_template('user.html', title=_('User Profile'),user=user, posts=posts.items,
                            next_url=next_url, prev_url=prev_url, form=form)
 
 @app.route('/user/<username>/popup')
@@ -249,7 +251,7 @@ def movie():
         return redirect(url_for('movie'))
     
     movies = Movie.query.all()
-    return render_template('movie.html', movies=movies)
+    return render_template('movie.html', title=_('Movie'),movies=movies)
 
 @app.route('/movie/edit/<int:movie_id>', methods=['GET', 'POST'])
 @login_required
@@ -270,7 +272,7 @@ def movie_edit(movie_id):
         flash('Item updated.')
         return redirect(url_for('movie'))  # 重定向回主页
 
-    return render_template('movie_edit.html', movie=movie)  # 传入被编辑的电影记录
+    return render_template('movie_edit.html', title=_('Edit Movie'), movie=movie)  # 传入被编辑的电影记录
 
 
 @app.route('/movie/delete/<int:movie_id>', methods=['POST'])
@@ -313,7 +315,7 @@ def comment():
         if comments.has_next else None
     prev_url = url_for('comment', page=comments.prev_num) \
         if comments.has_prev else None   
-    return render_template('comment.html', form=form, comments=comments.items,
+    return render_template('comment.html', title=_('Comment'), form=form, comments=comments.items,
                            next_url=next_url, prev_url=prev_url)
 
     
@@ -338,7 +340,7 @@ def todo():
     prev_url = url_for('todo', page=todos.prev_num) \
         if todos.has_prev else None
     
-    return render_template('todo.html', form=form, todos=todos.items,
+    return render_template('todo.html', title=_('Todo'), form=form, todos=todos.items,
                            next_url=next_url, prev_url=prev_url)
         
 @app.route('/todo/update/<int:todo_id>', methods=['POST'])
@@ -371,7 +373,7 @@ def todo_edit(todo_id):
         flash('Todo updated.')
         return redirect(url_for('todo'))
 
-    return render_template('todo_edit.html', form=form, todo=todo)
+    return render_template('todo_edit.html', title=_('Edit Todo'), form=form, todo=todo)
 
 
 @app.route('/search', methods=['GET'])
@@ -383,7 +385,7 @@ def search():
         # Search in the 'body' of the posts
         posts = Post.query.filter(Post.body.contains(query)).all()
 
-    return render_template('search_results.html', query=query, posts=posts)
+    return render_template('search_results.html', title=_('Search'), query=query, posts=posts)
 
 @app.route('/files/<path:filename>')
 def uploaded_files(filename):
@@ -433,7 +435,7 @@ def messages():
         if messages.has_next else None
     prev_url = url_for('messages', page=messages.prev_num) \
         if messages.has_prev else None
-    return render_template('messages.html', messages=messages.items,
+    return render_template('messages.html', title=_('Messages'), messages=messages.items,
                            next_url=next_url, prev_url=prev_url)
     
 @app.route('/notifications')
@@ -467,3 +469,167 @@ def test_redis():
     except Exception as e:
         app.logger.error(f"Redis connection error: {e}")
         return "Redis connection failed."
+
+@app.route('/categories', methods=['GET', 'POST'])
+def categories():
+    form = CategoryForm()
+    
+    # Handle form submission for adding a new category
+    if form.validate_on_submit():
+        if db.session.execute(sa.select(Category).filter_by(name=form.name.data)).scalar():
+            flash('Category name already exists.')
+            return redirect(url_for('categories'))
+
+        new_category = Category(name=form.name.data)
+        db.session.add(new_category)
+        db.session.commit()
+
+        flash('New category created successfully.')
+        return redirect(url_for('categories'))
+
+    # Retrieve all categories for display
+    categories = db.session.execute(sa.select(Category)).scalars().all()
+    return render_template('categories.html', title=_('Categories'), form=form, categories=categories)
+
+# Route for deleting a category
+@app.route('/delete_category/<int:category_id>', methods=['POST'])
+def delete_category(category_id):
+    category = db.session.get(Category, category_id)
+    if category:
+        db.session.delete(category)
+        db.session.commit()
+        flash(f'Category "{category.name}" has been deleted.')
+    else:
+        flash('Category not found.')
+    return redirect(url_for('categories'))
+
+@app.route('/category/<int:category_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_category(category_id):
+    category = Category.query.get_or_404(category_id)
+    form = CategoryForm(obj=category)
+    if form.validate_on_submit():
+        category.name = form.name.data
+        db.session.commit()
+        flash('The category has been updated.', 'success')
+        return redirect(url_for('categories'))
+    return render_template('edit_category.html', title=_('Category'), form=form, category=category)
+
+@app.route('/category/<int:category_id>', methods=['GET'])
+def posts_by_category(category_id):
+    # Query for the category by its ID
+    category = Category.query.get_or_404(category_id)
+    
+    # Get all posts that belong to this category
+    posts = Post.query.filter_by(category_id=category.id).all()
+
+    # Render the posts in the category using a template
+    return render_template('posts_by_category.html', category=category, posts=posts)
+
+@app.route('/post/<int:post_id>', methods=['GET'])
+@login_required
+def post(post_id):
+    # Query the database to get the post by its id
+    post = Post.query.get_or_404(post_id)
+    return render_template('post.html', title=_('Post'), post=post)
+
+@app.route('/about', methods=['GET'])
+def about():
+    # Fetch the current "About" content from the database
+    about_content = About.query.first()  # Assuming there's only one 'About' entry
+    return render_template('about.html', title=_('About'), about_content=about_content)
+
+@app.route('/about/edit', methods=['GET', 'POST'])
+@login_required  # Only authenticated users can edit
+def edit_about():
+    # Fetch the current "About" content from the database
+    about_content = About.query.first()
+
+    form = AboutForm()
+
+    if form.validate_on_submit():
+        if not about_content:
+            about_content = About(body=form.body.data)
+        else:
+            about_content.body = form.body.data
+        db.session.add(about_content)
+        db.session.commit()
+        flash(_('The about page has been updated.'))
+        return redirect(url_for('about'))
+
+    if request.method == 'GET' and about_content:
+        form.body.data = about_content.body
+
+    return render_template('edit_about.html', title=_('Edit About'),form=form)
+
+# Display all links
+@app.route('/links', methods=['GET', 'POST'])
+def links():
+    form = LinkForm()
+    if form.validate_on_submit():
+        # Ensure URL has a valid scheme
+        url = form.url.data
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url  # Default to https if no scheme provided
+
+        # Add the new link to the database
+        link = Link(name=form.name.data, email=form.email.data, text=form.text.data, url=url)
+        db.session.add(link)
+        db.session.commit()
+        flash(_('Link added successfully!'))
+        return redirect(url_for('links'))
+
+    # Query and display all links, ordered by creation date
+    links = Link.query.order_by(Link.created_at.desc()).all()
+    return render_template('links.html', title=_('Links'), form=form, links=links)
+
+
+@app.route('/edit_link/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_link(id):
+    link = Link.query.get_or_404(id)
+    form = LinkForm(obj=link)
+    
+    if form.validate_on_submit():
+        # 如果 URL 不以 http:// 或 https:// 开头，自动加上 https://
+        if not form.url.data.startswith(('http://', 'https://')):
+            form.url.data = 'https://' + form.url.data
+        
+        # 更新数据库中的链接
+        form.populate_obj(link)
+        db.session.commit()
+        flash('Link has been updated successfully.')
+        return redirect(url_for('links'))
+    
+    return render_template('edit_link.html', title=_('Edit Link'), form=form, link=link)
+
+@app.route('/link/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_link(id):
+    link = Link.query.get_or_404(id)
+    db.session.delete(link)
+    db.session.commit()
+    flash(_('Link deleted successfully!'))
+    return redirect(url_for('links'))
+
+@app.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def edit_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    
+    # Ensure the current user is the author of the post
+    if post.author != current_user:
+        abort(403)
+    
+    form = PostForm(obj=post)
+    
+    if form.validate_on_submit():
+        # Fetch the category instance
+        category = Category.query.get_or_404(form.category.data)
+        post.category = category  # Assign the category instance
+        post.body = form.post.data
+        db.session.commit()
+        flash(_('Post updated successfully!'))
+        return redirect(url_for('post', post_id=post.id))
+    
+    return render_template('edit_post.html', title=_('Edit Post'), form=form, post=post)

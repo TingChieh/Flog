@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Edit Link
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Edit Link</h1>
+    
+    <form method="POST" action="{{ url_for('edit_link', id=link.id) }}">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control", placeholder="Enter the name") }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control", placeholder="Enter the email") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.text.label(class="form-label") }}
+            {{ form.text(class="form-control", placeholder="Enter the text") }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.url.label(class="form-label") }}
+            {{ form.url(class="form-control", placeholder="Enter the URL") }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('links') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+{% endblock %}

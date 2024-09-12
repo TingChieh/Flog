@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Category Management{% endblock %}
+
+{% block content %}
+    <h1 class="text-center mb-4">Category Management</h1>
+
+    <!-- Form to add a new category -->
+    {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('categories') }}">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control", placeholder="Enter a new category...") }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">{{ form.submit.label.text }}</button>
+        </form>
+    {% endif %}
+
+    <!-- Display the list of categories -->
+    <ul class="list-group mt-4">
+        {% for category in categories %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('posts_by_category', category_id=category.id) }}">
+                        {{ category.name }}
+                    </a>
+                    <div>
+                        <!-- Edit button (only visible to logged-in users) -->
+                        {% if not current_user.is_anonymous %}
+                        <a href="{{ url_for('edit_category', category_id=category.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+
+                        <!-- Delete button (only visible to logged-in users) -->
+                        <form method="POST" action="{{ url_for('delete_category', category_id=category.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Pagination controls (if applicable) -->
+    <nav aria-label="Category navigation">
+        <ul class="pagination">
+            <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Newer categories') }}
+                </a>
+            </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url }}">
+                    {{ _('Older categories') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+{% endblock %}

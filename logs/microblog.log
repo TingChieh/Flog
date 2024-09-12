@@ -1,102 +1,43 @@
-2024-09-11 14:49:29,000 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:49:29,002 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:51:54,222 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:51:54,222 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:51:54,558 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:51:54,558 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:51:54,893 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:51:54,893 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:51:55,220 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:51:55,220 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:51:55,544 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:51:55,544 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:53:01,696 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:53:01,697 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:53:06,062 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:53:06,062 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:53:11,379 ERROR: Unhandled exception [in /home/tingchieh/Documents/flask-study/app/tasks.py:64]
+2024-09-11 21:44:57,035 ERROR: Exception on /categories [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
 Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 492, in send
-    message.send(connection)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 427, in send
-    connection.send(self)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 188, in send
-    self.host.sendmail(sanitize_address(envelope_from or message.sender),
-  File "/usr/lib/python3.12/smtplib.py", line 891, in sendmail
-    (code, resp) = self.data(msg)
-                   ^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/smtplib.py", line 580, in data
-    (code, msg) = self.getreply()
-                  ^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/smtplib.py", line 405, in getreply
-    raise SMTPServerDisconnected("Connection unexpectedly closed")
-smtplib.SMTPServerDisconnected: Connection unexpectedly closed
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/app/tasks.py", line 54, in export_posts
-    send_email(
-  File "/home/tingchieh/Documents/flask-study/app/email.py", line 38, in send_email
-    mail.send(msg)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 491, in send
-    with self.connect() as connection:
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 152, in __exit__
-    self.host.quit()
-  File "/usr/lib/python3.12/smtplib.py", line 993, in quit
-    res = self.docmd("quit")
-          ^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/smtplib.py", line 431, in docmd
-    self.putcmd(cmd, args)
-  File "/usr/lib/python3.12/smtplib.py", line 378, in putcmd
-    self.send(f'{s}{CRLF}')
-  File "/usr/lib/python3.12/smtplib.py", line 365, in send
-    raise SMTPServerDisconnected('please run connect() first')
-smtplib.SMTPServerDisconnected: please run connect() first
-2024-09-11 14:58:16,618 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:58:16,618 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:58:22,642 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 14:58:22,642 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 14:58:27,943 ERROR: Unhandled exception [in /home/tingchieh/Documents/flask-study/app/tasks.py:64]
-Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 492, in send
-    message.send(connection)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 427, in send
-    connection.send(self)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 188, in send
-    self.host.sendmail(sanitize_address(envelope_from or message.sender),
-  File "/usr/lib/python3.12/smtplib.py", line 891, in sendmail
-    (code, resp) = self.data(msg)
-                   ^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/smtplib.py", line 580, in data
-    (code, msg) = self.getreply()
-                  ^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/smtplib.py", line 405, in getreply
-    raise SMTPServerDisconnected("Connection unexpectedly closed")
-smtplib.SMTPServerDisconnected: Connection unexpectedly closed
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/app/tasks.py", line 54, in export_posts
-    send_email(
-  File "/home/tingchieh/Documents/flask-study/app/email.py", line 45, in send_email
-    mail.send(msg)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 491, in send
-    with self.connect() as connection:
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_mail.py", line 152, in __exit__
-    self.host.quit()
-  File "/usr/lib/python3.12/smtplib.py", line 993, in quit
-    res = self.docmd("quit")
-          ^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/smtplib.py", line 431, in docmd
-    self.putcmd(cmd, args)
-  File "/usr/lib/python3.12/smtplib.py", line 378, in putcmd
-    self.send(f'{s}{CRLF}')
-  File "/usr/lib/python3.12/smtplib.py", line 365, in send
-    raise SMTPServerDisconnected('please run connect() first')
-smtplib.SMTPServerDisconnected: please run connect() first
-2024-09-11 15:01:50,781 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 15:01:50,781 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
-2024-09-11 15:58:25,671 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
-2024-09-11 15:58:25,671 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 869, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 490, in categories
+    return render_template('categories.html', form=form, categories=categories)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/templating.py", line 152, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/templating.py", line 133, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/jinja2/environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/tingchieh/Documents/flask-study/app/templates/categories.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/tingchieh/Documents/flask-study/app/templates/base.html", line 97, in top-level template code
+    {% block content %}
+  File "/home/tingchieh/Documents/flask-study/app/templates/categories.html", line 29, in block 'content'
+    <a href="{{ url_for('edit_category', category_id=category.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1071, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1060, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/werkzeug/routing/map.py", line 919, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'edit_category' with values ['category_id']. Did you mean 'delete_category' instead?

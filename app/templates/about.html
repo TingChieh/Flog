@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ _('About') }}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ _('About') }}</h1>
+
+    {% if about_content %}
+        <div class="about-body">
+            {{ about_content.body|safe }}
+        </div>
+    {% else %}
+        <p>{{ _('No information available yet.') }}</p>
+    {% endif %}
+
+    <!-- Edit button (only visible to logged-in users) -->
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('edit_about') }}" class="btn btn-primary mt-3">{{ _('Edit') }}</a>
+    {% endif %}
+{% endblock %}

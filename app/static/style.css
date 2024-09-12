@@ -1,173 +1,150 @@
-/* 页面整体 */
+html {
+    --brand-green: hsl(162, 87%, 21%);
+    --dark-green: hsl(162, 88%, 30%);
+    --medium-green: hsl(162, 73%, 46%);
+    --text-color: hsl(0, 1%, 26%);
+    --gray: hsl(210, 7%, 56%);
+    --light-gray: hsl(210, 17%, 95%);
+    --extra-light-gray: hsl(210, 17%, 98%);
+    --white: hsl(0, 0%, 100%);
+    --red: hsl(342, 63%, 46%);
+
+    box-sizing: border-box;
+    color: var(--text-color);
+}
+
+@font-face {
+    font-family: "SmileySans-Oblique";
+    src: url("fonts/SmileySans-Oblique.ttf");
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
 body {
-    margin: auto;
-    max-width: 880px;
-    font-size: 14px;
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif, "SmileySans-Oblique";
+    font-size: 16px;
+    /* 设置字体大小 */
+    line-height: 1.8;
+    /* 设置行高 */
+    letter-spacing: 0.05em;
+    /* 增加字间距 */
+    text-align: justify;
+    /* 文本对齐方式为两端对齐 */
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+    background-color: var(--extra-light-gray);
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+}
+
+.fonts-failed body {
     font-family: Helvetica, Arial, sans-serif;
 }
 
-/* 页脚 */
-.page-footer {
-    color: #888;
-    margin-top: 3em;
-    padding: 1em 0;
-    background-color: var(--light-gray);
-    color: var(--gray);
+h1,
+h2,
+h3,
+h4 {
+    font-family: Sansita, serif;
+    letter-spacing: 0.03em;
 }
 
-.page-footer__inner {
-    margin: 0 auto;
+.fonts-failed h1,
+.fonts-failed h2,
+.fonts-failed h3,
+.fonts-failed h4 {
+    font-family: Georgia, serif;
+}
+
+a {
+    color: var(--medium-green);
+}
+
+a:visited {
+    color: var(--brand-green);
+}
+
+a:hover {
+    color: var(--brand-green);
+}
+
+a:active {
+    color: var(--red);
+    text-decoration: none;
+    /* 去除下划线 */
+}
+
+p {
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    white-space: normal;
+}
+
+p,
+ul,
+ol {
+    margin-bottom: 1.5em;
+    /* 段落、列表之间的间距 */
+    white-space: normal;
+}
+
+.nav-container {
+    background-color: var(--medium-green);
+}
+
+.nav-container__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
     max-width: 1080px;
-    text-align: center;
-    font-size: 0.8rem;
-}
-
-/* 头像 */
-.avatar {
-    width: 40px;
-}
-
-/* 电影列表 */
-.movie-list {
-    list-style-type: none;
-    padding: 0;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
-}
-
-.movie-list li {
-    padding: 12px 24px;
-    border-bottom: 1px solid #ddd;
-}
-
-.movie-list li:last-child {
-    border-bottom:none;
-}
-
-.movie-list li:hover {
-    background-color: #f8f9fa;
-}
-
-/* 龙猫图片 */
-.totoro {
-    display: block;
     margin: 0 auto;
-    height: 100px;
+    padding: 0.625em 0;
 }
 
-/* nav ul {
+.home-link {
+    color: var(--text-color);
+    font-size: 1.6rem;
+    font-family: Sansita, serif;
+    font-weight: bold;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    flex: 1;
+}
+
+.fonts-failed .home-link {
+    font-family: Georgia, serif;
+}
+
+.top-nav {
+    display: flex;
     list-style-type: none;
     margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #333;
-} */
-
-nav li {
-    float: left;
 }
 
-nav li a {
+.top-nav>li+li {
+    margin-left: 0.625em;
+}
+
+.top-nav a {
     display: block;
-    color: white;
-    text-align: center;
-    padding: 8px 12px;
+    font-size: 0.8rem;
+    padding: 0.3rem 1.25rem;
+    color: var(--white);
+    background: var(--brand-green);
     text-decoration: none;
-}
-
-nav li a:hover {
-    background-color: #919191;
-}
-
-.float-right {
-    float: right;
-}
-
-.imdb {
-    font-size: 12px;
-    font-weight: bold;
-    color: black;
-    text-decoration: none;
-    background: #F5C518;
-    border-radius: 5px;
-    padding: 3px 5px;
-}
-
-/* 覆盖某些浏览器对 input 元素定义的字体 */
-input[type=submit] {
-    font-family: inherit;
-}
-
-input[type=text] {
-    border: 1px solid #ddd;
-}
-
-input[name=year] {
-    width: 50px;
-}
-
-.btn {
-    font-size: 12px;
-    padding: 3px 5px;
-    text-decoration: none;
-    cursor: pointer;
-    background-color: white;
-    color: black;
-    border: 1px solid #555555;
-    border-radius: 5px;
-}
-
-.btn:hover {
-    text-decoration: none;
-    background-color: black;
-    color: white;
-    border: 1px solid black;
-}
-
-.alert {
-    position: relative;
-    padding: 7px;
-    margin: 7px 0;
-    border: 1px solid transparent;
-    color: #004085;
-    background-color: #cce5ff;
-    border-color: #b8daff;
-    border-radius: 5px;
-}
-
-.inline-form {
-    display: inline;
-}
-
-/* Custom button colors */
-.btn-complete {
-    background-color: #28a745 !important; /* Green */
-    color: white !important;
-    border: none;
-}
-
-.btn-incomplete {
-    background-color: #ffc107 !important; /* Yellow */
-    color: black !important;
-    border: none;
-}
-
-/* Disable hover effect on disabled buttons */
-.btn[disabled] {
-    background-color: inherit !important;
-    color: inherit !important;
-    cursor: not-allowed;
-}
-
-/* Optional: Style for disabled buttons */
-.btn[disabled].btn-complete {
-    background-color: #28a745 !important;
-    color: white !important;
-}
-
-.btn[disabled].btn-incomplete {
-    background-color: #ffc107 !important;
-    color: black !important;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
 .top-nav .search-icon {
@@ -191,58 +168,295 @@ input[name=year] {
     background-color: var(--dark-green);
 }
 
-/* 确保搜索框和按钮完全贴合 */
-.search-icon {
-    display: flex; /* 使用flex布局确保输入框和按钮在同一行 */
-    align-items: center; /* 垂直居中对齐 */
-    margin: 0;
+.top-nav__featured>a {
+    color: var(--brand-green);
+    background-color: var(--white);
 }
 
-.search-icon input[type=search] {
-    border-radius: 3px 0 0 3px;
-    border: 1px solid #ddd;
-    border-right: none; /* 去掉右边框，确保与按钮紧密贴合 */
-    height: 38px; /* 确保与按钮一致 */
-    margin: 0;
-    padding: 0 10px; /* 内边距设置为 0 */
-    box-sizing: border-box;
+.top-nav__featured>a:hover {
+    color: var(--medium-green);
+    background-color: var(--white);
 }
 
-.search-icon button {
-    border-radius: 0 3px 3px 0;
-    height: 38px; /* 确保与输入框一致 */
-    margin: 0;
-    padding: 0;
-    background: hsl(162, 87%, 21%);
-    border: 1px solid #ddd; /* 确保与输入框一致 */
-    border-left: none; /* 去掉左边框，确保与输入框紧密贴合 */
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.hero {
+    background: url(images/hero.png);
+    background-size: cover;
+    margin-bottom: 2.5rem;
+    animation: fade-in 1.5s ease-in-out;
 }
 
-.search-icon button img {
-    width: 24px;
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.hero__inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 5.56em 12.5em 12.5em 0;
+    text-align: right;
+    overflow: hidden;
+    position: relative;
+}
+
+.hero h2 {
+    font-size: 1.95rem;
+    letter-spacing: -0.02em;
+    margin-top: 0;
+    margin-bottom: 0.625rem;
+}
+
+.hero__inner img {
+    width: 20%;
     height: auto;
+    transition: transform 0.5s ease-out;
 }
 
-.scrollTop {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    padding: 10px 12px;
-    background-color: hsl(162, 73%, 46%);
+.hero__inner:hover img {
+    transform: scale(1.1);
+}
+.button-div{
+    text-align: center;
+}
+
+.button {
+    display: inline-block;
+    padding: 0.4em 1em;
     color: hsl(162, 87%, 21%);
-    border-radius: 5px;
-    border-radius: 1px solid hsl(162, 87%, 21%);
-    cursor: pointer;
-    transition: all 0.5s ease 0s;
+    border: 2px solid hsl(162, 87%, 21%);
+    border-radius: 3px;
+    text-decoration: none;
+    font-size: 0.8rem;
 }
 
-.scrollTop:hover {
+.button:hover {
+    background-color: hsl(162, 15%, 44%);
+    color: white;
+}
+
+.button--cta {
+    padding: 0.6em 1em;
     background-color: hsl(162, 87%, 21%);
-    color: hsl(162, 73%, 46%);
+    color: white;
+    border: none;
+}
+
+.container {
+    margin: 0 auto;
+    max-width: 1080px;
+}
+
+.tile-row {
+    display: flex;
+}
+
+.tile-row>* {
+    flex: 1;
+}
+
+.tile-row>*+* {
+    margin-left: 1.5625em;
+}
+
+.tile {
+    background-color: var(--white);
+    border-radius: 3px;
+    padding: 1.5625em;
+    color: var(--clr-accent);
+    border: 10px solid var(--clr-accent);
+    transition: all 0.3s;
+}
+
+.tile:hover {
+    transform: translateY(-10px);
+    background-color: var(--clr-accent);
+    color: var(--clr-light);
+}
+
+.tile>h4 {
+    margin-top: 0;
+    margin-bottom: 1.5em;
+    white-space: normal;
+}
+
+.tag-list {
+    list-style: none;
+    padding-left: 0;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    counter-reset: num;
+}
+
+.tag-list>li {
+    display: inline;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 0.2rem;
+    background-color: var(--light-gray);
+    line-height: 2.6;
+    opacity: 0;
+    transform: scale(.3);
+    animation: show .8s forwards;
+    transform-origin: left top;
+}
+
+.list li:nth-child(2n + 1) {
+    background: tomato
+}
+
+.list li:nth-child(3n + 2) {
+    background: royalblue
+}
+
+.list li:nth-child(9n + 3) {
+    background: violet
+}
+
+.list li:nth-child(7n + 4) {
+    background: tan;
+    color: #000;
+}
+
+.list li:nth-child(11n + 5) {
+    background: yellowgreen
+}
+
+/*animation-delay*/
+
+.list li:nth-child(9n + 1) {
+    animation-delay: 0s;
+}
+
+.list li:nth-child(9n + 2),
+.list li:nth-child(9n + 4) {
+    animation-delay: .3s;
+}
+
+.list li:nth-child(9n + 3),
+.list li:nth-child(9n + 5),
+.list li:nth-child(9n + 7) {
+    animation-delay: .6s;
+}
+
+.list li:nth-child(9n + 6),
+.list li:nth-child(9n + 8) {
+    animation-delay: .9s;
+}
+
+.list li:nth-child(9n + 9) {
+    animation-delay: 1.2s;
+}
+
+@keyframes show {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.page-footer {
+    margin-top: 3em;
+    padding: 1em 0;
+    background-color: var(--light-gray);
+    color: var(--gray);
+}
+
+.page-footer__inner {
+    margin: 0 auto;
+    max-width: 1080px;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.addimg {
+    border-radius: 1em;
+    background-color: #f2f2f2;
+    padding: 2px;
+    border-radius: 1em;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.01em);
+}
+
+.wrap {
+    overflow: hidden;
+    border-radius: 10px 10px 10px 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.35);
+}
+
+table {
+    font-family: Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+}
+
+/* 限制表头的最大宽度和高度 */
+/* 调整表头 th 的样式，减少高度和内边距 */
+th {
+    background-color: #11c9a4;
+    color: #ffffff;
+    max-width: 400px;  /* 更小的最大宽度 */
+    height: auto;      /* 自动调整高度 */
+    padding: 5px;      /* 减少内边距 */
+    text-align: center;
+    white-space: nowrap; /* 单行显示，防止自动换行 */
+    font-size: 14px;    /* 缩小字体 */
+}
+
+/* 调整表格数据 td 的样式 */
+td {
+    background-color: #ffffff;
+    max-width: 400px;  /* 更小的最大宽度 */
+    height: auto;      /* 自动调整高度 */
+    text-align: center;
+    padding: 5px;      /* 减少内边距 */
+    word-wrap: break-word;  /* 长内容自动换行 */
+    font-size: 14px;    /* 缩小字体 */
+}
+
+/* 限制图片宽度，使其更紧凑 */
+td img {
+    max-width: 100%;  /* 限制图片宽度为单元格宽度 */
+    height: auto;     /* 保持图片比例 */
+    margin: 0;        /* 移除图片的外边距 */
+}
+
+/* 为表格行和单元格移除不必要的外边距和内边距 */
+table {
+    margin: 0 auto;      /* 居中显示表格 */
+    border-collapse: collapse; /* 合并单元格边框，减少空隙 */
+}
+
+tr, td, th {
+    margin: 0;           /* 移除默认的外边距 */
+    padding: 5px;        /* 减少内边距 */
+    border: 1px solid #ddd; /* 添加边框，便于分隔 */
+}
+
+/* 调整整个表格的布局，使其更紧凑 */
+table {
+    width: 100%;   /* 占满可用空间 */
+    max-width: 800px; /* 限制表格最大宽度 */
+}
+
+
+tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+tr:last-of-type {
+    border-bottom: 2px solid #77e9d3;
+}
+
+tr:nth-of-type(even) td {
+    background-color: #f3f3f3;
+}
+
+tr:hover td {
+    background-color: #b7b7b7;
+    transition: all 0.3s ease-in-out;
 }
 
 /* 根据屏幕尺寸设置不同的样式 */
@@ -262,6 +476,36 @@ input[name=year] {
     p {
         font-size: 16px;
     }
+}
+
+.search-icon button img {
+    width: 24px;
+}
+
+.search-icon button {
+    border: 0;
+    border-radius: 0 3px 3px 0;
+    height: 72%;
+    width: 30px;
+    background: hsl(162, 87%, 21%);
+}
+
+.scrollTop {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 10px 12px;
+    background-color: hsl(162, 73%, 46%);
+    color: hsl(162, 87%, 21%);
+    border-radius: 5px;
+    border-radius: 1px solid hsl(162, 87%, 21%);
+    cursor: pointer;
+    transition: all 0.5s ease 0s;
+}
+
+.scrollTop:hover {
+    background-color: hsl(162, 87%, 21%);
+    color: hsl(162, 73%, 46%);
 }
 
 blockquote {
@@ -316,54 +560,84 @@ code {
     white-space: normal;
 }
 
-
-.fonts-failed body {
-    font-family: Helvetica, Arial, sans-serif;
+/* Style for the movie list */
+.movie-list {
+    list-style-type: none;
+    padding: 0;
 }
 
-h1,
-h2,
-h3,
-h4 {
-    font-family: Sansita, serif;
-    letter-spacing: 0.03em;
+.movie-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
 }
 
-.fonts-failed h1,
-.fonts-failed h2,
-.fonts-failed h3,
-.fonts-failed h4 {
-    font-family: Georgia, serif;
+.movie-info {
+    font-weight: bold;
 }
 
-a {
-    color: var(--medium-green);
+/* Style for action buttons */
+.movie-actions {
+    display: flex;
+    gap: 10px;
 }
 
-a:visited {
-    color: var(--brand-green);
+.inline-form {
+    display: inline-block;
+    margin-left: 5px;
 }
 
-a:hover {
-    color: var(--brand-green);
+/* Form styling */
+.movie-form .form-group {
+    margin-bottom: 15px;
 }
 
-a:active {
-    color: var(--red);
+/* 龙猫图片 */
+.totoro {
+    display: block;
+    margin: 0 auto;
+    height: 100px;
+}
+
+.imdb {
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
     text-decoration: none;
-    /* 去除下划线 */
+    background: #F5C518;
+    border-radius: 5px;
+    padding: 3px 5px;
 }
 
-p {
-    margin-top: 1.5em;
-    margin-bottom: 1.5em;
-    white-space: normal;
+
+/* Custom button colors */
+.btn-complete {
+    background-color: #28a745 !important; /* Green */
+    color: white !important;
+    border: none;
 }
 
-p,
-ul,
-ol {
-    margin-bottom: 1.5em;
-    /* 段落、列表之间的间距 */
-    white-space: normal;
+.btn-incomplete {
+    background-color: #ffc107 !important; /* Yellow */
+    color: black !important;
+    border: none;
+}
+
+/* Disable hover effect on disabled buttons */
+.btn[disabled] {
+    background-color: inherit !important;
+    color: inherit !important;
+    cursor: not-allowed;
+}
+
+/* Optional: Style for disabled buttons */
+.btn[disabled].btn-complete {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.btn[disabled].btn-incomplete {
+    background-color: #ffc107 !important;
+    color: black !important;
 }

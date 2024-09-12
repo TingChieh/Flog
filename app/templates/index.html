@@ -1,27 +1,80 @@
-{% extends "base.html" %}
+{% extends "new_base.html" %}
 {% import "bootstrap_wtf.html" as wtf %}
 
-{% block content %}
-    <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
-    {% if form %}
-    {{ wtf.quick_form(form) }}
-    {% endif %}
-    {% for post in posts %}
-        {% include '_post.html' %}
-    {% endfor %}
-    <nav aria-label="Post navigation">
-        <ul class="pagination">
-            <li class="page-item{% if not prev_url %} disabled{% endif %}">
-                <a class="page-link" href="{{ prev_url }}">
-                    <span aria-hidden="true">&larr;</span> {{ _('Newer posts') }}
-                </a>
-            </li>
-            <li class="page-item{% if not next_url %} disabled{% endif %}">
-                <a class="page-link" href="{{ next_url }}">
-                    {{ _('Older posts') }} <span aria-hidden="true">&rarr;</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
 
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Left column for posts -->
+        <div class="col-md-10"> <!-- 从 col-md-8 改为 col-md-9 -->
+            <h1>{{ _('Hi  %(username)s!', username=current_user.username) }}</h1>
+            {% if form %}
+            {{ wtf.quick_form(form) }}
+            {% endif %}
+            {% for post in posts %}
+                {% include '_post.html' %}
+            {% endfor %}
+            <nav aria-label="Post navigation">
+                <ul class="pagination">
+                    <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ prev_url }}">
+                            <span aria-hidden="true">&larr;</span> {{ _('Newer posts') }}
+                        </a>
+                    </li>
+                    <li class="page-item{% if not next_url %} disabled{% endif %}">
+                        <a class="page-link" href="{{ next_url }}">
+                            {{ _('Older posts') }} <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Right column for categories -->
+        <div class="col-md-2">
+            <h3>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('categories') }}" class="category-link">{{ _('Categories') }}</a>
+                {% else %}
+                    {{ _('Categories') }}
+                {% endif %}
+            </h3>
+            <ul class="list-group">
+                {% for category in categories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('posts_by_category', category_id=category.id) }}" class="category-link">
+                            {{ category.name }}
+                        </a>
+                        <span class="badge badge-pill badge-primary">{{ category.posts.count() }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>                      
+    </div>
+</div>
+
+<!-- Custom CSS -->
+<style>
+    .category-link {
+        text-decoration: none;
+        color: inherit; /* 继承父元素的颜色 */
+    }
+
+    .category-link:hover {
+        color: #11c9a4; /* 鼠标悬停时变色 */
+    }
+
+    .badge-pill {
+        border-radius: 50%;
+        padding: 10px;
+        font-size: 14px;
+        background-color: #11c9a4;
+        color: white;
+        width: 35px;
+        height: 35px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
 {% endblock %}

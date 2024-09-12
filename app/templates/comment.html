@@ -19,7 +19,6 @@
 </ul>   
 
 <!-- Comment Form -->
-{% if current_user.is_authenticated %}
 <form method="POST" action="{{ url_for('comment') }}">
     {{ form.hidden_tag() }}
     <div class="form-group">
@@ -36,7 +35,6 @@
     </div>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
-{% endif %}
 
 <nav aria-label="Post navigation">
     <ul class="pagination">

@@ -1,4 +1,4 @@
-2024-09-11 10:58:58,154 ERROR: Exception on / [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+2024-09-11 12:51:16,133 ERROR: Exception on /index [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
 Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
     response = self.full_dispatch_request()
@@ -31,8 +31,8 @@ Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/app/templates/index.html", line 2, in top-level template code
     {% import "bootstrap_wtf.html" as wtf %}
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/templates/base.html", line 63, in top-level template code
-    href="{{ url_for('messages') }}">
+  File "/home/tingchieh/Documents/flask-study/app/templates/base.html", line 157, in top-level template code
+    const response = await fetch('{{ url_for('main.notifications') }}?since=' + since);
     ^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1071, in url_for
     return self.handle_url_build_error(error, endpoint, values)
@@ -42,8 +42,8 @@ Traceback (most recent call last):
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/werkzeug/routing/map.py", line 919, in build
     raise BuildError(endpoint, values, method, self)
-werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'main.messages'. Did you mean 'messages' instead?
-2024-09-11 10:58:58,598 ERROR: Exception on / [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'main.notifications'. Did you mean 'notifications' instead?
+2024-09-11 12:51:36,240 ERROR: Exception on /index [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:825]
 Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1455, in wsgi_app
     response = self.full_dispatch_request()
@@ -76,8 +76,8 @@ Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/app/templates/index.html", line 2, in top-level template code
     {% import "bootstrap_wtf.html" as wtf %}
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/templates/base.html", line 63, in top-level template code
-    href="{{ url_for('messages') }}">
+  File "/home/tingchieh/Documents/flask-study/app/templates/base.html", line 157, in top-level template code
+    const response = await fetch('{{ url_for('notifications') }}?since=' + since);
     ^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1071, in url_for
     return self.handle_url_build_error(error, endpoint, values)
@@ -87,4 +87,31 @@ Traceback (most recent call last):
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/werkzeug/routing/map.py", line 919, in build
     raise BuildError(endpoint, values, method, self)
-werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'main.messages'. Did you mean 'messages' instead?
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'main.notifications'. Did you mean 'notifications' instead?
+2024-09-11 12:51:40,571 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 12:51:40,571 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 12:57:37,696 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 12:57:37,696 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:08:12,671 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:08:12,671 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:08:51,617 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:08:51,617 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:09:29,457 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:09:29,457 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:12:00,262 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:12:00,262 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:12:05,508 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:12:05,508 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:12:10,165 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:12:10,165 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:12:10,844 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:12:10,844 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:19:09,034 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:19:09,034 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:20:26,793 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:59]
+2024-09-11 13:20:26,793 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-11 13:43:24,363 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 13:43:24,363 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 13:43:29,644 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
+2024-09-11 13:43:29,644 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:63]
+2024-09-11 13:44:03,614 INFO: Microblog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:62]
