@@ -1,15 +1,14 @@
 {% extends "new_base.html" %}
 {% import "bootstrap_wtf.html" as wtf %}
 
-
 {% block content %}
-<div class="container">
+<div class="specific-container">
     <div class="row">
         <!-- Left column for posts -->
         <div class="col-md-9">
             <h1>{{ _('Hi  %(username)s!', username=current_user.username) }}</h1>
             {% if form %}
-            {{ wtf.quick_form(form) }}
+                {{ wtf.quick_form(form) }}
             {% endif %}
             {% for post in posts %}
                 {% include '_post.html' %}
@@ -57,11 +56,11 @@
 <style>
     .category-link {
         text-decoration: none;
-        color: inherit; /* 继承父元素的颜色 */
+        color: inherit;
     }
 
     .category-link:hover {
-        color: #11c9a4; /* 鼠标悬停时变色 */
+        color: #11c9a4;
     }
 
     .badge-pill {

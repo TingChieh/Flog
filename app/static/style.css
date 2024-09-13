@@ -645,8 +645,37 @@ code {
     background-color: #ffc107 !important;
     color: black !important;
 }
-
-.row {
+/* Remove global flex-wrap: nowrap from .row */
+.specific-container .row {
     display: flex;
     flex-wrap: nowrap;
+}
+
+/* Keep default row behavior for posts and categories */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* Optional: Styling for category links and badges */
+.category-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.category-link:hover {
+    color: #11c9a4;
+}
+
+.badge-pill {
+    border-radius: 50%;
+    padding: 10px;
+    font-size: 14px;
+    background-color: #11c9a4;
+    color: white;
+    width: 35px;
+    height: 35px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
 }

@@ -7,16 +7,26 @@
 {% block content %}
     <h1>{{ _('About') }}</h1>
 
-    {% if about_content %}
-        <div class="about-body">
-            {{ about_content.body|safe }}
-        </div>
-    {% else %}
-        <p>{{ _('No information available yet.') }}</p>
-    {% endif %}
+    <div class="row">
+        {% if about_content %}
+            <div class="col-md-4 mb-3">
+                <div class="about-body">
+                    {{ about_content.body|safe }}
+                </div>
+            </div>
+        {% else %}
+            <div class="col-md-4 mb-3">
+                <p>{{ _('No information available yet.') }}</p>
+            </div>
+        {% endif %}
+    </div>
 
     <!-- Edit button (only visible to logged-in users) -->
     {% if current_user.is_authenticated %}
-        <a href="{{ url_for('edit_about') }}" class="btn btn-primary mt-3">{{ _('Edit') }}</a>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <a href="{{ url_for('edit_about') }}" class="btn btn-primary">{{ _('Edit') }}</a>
+            </div>
+        </div>
     {% endif %}
 {% endblock %}
