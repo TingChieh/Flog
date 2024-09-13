@@ -14,7 +14,6 @@
 
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='ckeditor/ckeditor.js') }}"></script>
 <script>
     // Initialize CKEditor with the correct textarea field
     CKEDITOR.replace('body');
