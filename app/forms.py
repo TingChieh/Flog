@@ -86,7 +86,7 @@ class PostForm(FlaskForm):
 
 class CommentForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired(), Length(1, 20)])
-    email = StringField(_l('email'), validators=[DataRequired()])
+    email = StringField(_l('email'), validators=[DataRequired(), Email()])
     body = CKEditorField(_l('Message'), validators=[DataRequired(), Length(1, 240)])
     submit = SubmitField(_l('Submit'))
     

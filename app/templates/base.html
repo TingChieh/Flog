@@ -137,6 +137,7 @@
         document.getElementById(destElem).innerText = data.text;
       }
 
+      {% if current_user.is_authenticated %}
       function initialize_popovers() {
         const popups = document.getElementsByClassName('user_popup');
         for (let i = 0; i < popups.length; i++) {
@@ -166,6 +167,7 @@
         }
       }
       document.addEventListener('DOMContentLoaded', initialize_popovers);
+      {% endif %}
 
     function set_message_count(n) {
       const count = document.getElementById('message_count');

@@ -84,7 +84,7 @@ def login():
         if not next_page or urlsplit(next_page).netloc != '':
             next_page = url_for('index')
         return redirect(next_page)
-    return render_template('login.html', title=_('Sign In'), form=form)
+    return render_template('user/login.html', title=_('Sign In'), form=form)
 
 
 @app.route('/logout')
@@ -105,7 +105,7 @@ def register():
         db.session.commit()
         flash(_('Congratulations, you are now a registered user!'))
         return redirect(url_for('login'))
-    return render_template('register.html', title=_('Register'), form=form)
+    return render_template('user/register.html', title=_('Register'), form=form)
 
 
 @app.route('/reset_password_request', methods=['GET', 'POST'])
@@ -121,7 +121,7 @@ def reset_password_request():
         flash(
             _('Check your email for the instructions to reset your password'))
         return redirect(url_for('login'))
-    return render_template('reset_password_request.html',
+    return render_template('user/reset_password_request.html',
                            title=_('Reset Password'), form=form)
 
 
@@ -138,7 +138,7 @@ def reset_password(token):
         db.session.commit()
         flash(_('Your password has been reset.'))
         return redirect(url_for('login'))
-    return render_template('reset_password.html', form=form)
+    return render_template('user/reset_password.html', form=form)
 
 
 @app.route('/user/<username>')
@@ -155,14 +155,14 @@ def user(username):
     prev_url = url_for('user', username=user.username, page=posts.prev_num) \
         if posts.has_prev else None
     form = EmptyForm()
-    return render_template('user.html', title=_('User Profile'),user=user, posts=posts.items,
+    return render_template('user/user.html', title=_('User Profile'),user=user, posts=posts.items,
                            next_url=next_url, prev_url=prev_url, form=form)
 
 @app.route('/user/<username>/popup')
 def user_popup(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
     form = EmptyForm()
-    return render_template('user_popup.html', user=user, form=form)
+    return render_template('user/user_popup.html', user=user, form=form)
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -251,7 +251,7 @@ def movie():
         return redirect(url_for('movie'))
     
     movies = Movie.query.all()
-    return render_template('movie.html', title=_('Movie'),movies=movies)
+    return render_template('movie/movie.html', title=_('Movie'),movies=movies)
 
 @app.route('/movie/edit/<int:movie_id>', methods=['GET', 'POST'])
 @login_required
@@ -272,7 +272,7 @@ def movie_edit(movie_id):
         flash('Item updated.')
         return redirect(url_for('movie'))  # 重定向回主页
 
-    return render_template('movie_edit.html', title=_('Edit Movie'), movie=movie)  # 传入被编辑的电影记录
+    return render_template('movie/movie_edit.html', title=_('Edit Movie'), movie=movie)  # 传入被编辑的电影记录
 
 
 @app.route('/movie/delete/<int:movie_id>', methods=['POST'])
@@ -315,9 +315,17 @@ def comment():
         if comments.has_next else None
     prev_url = url_for('comment', page=comments.prev_num) \
         if comments.has_prev else None   
-    return render_template('comment.html', title=_('Comment'), form=form, comments=comments.items,
+    return render_template('comment/comment.html', title=_('Comment'), form=form, comments=comments.items,
                            next_url=next_url, prev_url=prev_url)
 
+@app.route('/delete_comment/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    db.session.delete(comment)
+    db.session.commit()
+    flash('Comment Deleted.')
+    return redirect(url_for('comment'))
     
 @app.route('/todo', methods=['GET', 'POST'])
 def todo():
@@ -340,7 +348,7 @@ def todo():
     prev_url = url_for('todo', page=todos.prev_num) \
         if todos.has_prev else None
     
-    return render_template('todo.html', title=_('Todo'), form=form, todos=todos.items,
+    return render_template('todo/todo.html', title=_('Todo'), form=form, todos=todos.items,
                            next_url=next_url, prev_url=prev_url)
         
 @app.route('/todo/update/<int:todo_id>', methods=['POST'])
@@ -373,7 +381,7 @@ def todo_edit(todo_id):
         flash('Todo updated.')
         return redirect(url_for('todo'))
 
-    return render_template('todo_edit.html', title=_('Edit Todo'), form=form, todo=todo)
+    return render_template('todo/todo_edit.html', title=_('Edit Todo'), form=form, todo=todo)
 
 
 @app.route('/search', methods=['GET'])
@@ -385,7 +393,7 @@ def search():
         # Search in the 'body' of the posts
         posts = Post.query.filter(Post.body.contains(query)).all()
 
-    return render_template('search_results.html', title=_('Search'), query=query, posts=posts)
+    return render_template('post/search_results.html', title=_('Search'), query=query, posts=posts)
 
 @app.route('/files/<path:filename>')
 def uploaded_files(filename):
@@ -489,7 +497,7 @@ def categories():
 
     # Retrieve all categories for display
     categories = db.session.execute(sa.select(Category)).scalars().all()
-    return render_template('categories.html', title=_('Categories'), form=form, categories=categories)
+    return render_template('post/categories.html', title=_('Categories'), form=form, categories=categories)
 
 # Route for deleting a category
 @app.route('/delete_category/<int:category_id>', methods=['POST'])
@@ -513,7 +521,7 @@ def edit_category(category_id):
         db.session.commit()
         flash('The category has been updated.', 'success')
         return redirect(url_for('categories'))
-    return render_template('edit_category.html', title=_('Category'), form=form, category=category)
+    return render_template('post/edit_category.html', title=_('Category'), form=form, category=category)
 
 @app.route('/category/<int:category_id>', methods=['GET'])
 def posts_by_category(category_id):
@@ -524,19 +532,19 @@ def posts_by_category(category_id):
     posts = Post.query.filter_by(category_id=category.id).all()
 
     # Render the posts in the category using a template
-    return render_template('posts_by_category.html', category=category, posts=posts)
+    return render_template('post/posts_by_category.html', category=category, posts=posts)
 
 @app.route('/post/<int:post_id>', methods=['GET'])
 def post(post_id):
     # Query the database to get the post by its id
     post = Post.query.get_or_404(post_id)
-    return render_template('post.html', title=_('Post'), post=post)
+    return render_template('post/post.html', title=_('Post'), post=post)
 
 @app.route('/about', methods=['GET'])
 def about():
     # Fetch the current "About" content from the database
     about_content = About.query.first()  # Assuming there's only one 'About' entry
-    return render_template('about.html', title=_('About'), about_content=about_content)
+    return render_template('about/about.html', title=_('About'), about_content=about_content)
 
 @app.route('/about/edit', methods=['GET', 'POST'])
 @login_required  # Only authenticated users can edit
@@ -559,7 +567,7 @@ def edit_about():
     if request.method == 'GET' and about_content:
         form.body.data = about_content.body
 
-    return render_template('edit_about.html', title=_('Edit About'),form=form)
+    return render_template('about/edit_about.html', title=_('Edit About'),form=form)
 
 # Display all links
 @app.route('/links', methods=['GET', 'POST'])
@@ -632,4 +640,4 @@ def edit_post(post_id):
     form.post.data = post.body
     form.category.data = post.category_id
 
-    return render_template('edit_post.html', title=_('Edit Post'), form=form, post=post)
+    return render_template('post/edit_post.html', title=_('Edit Post'), form=form, post=post)

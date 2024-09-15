@@ -13,6 +13,13 @@
                 <strong>{{ comment.name }}</strong> ({{ comment.email }})<br>
                 <small>{{ comment.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small><br>
                 <p style="margin-top: 5px;">{{ comment.body|safe }}</p>
+
+                {% if not current_user.is_anonymous %}
+                <!-- Delete button (only visible to logged-in users) -->
+                <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+                {% endif %}
             </div>
         </li>
     {% endfor %}
