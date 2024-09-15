@@ -30,7 +30,7 @@ moment = Moment(app)
 babel = Babel(app, locale_selector=get_locale)
 ckeditor = CKEditor(app)
 app.redis = Redis.from_url(app.config['REDIS_URL'])
-app.task_queue = rq.Queue('microblog-task', connection=app.redis)
+app.task_queue = rq.Queue('flog-task', connection=app.redis)
 
 if not app.debug:
     if app.config['MAIL_SERVER']:
@@ -40,7 +40,7 @@ if not app.debug:
         mail_handler = SMTP_SSLHandler(
             mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
             fromaddr=app.config['MAIL_USERNAME'],
-            toaddrs=app.config['ADMINS'], subject='Microblog Failure',
+            toaddrs=app.config['ADMINS'], subject='Flog Failure',
             credentials=auth, secure=())
         print((app.config['MAIL_SERVER'], app.config['MAIL_PORT']))
         print(app.config['MAIL_USERNAME'], app.config['ADMINS'])
