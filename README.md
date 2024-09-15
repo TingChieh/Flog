@@ -25,26 +25,6 @@ $ source .venv/bin/activate  # use `.venv\Scripts\activate` on Windows
 $ pip install -r requirements.txt
 ```
 
-​    
-
-or with PDM (you need to [install PDM](https://pdm.fming.dev/latest/#installation) first):
-
-```
-$ pdm install
-$ source .venv/bin/activate  # use `.venv\Scripts\activate` on Windows
-```
-
-​    
-
-Generate data then run the application:
-
-```
-$ flask lorem
-$ flask run
-* Running on http://127.0.0.1:5000/
-```
-
-​    
 
 Test account:
 
