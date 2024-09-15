@@ -9,8 +9,8 @@ Demo: https://flog.aisaka.cc
 Clone the repo:
 
 ```
-$ git git@github.com:TingChieh/flask-study.git
-$ cd flask-studu
+$ git git@github.com:TingChieh/Flog.git
+$ cd Flog
 ```
 
 ​    
