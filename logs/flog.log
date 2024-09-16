@@ -123,3 +123,11 @@ FROM user
 WHERE user.id = %(pk_1)s]
 [parameters: {'pk_1': 2}]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2024-09-16 01:59:35,134 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-16 01:59:35,134 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-16 10:14:31,906 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-16 10:14:31,906 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-16 14:38:41,675 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-16 14:38:41,676 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-16 15:05:59,006 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-16 15:05:59,006 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
