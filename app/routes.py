@@ -24,10 +24,9 @@ def before_request():
     g.locale = str(get_locale())
 
 
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
+@app.route('/following', methods=['GET', 'POST'])
 @login_required
-def index():
+def following():
     form = PostForm()
     if form.validate_on_submit():
         try:
@@ -39,32 +38,33 @@ def index():
         db.session.add(post)
         db.session.commit()
         flash(_('Your post is now live!'))
-        return redirect(url_for('index'))
+        return redirect(url_for('following'))
     page = request.args.get('page', 1, type=int)
     categories = Category.query.order_by(Category.id.asc()).all()
     posts = db.paginate(current_user.following_posts(), page=page,
                         per_page=app.config['POSTS_PER_PAGE'], error_out=False)
-    next_url = url_for('index', page=posts.next_num) \
+    next_url = url_for('following', page=posts.next_num) \
         if posts.has_next else None
-    prev_url = url_for('index', page=posts.prev_num) \
+    prev_url = url_for('following', page=posts.prev_num) \
         if posts.has_prev else None
-    return render_template('index.html', title=_('Home'), form=form,categories=categories,
+    return render_template('index.html', title=_('Following'), form=form,categories=categories,
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
 
 
-@app.route('/explore')
-def explore():
+@app.route('/')
+@app.route('/index')
+def index():
     page = request.args.get('page', 1, type=int)
     query = sa.select(Post).order_by(Post.timestamp.desc())
     categories = Category.query.order_by(Category.id.asc()).all()
     posts = db.paginate(query, page=page,
                         per_page=app.config['POSTS_PER_PAGE'], error_out=False)
-    next_url = url_for('explore', page=posts.next_num) \
+    next_url = url_for('index', page=posts.next_num) \
         if posts.has_next else None
-    prev_url = url_for('explore', page=posts.prev_num) \
+    prev_url = url_for('index', page=posts.prev_num) \
         if posts.has_prev else None
-    return render_template('index.html', title=_('Explore'),
+    return render_template('index.html', title=_('index'),
                            posts=posts.items, categories=categories, next_url=next_url,
                            prev_url=prev_url)
 
@@ -647,10 +647,11 @@ def edit_post(post_id):
 @app.route('/rss')
 def rss_feed():
     fg = FeedGenerator()
-    fg.title('我的博客 RSS')
-    fg.link(href='http://localhost:5000/rss')
-    fg.description('Aisaka Blog')
+    fg.title('Aisaka\' Blog')
+    fg.link(href='https://flog.aisaka.cc/rss')
+    fg.description('Aisaka\' Blog')
     fg.language('zh')  # 假设博客语言是中文
+    fg.logo( logo='https://flog.aisaka.cc/static/images/aisaka.png')
 
     # 查询数据库，获取最新的博文
     posts = db.session.query(Post).order_by(Post.timestamp.desc()).all()
@@ -659,9 +660,10 @@ def rss_feed():
     for post in posts:
         fe = fg.add_entry()
         fe.title(post.title)
-        fe.link(href=f'http://localhost:5000/post/{post.id}')
+        fe.link(href=f'https://flog.aisaka.cc/post/{post.id}')
         fe.description(post.body)  # 可截断内容以提供摘要
         fe.author(name=post.author.username)  # 假设author有username属性
+        fg.subtitle('Aisaka\'s RSS Feed!')
 
         # 确保 timestamp 有时区信息
         if post.timestamp.tzinfo is None:

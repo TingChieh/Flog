@@ -23,9 +23,11 @@
           <font face="SmileySans-Oblique" >Aisaka's Blog</font>
         </a>
           <ul class="top-nav">
+            {% if current_user.is_authenticated %}
             <li>
-              <a aria-current="page" href="{{ url_for('explore') }}"><font face="SmileySans-Oblique">{{ _('Explore') }}</font></a>
+              <a aria-current="page" href="{{ url_for('following') }}"><font face="SmileySans-Oblique">{{ _('Following') }}</font></a>
             </li>
+            {% endif %}
             <li>
               <a aria-current="page" href="{{ url_for('movie') }}"><font face="SmileySans-Oblique">{{ _('Movie') }}</font></a>
             </li>
