@@ -1,64 +1,32 @@
-2024-09-20 15:05:18,009 ERROR: Exception on /comment [GET] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:838]
-Traceback (most recent call last):
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 146, in __init__
-    self._dbapi_connection = engine.raw_connection()
-                             ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3302, in raw_connection
-    return self.pool.connect()
-           ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 449, in connect
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1263, in _checkout
-    fairy = _ConnectionRecord.checkout(pool)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 712, in checkout
-    rec = pool._do_get()
-          ^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 179, in _do_get
-    with util.safe_reraise():
-         ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
-    return self._create_connection()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 390, in _create_connection
-    return _ConnectionRecord(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 674, in __init__
-    self.__connect()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 900, in __connect
-    with util.safe_reraise():
-         ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 896, in __connect
-    self.dbapi_connection = connection = pool._invoke_creator(self)
-                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 643, in connect
-    return dialect.connect(*cargs, **cparams)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 621, in connect
-    return self.loaded_dbapi.connect(*cargs, **cparams)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 361, in __init__
-    self.connect()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 669, in connect
-    self._request_authentication()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 957, in _request_authentication
-    auth_packet = self._read_packet()
-                  ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 775, in _read_packet
-    packet.raise_for_error()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/protocol.py", line 219, in raise_for_error
-    err.raise_mysql_exception(self._data)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/err.py", line 150, in raise_mysql_exception
-    raise errorclass(errno, errval)
-pymysql.err.OperationalError: (1045, "Access denied for user 'root'@'localhost' (using password: YES)")
-
-The above exception was the direct cause of the following exception:
-
+2024-09-20 15:05:41,896 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-20 15:05:41,897 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 11:30:58,628 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 11:30:58,628 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 14:40:46,591 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 14:40:46,591 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 14:48:26,329 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 14:48:26,329 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 14:49:31,599 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 14:49:31,599 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:31:23,459 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:31:23,459 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:31:41,119 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:31:41,119 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:32:43,028 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:32:43,028 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:32:47,320 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:32:47,320 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:32:48,767 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:32:48,767 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:32:53,035 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:32:53,035 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:35:18,203 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:35:18,203 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:37:07,328 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:37:07,328 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:38:26,745 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:38:26,745 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:39:05,399 ERROR: Exception on /post/32/edit [POST] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:838]
 Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1473, in wsgi_app
     response = self.full_dispatch_request()
@@ -72,95 +40,63 @@ Traceback (most recent call last):
   File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 865, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 312, in comment
-    comments = db.paginate(query, page=page,
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_sqlalchemy/extension.py", line 839, in paginate
-    return SelectPagination(
-           ^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_sqlalchemy/pagination.py", line 72, in __init__
-    items = self._query_items()
-            ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_sqlalchemy/pagination.py", line 339, in _query_items
-    return list(session.execute(select).unique().scalars())
-                ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2362, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2237, in _execute_internal
-    conn = self._connection_for_bind(bind)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2106, in _connection_for_bind
-    return trans._connection_for_bind(engine, execution_options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 2, in _connection_for_bind
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1189, in _connection_for_bind
-    conn = bind.connect()
-           ^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3278, in connect
-    return self._connection_cls(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 148, in __init__
-    Connection._handle_dbapi_exception_noconnection(
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2442, in _handle_dbapi_exception_noconnection
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 146, in __init__
-    self._dbapi_connection = engine.raw_connection()
-                             ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3302, in raw_connection
-    return self.pool.connect()
-           ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 449, in connect
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1263, in _checkout
-    fairy = _ConnectionRecord.checkout(pool)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 712, in checkout
-    rec = pool._do_get()
-          ^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 179, in _do_get
-    with util.safe_reraise():
-         ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 177, in _do_get
-    return self._create_connection()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 390, in _create_connection
-    return _ConnectionRecord(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 674, in __init__
-    self.__connect()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 900, in __connect
-    with util.safe_reraise():
-         ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 896, in __connect
-    self.dbapi_connection = connection = pool._invoke_creator(self)
-                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 643, in connect
-    return dialect.connect(*cargs, **cparams)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 621, in connect
-    return self.loaded_dbapi.connect(*cargs, **cparams)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 361, in __init__
-    self.connect()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 669, in connect
-    self._request_authentication()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 957, in _request_authentication
-    auth_packet = self._read_packet()
-                  ^^^^^^^^^^^^^^^^^^^
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/connections.py", line 775, in _read_packet
-    packet.raise_for_error()
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/protocol.py", line 219, in raise_for_error
-    err.raise_mysql_exception(self._data)
-  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/pymysql/err.py", line 150, in raise_mysql_exception
-    raise errorclass(errno, errval)
-sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost' (using password: YES)")
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 634, in edit_post
+    post.title = form.post.title
+                 ^^^^^^^^^^^^^^^
+AttributeError: 'CKEditorField' object has no attribute 'title'
+2024-09-23 15:40:41,758 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 15:40:41,758 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 15:41:01,581 ERROR: Exception on /post/32/edit [POST] [in /home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py:838]
+Traceback (most recent call last):
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/.venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tingchieh/Documents/flask-study/app/routes.py", line 634, in edit_post
+    post.title = form.post.title
+                 ^^^^^^^^^^^^^^^
+AttributeError: 'CKEditorField' object has no attribute 'title'
+2024-09-23 20:36:46,248 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:36:46,248 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:42:14,375 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:42:14,375 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:51:09,151 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:51:09,151 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:54:31,060 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:54:31,060 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:54:39,347 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:54:39,347 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:58:04,179 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:58:04,180 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:09:18,170 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:09:18,170 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:12:17,353 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:12:17,353 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:16:28,084 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:16:28,084 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:24:53,828 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:24:53,828 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:25:54,173 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:25:54,173 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:27:41,888 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:27:41,888 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:34:15,970 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:34:15,970 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:36:11,156 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:36:11,156 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:41:29,708 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:41:29,708 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]

@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+        return f'https://cn.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
     def follow(self, user):
         if not self.is_following(user):
@@ -196,7 +196,7 @@ class Comment(db.Model):
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+        return f'https://cn.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
 class Todo(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -271,4 +271,4 @@ class Link(db.Model):
     
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+        return f'https://cn.gravatar.com/avatar/{digest}?d=identicon&s={size}'
