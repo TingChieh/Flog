@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
-from flask import abort, current_app, render_template, flash, redirect, send_from_directory, url_for, request, g
+from flask import abort, current_app, render_template, flash, redirect, send_from_directory, url_for, request, g, make_response
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_babel import _, get_locale
 import sqlalchemy as sa
@@ -12,6 +12,7 @@ from app.models import About, Category, Link, Notification, Comment, Message, To
 from app.email import send_password_reset_email
 from app.translate import translate
 from flask_ckeditor import upload_success, upload_fail
+from feedgen.feed import FeedGenerator
 import os
 
 
@@ -33,7 +34,7 @@ def index():
             language = detect(form.post.data)
         except LangDetectException:
             language = ''
-        post = Post(body=form.post.data, author=current_user,
+        post = Post(title=form.title.data, body=form.post.data, author=current_user,
                     language=language, category_id=form.category.data)
         db.session.add(post)
         db.session.commit()
@@ -630,6 +631,7 @@ def edit_post(post_id):
     form = PostForm()
 
     if form.validate_on_submit():
+        post.title = form.title.data 
         post.body = form.post.data
         post.category_id = form.category.data
         db.session.commit()
@@ -637,7 +639,41 @@ def edit_post(post_id):
         return redirect(url_for('post', post_id=post.id))
 
     # Populate form with the current post data
+    form.title.data = post.title
     form.post.data = post.body
     form.category.data = post.category_id
 
     return render_template('post/edit_post.html', title=_('Edit Post'), form=form, post=post)
+
+@app.route('/rss')
+def rss_feed():
+    fg = FeedGenerator()
+    fg.title('我的博客 RSS')
+    fg.link(href='http://localhost:5000/rss')
+    fg.description('Aisaka Blog')
+    fg.language('zh')  # 假设博客语言是中文
+
+    # 查询数据库，获取最新的博文
+    posts = db.session.query(Post).order_by(Post.timestamp.desc()).all()
+
+    # 添加每篇博文到 RSS Feed 中
+    for post in posts:
+        fe = fg.add_entry()
+        fe.title(post.title)
+        fe.link(href=f'http://localhost:5000/post/{post.id}')
+        fe.description(post.body)  # 可截断内容以提供摘要
+        fe.author(name=post.author.username)  # 假设author有username属性
+
+        # 确保 timestamp 有时区信息
+        if post.timestamp.tzinfo is None:
+            post_timestamp = post.timestamp.replace(tzinfo=timezone.utc)  # 使用 UTC 时区
+        else:
+            post_timestamp = post.timestamp
+
+        fe.pubDate(post_timestamp)
+
+    # 生成 RSS XML 并返回响应
+    response = make_response(fg.rss_str())
+    response.headers.set('Content-Type', 'application/rss+xml; charset=utf-8')
+
+    return response

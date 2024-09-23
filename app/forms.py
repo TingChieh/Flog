@@ -74,6 +74,7 @@ class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class PostForm(FlaskForm):
+    title = StringField(_l('Title'), validators=[DataRequired(), Length(1, 120)])
     category = SelectField(_l('Category'), coerce=int, default=1)
     post = CKEditorField(_l('Say something'), validators=[
         DataRequired()])

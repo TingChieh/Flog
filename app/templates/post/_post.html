@@ -57,7 +57,8 @@
     <!-- 文章内容 -->
     <a href="{{ url_for('post', post_id=post.id) }}" class="text-decoration-none text-dark">
         <div class="post-body mt-3">
-            <p>{{ post.body[:240]|safe }}</p>
+            <h1><b>{{ post.title }}</b></h1>
+            <p>{{ post.body[:240]|safe }} ...</p>
         </div>
     </a>
 

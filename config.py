@@ -4,7 +4,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql+pymysql://root:password@127.0.0.1/flog'
+        'mysql+pymysql://root:ogihana77**@172.17.0.1/flog'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SERVER = 'smtp.hedwi.net'
     MAIL_PORT = 465
