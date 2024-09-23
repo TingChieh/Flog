@@ -70,3 +70,19 @@ Traceback (most recent call last):
     post.title = form.post.title
                  ^^^^^^^^^^^^^^^
 AttributeError: 'CKEditorField' object has no attribute 'title'
+2024-09-23 20:36:46,248 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:36:46,248 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:42:14,375 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:42:14,375 INFO: 19dc547d60e6421ab862b8ea304ac0ff [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:51:09,151 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:51:09,151 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:54:31,060 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:54:31,060 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:54:39,347 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:54:39,347 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 20:58:04,179 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 20:58:04,180 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:09:18,170 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:09:18,170 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]
+2024-09-23 21:12:17,353 INFO: Flog startup [in /home/tingchieh/Documents/flask-study/app/__init__.py:60]
+2024-09-23 21:12:17,353 INFO: b699690623de4f8a9bfcb051c2db0145 [in /home/tingchieh/Documents/flask-study/app/__init__.py:61]

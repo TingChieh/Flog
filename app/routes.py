@@ -226,7 +226,6 @@ def unfollow(username):
 
 
 @app.route('/translate', methods=['POST'])
-@login_required
 def translate_text():
     data = request.get_json()
     return {'text': translate(data['text'],
