@@ -1,5 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
+
+from flask_caching import Cache
 from app.email_handler import SMTP_SSLHandler
 import os
 from flask import Flask, request
@@ -31,6 +33,7 @@ babel = Babel(app, locale_selector=get_locale)
 ckeditor = CKEditor(app)
 app.redis = Redis.from_url(app.config['REDIS_URL'])
 app.task_queue = rq.Queue('flog-task', connection=app.redis)
+cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 
 if not app.debug:
     if app.config['MAIL_SERVER']:

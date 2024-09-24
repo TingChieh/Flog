@@ -179,7 +179,7 @@ ol {
 }
 
 .hero {
-    background: url(images/hero.png);
+    background: url(images/hero.jpg);
     background-size: cover;
     margin-bottom: 2.5rem;
     animation: fade-in 1.5s ease-in-out;
