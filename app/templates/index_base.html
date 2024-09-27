@@ -40,6 +40,9 @@
           <font face="SmileySans-Oblique" >Aisaka's Blog</font>
         </a>
           <ul class="top-nav">
+            <li>
+              <a aria-current="page" href="{{ url_for('index') }}"><font face="SmileySans-Oblique">{{ _('Home') }}</font></a>
+            </li>
             {% if current_user.is_authenticated %}
             <li>
               <a aria-current="page" href="{{ url_for('following') }}"><font face="SmileySans-Oblique">{{ _('Following') }}</font></a>
@@ -60,11 +63,7 @@
             <li>
               <a aria-current="page" href="{{ url_for('about') }}"><font face="SmileySans-Oblique">{{ _('About') }}</font></a>
             </li>
-            {% if current_user.is_anonymous %}
-            <li>
-              <a aria-current="page" href="{{ url_for('login') }}"><font face="SmileySans-Oblique">{{ _('Login') }}</font></a>
-            </li>
-            {% else %}
+            {% if current_user.is_authenticated %}
             <li >
               <a aria-current="page"
                       href="{{ url_for('messages') }}">
@@ -77,9 +76,6 @@
             </li>
             <li>
               <a aria-current="page" href="{{ url_for('user', username=current_user.username) }}"><font face="SmileySans-Oblique">{{ _('Profile') }}</font></a>
-            </li>
-            <li>
-              <a aria-current="page" href="{{ url_for('logout') }}"><font face="SmileySans-Oblique">{{ _('Logout') }}</font></a>
             </li>
             {% endif %}
             <li>
@@ -230,6 +226,12 @@
     <footer class="page-footer">
       <div class="page-footer__inner">
           Copyright &copy; 2024 Aisaka
+          Powered by <a href="https://github.com/pallets/flask">Flask</a> / 
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('logout') }}">{{ _('Logout') }}</a>
+          {% else %}
+          <a href="{{ url_for('login') }}">{{ _('Login') }}</a>
+          {% endif %}
       </div>
   </footer>
   </body>
