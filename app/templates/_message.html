@@ -55,11 +55,11 @@
     </div>
 
     <!-- 文章内容 -->
-    <a href="{{ url_for('post', post_id=post.id) }}" class="text-decoration-none text-dark">
+    <p href="{{ url_for('post', post_id=post.id) }}" class="text-decoration-none text-dark">
         <div class="post-body mt-3">
             <p>{{ post.body|safe }}</p>
         </div>
-    </a>
+    </p>
 
     
     <!-- 文章底部的按钮 -->
