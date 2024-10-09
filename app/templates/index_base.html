@@ -80,7 +80,7 @@
             {% endif %}
             <li>
                 <form class="search-icon" method="GET" action="{{ url_for('search') }}">
-                    <input class="form-control" type="search" placeholder="{{ _('Search') }}" aria-label="{{ _('Search') }}" name="q">
+                    <input class="form-control" type="search" placeholder="{{ _(' ') }}" aria-label="{{ _('Search') }}" name="q">
                     <button class="btn btn-outline-success" type="submit">
                     <img src="{{ url_for('static', filename='images/search.png') }}" alt="">
                     </button>
