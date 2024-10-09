@@ -7,13 +7,11 @@
 {% block content %}
     <h1>{{ _('About') }}</h1>
 
-    <div class="row">
+    <div class="container">
         {% if about_content %}
-            <div class="col-md-4 mb-3">
                 <div class="mt-2">
                     {{ about_content.body|safe }}
                 </div>
-            </div>
         {% else %}
             <div class="col-md-4 mb-3">
                 <p>{{ _('No information available yet.') }}</p>

@@ -86,8 +86,8 @@ class PostForm(FlaskForm):
         self.category.choices = [(category.id, category.name) for category in categories]
 
 class CommentForm(FlaskForm):
-    name = StringField(_l('name'), validators=[DataRequired(), Length(1, 20)])
-    email = StringField(_l('email'), validators=[DataRequired(), Email()])
+    name = StringField(_l('Name'), validators=[DataRequired(), Length(1, 20)])
+    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     body = CKEditorField(_l('Message'), validators=[DataRequired(), Length(1, 240)])
     submit = SubmitField(_l('Submit'))
     
