@@ -58,8 +58,3 @@ Test account:
 - username: `susan`
 - password: `cat`
 
-## License
-
-
-
-This project is licensed under the MIT License (see the [LICENSE](https://github.com/greyli/greybook/blob/main/LICENSE) file for details).

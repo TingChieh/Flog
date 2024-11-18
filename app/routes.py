@@ -650,7 +650,7 @@ def rss_feed():
     fg.title('Aisaka\' Blog')
     fg.link(href='https://flog.aisaka.cc/rss')
     fg.description('Aisaka\' Blog')
-    fg.language('zh')  # 假设博客语言是中文
+    fg.language('zh')  
     fg.logo( logo='https://flog.aisaka.cc/static/images/aisaka.png')
 
     # 查询数据库，获取最新的博文
@@ -661,8 +661,8 @@ def rss_feed():
         fe = fg.add_entry()
         fe.title(post.title)
         fe.link(href=f'https://flog.aisaka.cc/post/{post.id}')
-        fe.description(post.body)  # 可截断内容以提供摘要
-        fe.author(name=post.author.username)  # 假设author有username属性
+        fe.description(post.body)  
+        fe.author(name=post.author.username) 
         fg.subtitle('Aisaka\'s RSS Feed!')
 
         # 确保 timestamp 有时区信息
