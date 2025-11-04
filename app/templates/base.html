@@ -37,9 +37,15 @@
     <nav class="nav-container">
       <div class="nav-container__inner">
         <a class="home-link" href="{{ url_for('index') }}" align="left">
-          <font face="SmileySans-Oblique" >Aisaka's Blog</font>
+          <font face="SmileySans-Oblique">Aisaka's Blog</font>
         </a>
-          <ul class="top-nav">
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="top-navigation">
+          <span class="nav-toggle__bar"></span>
+          <span class="nav-toggle__bar"></span>
+          <span class="nav-toggle__bar"></span>
+          <span class="visually-hidden">{{ _('Toggle navigation') }}</span>
+        </button>
+          <ul class="top-nav" id="top-navigation">
             <li>
               <a aria-current="page" href="{{ url_for('index') }}"><font face="SmileySans-Oblique">{{ _('Home') }}</font></a>
             </li>
@@ -64,7 +70,7 @@
               <a aria-current="page" href="{{ url_for('about') }}"><font face="SmileySans-Oblique">{{ _('About') }}</font></a>
             </li>
             {% if current_user.is_authenticated %}
-            <li >
+            <li>
               <a aria-current="page"
                       href="{{ url_for('messages') }}">
                       <font face="SmileySans-Oblique">{{ _('Messages') }}</font>
@@ -125,6 +131,18 @@
         function scrollToTop() {
             window.scrollTo(0,0);
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          const navToggle = document.querySelector('.nav-toggle');
+          const topNav = document.getElementById('top-navigation');
+
+          if (navToggle && topNav) {
+            navToggle.addEventListener('click', function () {
+              const isOpen = topNav.classList.toggle('top-nav--open');
+              navToggle.setAttribute('aria-expanded', isOpen);
+            });
+          }
+        });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" integrity="sha512-7Pi/otdlbbCR+LnW+F7PwFcSDJOuUJB3OxtEHbg4vSMvzvJjde4Po1v4BR9Gdc9aXNUNFVUY+SK51wWT8WF0Gg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -132,22 +150,6 @@
     {{ moment.include_moment() }}
     {{ moment.lang(g.locale) }}
     <script>
-      async function translate(sourceElem, destElem, sourceLang, destLang) {
-        document.getElementById(destElem).innerHTML = 
-          '<img src="{{ url_for('static', filename='loading.gif') }}">';
-        const response = await fetch('/translate', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json; charset=utf-8'},
-          body: JSON.stringify({
-            text: document.getElementById(sourceElem).innerText,
-            source_language: sourceLang,
-            dest_language: destLang
-          })
-        })
-        const data = await response.json();
-        document.getElementById(destElem).innerText = data.text;
-      }
-
       {% if current_user.is_authenticated %}
       function initialize_popovers() {
         const popups = document.getElementsByClassName('user_popup');

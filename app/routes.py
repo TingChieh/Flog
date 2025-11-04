@@ -10,7 +10,6 @@ from app.forms import AboutForm, CategoryForm, CommentForm, LinkForm, LoginForm,
     EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, TodoForm
 from app.models import About, Category, Link, Notification, Comment, Message, Todo, User, Post, Movie
 from app.email import send_password_reset_email
-from app.translate import translate
 from flask_ckeditor import upload_success, upload_fail
 from feedgen.feed import FeedGenerator
 import os
@@ -225,13 +224,6 @@ def unfollow(username):
         return redirect(url_for('index'))
 
 
-@app.route('/translate', methods=['POST'])
-def translate_text():
-    data = request.get_json()
-    return {'text': translate(data['text'],
-                              data['source_language'],
-                              data['dest_language'])}
-   
 @app.route('/movie', methods=['GET', 'POST'])
 def movie():
     if request.method == 'POST':

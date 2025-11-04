@@ -25,21 +25,6 @@
                         <span id="post{{ post.id }}">{{ post.body|safe }}</span>
                     </div>
 
-                    <!-- Translate option if necessary -->
-                    {% if post.language and post.language != g.locale %}
-                        <div class="mt-2">
-                            <span id="translation{{ post.id }}">
-                                <a href="javascript:translate(
-                                            'post{{ post.id }}',
-                                            'translation{{ post.id }}',
-                                            '{{ post.language }}',
-                                            '{{ g.locale }}');">
-                                    {{ _('Translate') }}
-                                </a>
-                            </span>
-                        </div>
-                    {% endif %}
-                    
                     <!-- Copy Link button -->
                     <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{ request.url_root }}post/{{ post.id }}')">
                         Copy Link
