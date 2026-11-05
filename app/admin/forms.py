@@ -56,6 +56,10 @@ class ImageUploadForm(FlaskForm):
     """CSRF-only form for the library's multi-file upload."""
 
 
+class AvatarUploadForm(FlaskForm):
+    """CSRF-only form for the avatar upload."""
+
+
 class ImageEditForm(FlaskForm):
     title = StringField('名称', validators=[Length(max=120)])
     note = TextAreaField('备注', validators=[Length(max=500)])

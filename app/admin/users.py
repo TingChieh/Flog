@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.admin import bp
 from app.admin.forms import UserCreateForm, UserDeleteForm, UserEditForm
+from app.avatars import remove_avatar_file
 from app.authorization import RoleChangeError, change_user_role
 from app.authorization import delete_user as remove_user
 from app.models import Post, User
@@ -125,6 +126,7 @@ def delete_user(user_id):
     if form.validate_on_submit():
         receiver = db.session.get(User, form.receiver.data) \
             if form.receiver.data else None
+        avatar_filename = target.avatar_filename
         try:
             remove_user(current_user, target, receiver)
             db.session.commit()
@@ -136,6 +138,7 @@ def delete_user(user_id):
             db.session.rollback()
             flash('用户删除失败，请重试。')
         else:
+            remove_avatar_file(avatar_filename)
             flash('用户已删除。')
             return redirect(url_for('admin.users'))
     return render_template(

@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}我的头像{% endblock %}
+
+{% block admin_content %}
+<div class="avatar-settings">
+  <img class="avatar-settings__preview" src="{{ current_user.avatar(120) }}" width="120" height="120" alt="{{ current_user.username }}">
+  <div class="avatar-settings__actions">
+    <form class="admin-form" method="post" action="{{ url_for('admin.avatar') }}" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="form-field">
+        <label class="form-label" for="avatar-file">上传新头像</label>
+        <input id="avatar-file" class="form-control" type="file" name="avatar" accept="image/png,image/jpeg,image/gif" required>
+        <div class="form-text">支持 png、jpg、gif，不超过 2 MB；会按圆形居中裁切显示，建议使用正方形图片。</div>
+      </div>
+      <button class="button button--cta" type="submit">上传头像</button>
+    </form>
+    {% if current_user.avatar_filename %}
+    <form method="post" action="{{ url_for('admin.remove_avatar') }}">
+      {{ remove_form.hidden_tag() }}
+      <button class="button button--quiet" type="submit">恢复默认头像</button>
+    </form>
+    {% else %}
+    <p class="form-text">当前使用邮箱对应的 Cravatar 头像。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

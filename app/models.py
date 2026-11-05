@@ -4,6 +4,7 @@ from typing import Optional
 import logging
 import sqlalchemy as sa
 import sqlalchemy.orm as so
+from flask import url_for
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login
@@ -27,6 +28,8 @@ class User(UserMixin, db.Model):
         default='user')
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
     about_me: so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
+    # File under <uploads>/avatars, or None to use the Cravatar default.
+    avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(64))
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc))
     last_message_read_time: so.Mapped[Optional[datetime]]
@@ -50,6 +53,8 @@ class User(UserMixin, db.Model):
         return self.role == 'admin'
 
     def avatar(self, size):
+        if self.avatar_filename:
+            return url_for('uploaded_files', filename=f'avatars/{self.avatar_filename}')
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return f'https://cravatar.cn/avatar/{digest}?d=identicon&s={size}'
 
