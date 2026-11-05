@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block page_hero %}{% endblock %}
+{% block content %}
+<section class="content-section public-page" aria-labelledby="page-title">
+  <header class="page-heading">
+    <div class="public-label">{{ _('Search') }}</div>
+    <h1 id="page-title">{{ _('Search results') }}{% if query %} · {{ query }}{% endif %}</h1>
+    {% if query %}<p class="search-count">{{ ngettext('%(num)s result', '%(num)s results', result_count) }}</p>{% endif %}
+  </header>
+  <form method="get" action="{{ url_for('search') }}" class="search-page-form">
+    <label for="search-page-query">{{ _('Search posts') }}</label>
+    <input id="search-page-query" type="search" name="q" value="{{ query }}">
+    <button type="submit">{{ _('Search') }}</button>
+  </form>
+  {% if results %}
+  <div class="editorial-list">
+    {% for post, search_result in items %}
+    {% include 'post/_post.html' %}
+    {% endfor %}
+  </div>
+  <nav class="search-pagination" aria-label="{{ _('Post navigation') }}">
+    {% if prev_url %}<a href="{{ prev_url }}">{{ _('Previous') }}</a>{% endif %}
+    {% if next_url %}<a href="{{ next_url }}">{{ _('Next') }}</a>{% endif %}
+  </nav>
+  {% elif query %}<div class="empty-state"><p>{{ _('No results found.') }}</p></div>
+  {% else %}<div class="empty-state"><p>{{ _('Type to search posts.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

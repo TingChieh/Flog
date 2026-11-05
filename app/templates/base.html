@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="{{ g.locale or 'zh' }}">
+  <head>
+    <meta charset="utf-8">
+    <link rel="alternate" type="application/rss+xml" title="{{ _('Subscribe via RSS') }}" href="{{ url_for('feed') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    {% if title %}
+    <title>{{ title }} - Aisaka's blog</title>
+    {% else %}
+    <title>{{ _('Welcome to Aisaka') }}</title>
+    {% endif %}
+    {% if config.GTM_ID %}
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','{{ config.GTM_ID }}');</script>
+    <!-- End Google Tag Manager -->
+    {% endif %}
+    {% if config.GA_MEASUREMENT_ID %}
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_MEASUREMENT_ID }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{{ config.GA_MEASUREMENT_ID }}');
+    </script>
+    {% endif %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ url_for('static', filename='fonts/source-serif-4-normal-latin.woff2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/article-fonts.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block page_styles %}{% endblock %}
+    <link href="{{ url_for('static', filename='favicon.ico') }}" rel="shortcut icon" type="image/ico">
+  </head>
+  <body class="{% block body_class %}public-site{% endblock %}">
+    <div class="site-shell">
+    {% if config.GTM_ID %}
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ config.GTM_ID }}"
+      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    {% endif %}
+    {% block site_navigation %}
+    <nav class="site-nav" aria-label="{{ _('Primary navigation') }}">
+      <div class="site-nav__inner">
+        <a class="site-brand" href="{{ url_for('index') }}">Aisaka's Blog</a>
+        <button class="nav-toggle" type="button" data-nav-toggle
+                aria-expanded="false" aria-controls="site-navigation">
+          <span class="visually-hidden">{{ _('Toggle navigation') }}</span>
+          <span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+        <div class="site-nav__menu" id="site-navigation" data-site-nav hidden>
+          <ul class="site-nav__links">
+            <li><a href="{{ url_for('index') }}">{{ _('Home') }}</a></li>
+            <li><a href="{{ url_for('archive') }}">{{ _('Archive') }}</a></li>
+            {% for page in navigation_pages %}
+            <li><a href="{{ url_for('public_page', slug=page.slug) }}">{{ page.title }}</a></li>
+            {% endfor %}
+          </ul>
+          <a class="search-trigger" href="{{ url_for('search') }}" data-search-open aria-keyshortcuts="Control+K Meta+K /">⌕ <span>{{ _('Search') }}</span> <kbd>⌘ K</kbd></a>
+          {% include "_theme_controls.html" %}
+        </div>
+      </div>
+    </nav>
+    {% endblock %}
+    {% block page_hero %}
+    <header class="hero hero--page"><h1>{{ title }}</h1></header>
+    {% endblock %}
+    <main class="site-main" id="main-content">
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+        <div class="flash-message" role="status">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+    <dialog class="search-dialog" data-search-dialog role="dialog" aria-modal="true" aria-labelledby="search-dialog-title"
+            data-api="{{ url_for('api_search') }}"
+            data-empty="{{ _('Type to search posts.') }}"
+            data-loading="{{ _('Searching…') }}"
+            data-error="{{ _('Search failed. Please try again.') }}"
+            data-no-results="{{ _('No results found.') }}">
+      <div class="search-dialog__header">
+        <h2 id="search-dialog-title">{{ _('Search posts') }}</h2>
+        <button type="button" class="search-dialog__close" data-search-close aria-label="{{ _('Close search') }}">×</button>
+      </div>
+      <form action="{{ url_for('search') }}" method="get" data-search-form>
+        <label class="visually-hidden" for="search-dialog-query">{{ _('Search posts') }}</label>
+        <input id="search-dialog-query" type="search" name="q" maxlength="{{ config.SEARCH_QUERY_MAX_LENGTH }}" autocomplete="off" placeholder="{{ _('Search posts') }}" data-search-input>
+      </form>
+      <p class="search-dialog__status" role="status" aria-live="polite" data-search-status>{{ _('Type to search posts.') }}</p>
+      <ul class="search-dialog__results" data-search-results></ul>
+      <div class="search-dialog__footer">{{ _('Use ↑ ↓ to select, Enter to open, Esc to close') }}</div>
+    </dialog>
+    <button class="back-to-top" type="button" data-back-to-top
+            aria-label="Back to top" hidden>↑</button>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <p>Aisaka's Blog · 思考、记录，以及日常生活。</p>
+        <div class="site-footer__meta">
+          <span>Copyright &copy; {{ current_year }} Aisaka</span>
+          <a href="{{ url_for('feed') }}">{{ _('Subscribe via RSS') }}</a>
+          <span>Powered by <a href="https://github.com/tingchieh/flog">Flog</a></span>
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('admin.dashboard') }}">管理</a>
+          <form action="{{ url_for('logout') }}" method="post" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-link p-0">{{ _('Logout') }}</button>
+          </form>
+          {% else %}
+          <a href="{{ url_for('login') }}">{{ _('Login') }}</a>
+          {% endif %}
+        </div>
+      </div>
+    </footer>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" integrity="sha512-7Pi/otdlbbCR+LnW+F7PwFcSDJOuUJB3OxtEHbg4vSMvzvJjde4Po1v4BR9Gdc9aXNUNFVUY+SK51wWT8WF0Gg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    {{ moment.include_moment() }}
+    {{ moment.lang('zh-cn') }}
+    <script src="{{ url_for('static', filename='site.js') }}"></script>
+    <script src="{{ url_for('static', filename='search.js') }}" defer></script>
+    {% block page_scripts %}{% endblock %}
+  </body>
+</html>

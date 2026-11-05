@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% from "admin/images/_usages.html" import usage_list %}
+{% block admin_title %}{{ image.title }}{% endblock %}
+
+{% block admin_actions %}
+<a class="button button--quiet" href="{{ url_for('admin.images') }}">返回图片库</a>
+{% endblock %}
+
+{% block admin_content %}
+<div class="image-detail">
+  <div class="image-detail__preview">
+    {% if missing %}
+    <div class="image-card__thumb image-card__missing">文件缺失</div>
+    {% else %}
+    <img src="{{ url_for('uploaded_files', filename=image.filename) }}" alt="{{ image.title }}">
+    {% endif %}
+  </div>
+  <div class="image-detail__side">
+    <form class="admin-form" method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="form-field">
+        {{ form.title.label(class="form-label") }}
+        {{ form.title(class="form-control" + (' is-invalid' if form.title.errors else '')) }}
+        {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-field">
+        {{ form.note.label(class="form-label") }}
+        {{ form.note(class="form-control" + (' is-invalid' if form.note.errors else ''), rows="3") }}
+        {% for error in form.note.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      {{ form.submit(class="button button--cta") }}
+    </form>
+
+    <dl class="image-facts">
+      <dt>地址</dt>
+      <dd class="image-facts__url">
+        <input class="form-control" type="text" readonly value="{{ url_for('uploaded_files', filename=image.filename) }}" data-image-url aria-label="图片地址">
+        <button class="button button--quiet" type="button" data-copy-image-url>复制</button>
+      </dd>
+      <dt>原始文件名</dt><dd>{{ image.original_name }}</dd>
+      <dt>大小</dt><dd>{{ image.size|filesize }}</dd>
+      <dt>上传</dt><dd>{{ (image.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% if image.uploader %} · {{ image.uploader.username }}{% endif %}</dd>
+    </dl>
+
+    <section>
+      <h2 class="image-detail__heading">引用位置</h2>
+      {% if usages %}{{ usage_list(usages) }}{% else %}<p class="image-detail__empty">尚未被引用。</p>{% endif %}
+    </section>
+
+    <p><a class="button button--quiet button--danger" href="{{ url_for('admin.delete_image', image_id=image.id) }}">删除图片</a></p>
+  </div>
+</div>
+<script>
+document.querySelector('[data-copy-image-url]')?.addEventListener('click', function (event) {
+  const input = document.querySelector('[data-image-url]');
+  const url = new URL(input.value, window.location.origin).href;
+  navigator.clipboard?.writeText(url).then(function () { event.target.textContent = '已复制'; });
+});
+</script>
+{% endblock %}

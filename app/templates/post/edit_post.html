@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% from 'bootstrap_wtf.html' import quick_form %}
+
+{% block title %}Edit Post{% endblock %}
+
+{% block content %}
+<section class="form-shell" aria-labelledby="page-title">
+  <header class="page-heading"><h1 id="page-title">Edit Post</h1></header>
+  {{ quick_form(form, action=url_for('edit_post', post_id=post.id)) }}
+</section>
+{% endblock %}

@@ -1,0 +1,587 @@
+# Chinese translations for PROJECT.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-05 15:44+0800\n"
+"PO-Revision-Date: 2024-08-29 23:18+0800\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/__init__.py:42
+msgid "Please log in to access this page."
+msgstr "请登录后访问此页面。"
+
+#: app/forms.py:13 app/forms.py:20
+msgid "Username"
+msgstr "用户名"
+
+#: app/forms.py:14 app/forms.py:22 app/forms.py:47
+msgid "Password"
+msgstr "密码"
+
+#: app/forms.py:15
+msgid "Remember Me"
+msgstr "记住我"
+
+#: app/forms.py:16 app/routes.py:81 app/templates/user/login.html:9
+msgid "Sign In"
+msgstr "登录"
+
+#: app/forms.py:21 app/forms.py:42 app/forms.py:75
+msgid "Email"
+msgstr "电子邮箱"
+
+#: app/forms.py:24 app/forms.py:49
+msgid "Repeat Password"
+msgstr "重复密码"
+
+#: app/forms.py:26 app/routes.py:107 app/templates/user/register.html:9
+msgid "Register"
+msgstr "注册"
+
+#: app/forms.py:32
+msgid "Please use a different username."
+msgstr "请用一个不同的用户名。"
+
+#: app/forms.py:38
+msgid "Please use a different email address."
+msgstr "请用一个不同的电子邮箱。"
+
+#: app/forms.py:43 app/forms.py:51
+msgid "Request Password Reset"
+msgstr "请求重置密码"
+
+#: app/forms.py:55 app/forms.py:69
+msgid "Title"
+msgstr "标题"
+
+#: app/forms.py:57 app/templates/post/posts_by_category.html:12
+msgid "Category"
+msgstr "分类"
+
+#: app/forms.py:58 app/forms.py:70
+msgid "Say something"
+msgstr "说点什么"
+
+#: app/forms.py:60 app/forms.py:89 app/forms.py:97
+msgid "Submit"
+msgstr "提交"
+
+#: app/forms.py:74 app/forms.py:88
+msgid "Name"
+msgstr "名称"
+
+#: app/forms.py:76
+msgid "Comment"
+msgstr "留言"
+
+#: app/forms.py:78
+msgid "Publish comment"
+msgstr "发表留言"
+
+#: app/forms.py:96 app/templates/about/about.html:4
+#: app/templates/about/about.html:10 app/templates/page/content.html:12
+msgid "About"
+msgstr "关于"
+
+#: app/routes.py:60
+msgid "index"
+msgstr "index"
+
+#: app/routes.py:74
+msgid "Invalid username or password"
+msgstr "无效的用户名或密码"
+
+#: app/routes.py:105
+msgid "Congratulations, you are now a registered user!"
+msgstr "恭喜你，已注册成功！"
+
+#: app/routes.py:121
+msgid "Check your email for the instructions to reset your password"
+msgstr "检查你的电子邮箱来帮助你重置密码"
+
+#: app/routes.py:124 app/templates/user/reset_password.html:10
+msgid "Reset Password"
+msgstr "重置密码"
+
+#: app/routes.py:138
+msgid "Your password has been reset."
+msgstr "你的密码已被重置。"
+
+#: app/routes.py:197 app/templates/base.html:58
+#: app/templates/post/search_results.html:7
+#: app/templates/post/search_results.html:14
+msgid "Search"
+msgstr "搜索"
+
+#: app/routes.py:261 app/templates/base.html:53
+#: app/templates/post/archive.html:5
+msgid "Archive"
+msgstr "归档"
+
+#: app/routes.py:273 app/templates/post/categories.html:5
+#: app/templates/post/categories.html:9
+msgid "Categories"
+msgstr "分类"
+
+#: app/routes.py:335
+msgid "Your comment has been published."
+msgstr "你的留言已发布。"
+
+#: app/routes.py:346
+msgid "Post"
+msgstr "推文"
+
+#: app/routes.py:378
+msgid "Comment deleted."
+msgstr "留言已删除。"
+
+#: app/routes.py:418
+msgid "The about page has been updated."
+msgstr "关于页面已更新。"
+
+#: app/routes.py:439
+msgid "Your post has been updated!"
+msgstr "你的文章已更新。"
+
+#: app/translate.py:8 app/translate.py:10
+msgid "Error:the translation service is not configured."
+msgstr "错误：翻译服务未配置。"
+
+#: app/templates/base.html:5 app/templates/base.html:102
+msgid "Subscribe via RSS"
+msgstr "订阅 RSS"
+
+#: app/templates/base.html:11
+msgid "Welcome to Aisaka"
+msgstr "欢迎来到 Aisaka"
+
+#: app/templates/base.html:42
+msgid "Primary navigation"
+msgstr "主导航"
+
+#: app/templates/base.html:47
+msgid "Toggle navigation"
+msgstr "切换导航"
+
+#: app/templates/base.html:52
+msgid "Home"
+msgstr "首页"
+
+#: app/templates/base.html:79 app/templates/base.html:91
+#: app/templates/post/search_results.html:27
+msgid "Type to search posts."
+msgstr "输入关键词搜索文章。"
+
+#: app/templates/base.html:80
+msgid "Searching…"
+msgstr "正在搜索…"
+
+#: app/templates/base.html:81
+msgid "Search failed. Please try again."
+msgstr "搜索失败，请重试。"
+
+#: app/templates/base.html:82 app/templates/post/search_results.html:26
+msgid "No results found."
+msgstr "未找到结果。"
+
+#: app/templates/base.html:84 app/templates/base.html:88
+#: app/templates/base.html:89 app/templates/post/search_results.html:12
+msgid "Search posts"
+msgstr "搜索文章"
+
+#: app/templates/base.html:85
+msgid "Close search"
+msgstr "关闭搜索"
+
+#: app/templates/base.html:93
+msgid "Use ↑ ↓ to select, Enter to open, Esc to close"
+msgstr "使用 ↑ ↓ 选择，Enter 打开，Esc 关闭"
+
+#: app/templates/base.html:108
+msgid "Logout"
+msgstr "登出"
+
+#: app/templates/base.html:111
+msgid "Login"
+msgstr "登录"
+
+#: app/templates/index.html:8
+msgid "Stories"
+msgstr "文章"
+
+#: app/templates/index.html:18 app/templates/post/search_results.html:22
+msgid "Post navigation"
+msgstr "文章分页"
+
+#: app/templates/index.html:22
+msgid "Newer posts"
+msgstr "上一页"
+
+#: app/templates/index.html:27
+msgid "Older posts"
+msgstr "下一页"
+
+#: app/templates/about/about.html:18
+msgid "No information available yet."
+msgstr "没有消息可用。"
+
+#: app/templates/about/edit_about.html:4 app/templates/about/edit_about.html:10
+msgid "Edit About"
+msgstr "编辑关于"
+
+#: app/templates/error/404.html:7
+msgid "Not Found"
+msgstr "页面未找到"
+
+#: app/templates/error/404.html:8 app/templates/error/500.html:9
+msgid "Back"
+msgstr "返回"
+
+#: app/templates/error/500.html:7
+msgid "An unexpected error has occurred"
+msgstr "An unexpected error has occurred"
+
+#: app/templates/error/500.html:8
+msgid "The administrator has been notified. Sorry for the inconvenience!"
+msgstr "The administrator has been notified. Sorry for the inconvenience!"
+
+#: app/templates/post/_post.html:2
+msgid "Uncategorized"
+msgstr "未分类"
+
+#: app/templates/post/_post.html:4 app/templates/post/archive.html:14
+msgid "Untitled"
+msgstr "无标题"
+
+#: app/templates/post/_post.html:7
+#, python-format
+msgid "%(minutes)s min read"
+msgstr "阅读需 %(minutes)s 分钟"
+
+#: app/templates/post/archive.html:21
+msgid "No posts yet."
+msgstr "暂无文章。"
+
+#: app/templates/post/categories.html:19
+msgid "No categories yet."
+msgstr "暂无分类。"
+
+#: app/templates/post/categories.html:22
+msgid "Category navigation"
+msgstr "分类分页"
+
+#: app/templates/post/categories.html:24
+msgid "Newer categories"
+msgstr "上一页"
+
+#: app/templates/post/categories.html:25
+msgid "Older categories"
+msgstr "下一页"
+
+#: app/templates/post/edit_category.html:15
+msgid "Update"
+msgstr "更新"
+
+#: app/templates/post/post.html:22
+msgid "views"
+msgstr "次阅读"
+
+#: app/templates/post/post.html:33 app/templates/post/post.html:34
+msgid "Table of contents"
+msgstr "目录"
+
+#: app/templates/post/post.html:33 app/templates/post/post.html:34
+msgid "Contents"
+msgstr "目录"
+
+#: app/templates/post/post.html:48 app/templates/post/post.html:55
+msgid "Like"
+msgstr "点赞"
+
+#: app/templates/post/post.html:48
+msgid "Liked"
+msgstr "已点赞"
+
+#: app/templates/post/post.html:61
+msgid "Copy link"
+msgstr "复制链接"
+
+#: app/templates/post/post.html:67
+msgid "Generate QR Code"
+msgstr "生成二维码"
+
+#: app/templates/post/post.html:75
+msgid "Comments"
+msgstr "留言"
+
+#: app/templates/post/post.html:114
+msgid "No comments yet."
+msgstr "暂无留言。"
+
+#: app/templates/post/posts_by_category.html:4
+#: app/templates/post/posts_by_category.html:13
+#, python-format
+msgid "Posts in %(name)s"
+msgstr "%(name)s 下的文章"
+
+#: app/templates/post/posts_by_category.html:22
+msgid "No posts available in this category."
+msgstr "该分类下暂无文章。"
+
+#: app/templates/post/search_results.html:8
+msgid "Search results"
+msgstr "搜索结果"
+
+#: app/templates/post/search_results.html:9
+#, python-format
+msgid "%(num)s result"
+msgid_plural "%(num)s results"
+msgstr[0] "%(num)s 个结果"
+
+#: app/templates/post/search_results.html:23
+msgid "Previous"
+msgstr "上一页"
+
+#: app/templates/post/search_results.html:24
+msgid "Next"
+msgstr "下一页"
+
+#: app/templates/user/login.html:13
+msgid "New User?"
+msgstr "新用户？"
+
+#: app/templates/user/login.html:13
+msgid "Click to Register!"
+msgstr "点击注册！"
+
+#: app/templates/user/login.html:15
+msgid "Forgot Your Password?"
+msgstr "忘记你的密码？"
+
+#: app/templates/user/login.html:16
+msgid "Click to Reset It"
+msgstr "点击重置它"
+
+#: app/templates/user/reset_password.html:9
+#: app/templates/user/reset_password_request.html:9
+msgid "Account"
+msgstr "账号"
+
+#: app/templates/user/reset_password_request.html:10
+msgid "Reset Your Password"
+msgstr "重置你的密码"
+
+#~ msgid "%(username)s said %(when)s"
+#~ msgstr "%(username)s 在 %(when)s 发表"
+
+#~ msgid "name"
+#~ msgstr "用户名"
+
+#~ msgid "email"
+#~ msgstr "电子邮箱"
+
+#~ msgid "Your post is now live!"
+#~ msgstr "你的文章已提交"
+
+#~ msgid "Following"
+#~ msgstr "关注"
+
+#~ msgid "User %(username)s not found."
+#~ msgstr "用户 %(username)s 未被找到。"
+
+#~ msgid "You cannot follow yourself!"
+#~ msgstr "你不能关注你自己！"
+
+#~ msgid "You are following %(username)s!"
+#~ msgstr "你正在关注 %(username)s！"
+
+#~ msgid "You cannot unfollow yourself!"
+#~ msgstr "你不能取消关注你自己！"
+
+#~ msgid "You are not following %(username)s."
+#~ msgstr "你没有关注 %(username)s。"
+
+#~ msgid "Edit Movie"
+#~ msgstr "编辑资料"
+
+#~ msgid "Your todo have been added!"
+#~ msgstr "你的更改已被保存。"
+
+#~ msgid "Edit Todo"
+#~ msgstr "编辑 Todo"
+
+#~ msgid "Link added successfully!"
+#~ msgstr "友链添加成功！"
+
+#~ msgid "Edit Link"
+#~ msgstr "编辑友链"
+
+#~ msgid "Edit Post"
+#~ msgstr "编辑推文"
+
+#~ msgid "Edit"
+#~ msgstr "编辑"
+
+#~ msgid "Delete"
+#~ msgstr "删除"
+
+#~ msgid "Are you sure you want to delete this post?"
+#~ msgstr "你确定要删除这个推文吗？"
+
+#~ msgid "Hi  %(username)s!"
+#~ msgstr "嗨 %(username)s！"
+
+#~ msgid "Welcome to Microblog"
+#~ msgstr "欢迎来到 Aisaka"
+
+#~ msgid "Translate"
+#~ msgstr "翻译"
+
+#~ msgid "User"
+#~ msgstr "用户"
+
+#~ msgid "%(count)d followers"
+#~ msgstr "%(count)d 跟随者"
+
+#~ msgid "%(count)d following"
+#~ msgstr "%(count)d 正在跟随"
+
+#~ msgid "Follow"
+#~ msgstr "关注"
+
+#~ msgid "Unfollow"
+#~ msgstr "取消关注"
+
+#~ msgid "Explore"
+#~ msgstr "探索"
+
+#~ msgid "Error: the translation service failed."
+#~ msgstr "错误：翻译服务失败"
+
+#~ msgid "Error: the translation service is not configured."
+#~ msgstr "错误：翻译服务没有被配置"
+
+#~ msgid "Visit Website"
+#~ msgstr "访问网站"
+
+#~ msgid "title"
+#~ msgstr "标题"
+
+#~ msgid "URL"
+#~ msgstr "URL"
+
+#~ msgid "Text"
+#~ msgstr "文本"
+
+#~ msgid "Movie"
+#~ msgstr "影视"
+
+#~ msgid "Your comment has been sent to the world!"
+#~ msgstr "你的留言已发布。"
+
+#~ msgid "Todo"
+#~ msgstr "Todo"
+
+#~ msgid "Links"
+#~ msgstr "友链"
+
+#~ msgid "Link deleted successfully!"
+#~ msgstr "友链删除成功！"
+
+#~ msgid "No links available yet."
+#~ msgstr "暂无友链。"
+
+#~ msgid "Newer comments"
+#~ msgstr "上一页"
+
+#~ msgid "Older comments"
+#~ msgstr "下一页"
+
+#~ msgid "Movies"
+#~ msgstr "影视"
+
+#~ msgid "%(num)s title"
+#~ msgid_plural "%(num)s titles"
+#~ msgstr[0] "%(num)s 部"
+
+#~ msgid "Find this movie on IMDb"
+#~ msgstr "在 IMDb 上查找这部影片"
+
+#~ msgid "No movies available yet."
+#~ msgstr "暂无影视。"
+
+#~ msgid "No todo items yet."
+#~ msgstr "暂无待办事项。"
+
+#~ msgid "About me"
+#~ msgstr "关于我"
+
+#~ msgid "Message"
+#~ msgstr "信息"
+
+#~ msgid "User Profile"
+#~ msgstr "用户资料"
+
+#~ msgid "Your changes have been saved."
+#~ msgstr "你的更改已被保存。"
+
+#~ msgid "Edit Profile"
+#~ msgstr "编辑资料"
+
+#~ msgid "Your message has been sent."
+#~ msgstr "你的消息已发送。"
+
+#~ msgid "Send Message"
+#~ msgstr "发送私信"
+
+#~ msgid "Messages"
+#~ msgstr "站内信"
+
+#~ msgid "An export task is currently in progress"
+#~ msgstr "一个导出任务正在进行"
+
+#~ msgid "Exporting posts..."
+#~ msgstr "导出推文..."
+
+#~ msgid "Profile"
+#~ msgstr "资料"
+
+#~ msgid "No messages yet."
+#~ msgstr "暂无站内信。"
+
+#~ msgid "Newer messages"
+#~ msgstr "上一页"
+
+#~ msgid "Older messages"
+#~ msgstr "下一页"
+
+#~ msgid "Message navigation"
+#~ msgstr "站内信分页"
+
+#~ msgid "Send Message to %(recipient)s"
+#~ msgstr "发消息给 %(recipient)s"
+
+#~ msgid "Last seen on"
+#~ msgstr "上一次在线"
+
+#~ msgid "Edit your profile"
+#~ msgstr "编辑你的资料"
+
+#~ msgid "Export your posts"
+#~ msgstr "导出你的文章"
+
+#~ msgid "Send private message"
+#~ msgstr "发送私信"
+

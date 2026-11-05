@@ -1,0 +1,25 @@
+# Direct runtime dependencies. Edit this file, then regenerate the pinned
+# requirements.txt with: ./scripts/bootstrap.sh --upgrade
+alembic
+bleach
+cryptography
+email-validator
+feedgen
+Flask
+flask-babel
+Flask-Login
+Flask-Mail
+Flask-Migrate
+Flask-Moment
+Flask-SQLAlchemy
+Flask-WTF
+gunicorn
+langdetect
+lxml
+Markdown
+Pygments
+PyJWT
+PyMySQL
+python-dotenv
+SQLAlchemy
+WTForms

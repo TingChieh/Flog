@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}{{ '全部文章' if posts_scope == 'all' else '我的文章' }}{% endblock %}
+
+{% block admin_actions %}
+<a class="button button--cta" href="{{ url_for('admin.new_post') }}">新建文章</a>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list">
+  {% for post in posts %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <a href="{{ url_for('admin.edit_post', post_id=post.id) }}"><strong>{{ (post.draft.title if post.draft else post.title) or 'Untitled draft' }}</strong></a>
+      <span>{{ post.author.username }} · {{ post.local_timestamp.strftime('%Y-%m-%d') }} · {% if post.draft and post.is_published %}Pending update{% elif post.draft %}Draft{% elif post.is_published %}Published{% else %}Unpublished{% endif %}</span>
+    </div>
+    <div class="admin-list__actions">
+      <a href="{{ url_for('admin.edit_post', post_id=post.id) }}">编辑</a>
+      <form method="post" action="{{ url_for('admin.delete_post', post_id=post.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除这篇文章？');">删除</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>暂无文章。</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

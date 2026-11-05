@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% from "admin/images/_usages.html" import usage_list %}
+{% block admin_title %}删除图片{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <p>将删除图片 <strong>{{ image.title }}</strong>（{{ image.size|filesize }}），文件和记录都会被移除，无法恢复。</p>
+  {% if usages %}
+  <p>下面这些位置正在使用它，删除后这些位置的图片会失效：</p>
+  {{ usage_list(usages) }}
+  <div class="form-field">
+    <label class="admin-form__checks">{{ form.force() }} {{ form.force.label.text }}</label>
+    {% for error in form.force.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% else %}
+  <p>没有文章或页面在使用这张图片，可以直接删除。</p>
+  {% endif %}
+  <div class="admin-form__actions">
+    <button class="button button--cta button--danger" type="submit">确认删除</button>
+    <a class="button button--quiet" href="{{ url_for('admin.image_detail', image_id=image.id) }}">取消</a>
+  </div>
+</form>
+{% endblock %}

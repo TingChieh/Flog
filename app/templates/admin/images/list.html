@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}图片{% endblock %}
+
+{% block admin_content %}
+<form class="image-upload" method="post" action="{{ url_for('admin.upload_images') }}" enctype="multipart/form-data">
+  {{ upload_form.hidden_tag() }}
+  <label class="visually-hidden" for="image-files">选择图片</label>
+  <input id="image-files" class="form-control" type="file" name="images" accept="image/png,image/jpeg,image/gif" multiple required>
+  <button class="button button--cta" type="submit">上传</button>
+</form>
+<form class="admin-search" method="get" action="{{ url_for('admin.images') }}" role="search">
+  <label class="visually-hidden" for="image-search">搜索图片</label>
+  <input id="image-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="按名称、备注或文件名搜索">
+  <button class="button button--quiet" type="submit">搜索</button>
+</form>
+<div class="image-grid">
+  {% for card in cards %}
+  {% set image = card.image %}
+  <a class="image-card" href="{{ url_for('admin.image_detail', image_id=image.id) }}">
+    {% if card.missing %}
+    <span class="image-card__thumb image-card__missing">文件缺失</span>
+    {% else %}
+    <img class="image-card__thumb" src="{{ url_for('uploaded_files', filename=image.filename) }}" alt="{{ image.title }}" loading="lazy">
+    {% endif %}
+    <span class="image-card__title">{{ image.title }}</span>
+    <span class="image-card__meta">{{ image.size|filesize }} · {{ (image.created_at|localtime).strftime('%Y-%m-%d') }} · {{ '被 %d 处引用'|format(card.uses) if card.uses else '未被引用' }}</span>
+  </a>
+  {% else %}
+  <div class="empty-state"><p>{{ '没有符合条件的图片。' if search else '还没有图片，先上传几张吧。' }}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

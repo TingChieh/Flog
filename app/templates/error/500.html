@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block page_hero %}{% endblock %}
+
+{% block content %}
+    <section class="content-section public-page public-error">
+      <header class="page-heading"><p class="public-label">500</p><h1>{{ _('An unexpected error has occurred') }}</h1></header>
+      <p>{{ _('The administrator has been notified. Sorry for the inconvenience!') }}</p>
+      <p><a href="{{ url_for('index') }}">{{ _('Back') }}</a></p>
+    </section>
+{% endblock %}

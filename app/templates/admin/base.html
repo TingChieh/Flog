@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% macro nav_link(endpoint, label, current=(), scope=none) -%}
+{% set active = request.endpoint in current and (scope is none or request.endpoint != 'admin.posts' or posts_scope == scope) -%}
+<a class="admin-nav__link" href="{{ url_for(endpoint, scope=scope) }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
+{%- endmacro %}
+
+{% macro admin_navigation(drawer=False) %}
+<nav class="admin-nav" aria-label="管理导航">
+  <p class="admin-nav__group">工作区</p>
+  {{ nav_link('admin.dashboard', '概览', ('admin.dashboard',)) }}
+  {{ nav_link('admin.posts', '我的文章', ('admin.posts', 'admin.edit_post'), scope='mine') }}
+  {{ nav_link('admin.new_post', '新建文章', ('admin.new_post',)) }}
+  {{ nav_link('admin.images', '图片', ('admin.images', 'admin.upload_images', 'admin.image_detail', 'admin.delete_image')) }}
+  {% if current_user.role == 'admin' %}
+  <p class="admin-nav__group admin-nav__group--spaced">网站管理</p>
+  {{ nav_link('admin.posts', '全部文章', ('admin.posts',), scope='all') }}
+  {{ nav_link('admin.pages', '页面管理', ('admin.pages', 'admin.new_page', 'admin.edit_page', 'admin.preview_page')) }}
+  {{ nav_link('admin.categories', '分类', ('admin.categories',)) }}
+  {{ nav_link('admin.comments', '评论', ('admin.comments',)) }}
+  <p class="admin-nav__group admin-nav__group--spaced">系统</p>
+  {{ nav_link('admin.users', '用户与角色', ('admin.users',)) }}
+  {{ nav_link('admin.settings', '网站设置', ('admin.settings',)) }}
+  {% endif %}
+</nav>
+{% endmacro %}
+
+{% block body_class %}public-site admin-site{% endblock %}
+
+{% block site_navigation %}
+<header class="admin-topbar">
+  <div class="admin-topbar__inner">
+    <button class="admin-drawer-toggle" type="button" data-admin-drawer-toggle
+            aria-expanded="false" aria-controls="admin-drawer">
+      <span class="visually-hidden">切换管理导航</span>
+      <span aria-hidden="true"></span><span aria-hidden="true"></span>
+    </button>
+    <a class="admin-topbar__brand" href="{{ url_for('admin.dashboard') }}">Aisaka 管理</a>
+    <div class="admin-topbar__actions">
+      <a href="{{ url_for('index') }}">返回网站</a>
+      {% include "_theme_controls.html" %}
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block page_hero %}{% endblock %}
+
+{% block content %}
+<div class="admin-workspace">
+  <aside class="admin-sidebar">
+    {{ admin_navigation() }}
+  </aside>
+  <aside class="admin-drawer" id="admin-drawer" data-admin-drawer aria-label="管理导航">
+    {{ admin_navigation(drawer=True) }}
+  </aside>
+  <section class="admin-workspace__content">
+    <header class="admin-workspace__header">
+      <div>
+        <p class="admin-workspace__eyebrow">管理工作区</p>
+        <h1>{% block admin_title %}概览{% endblock %}</h1>
+      </div>
+      <div class="admin-workspace__actions">{% block admin_actions %}{% endblock %}</div>
+    </header>
+    {% block admin_content %}{% endblock %}
+  </section>
+</div>
+{% endblock %}

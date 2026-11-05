@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}删除用户{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <p>将删除用户 <strong>{{ target.username }}</strong>（{{ target.email }}）。此操作不可恢复。</p>
+  {% if post_count %}
+  <p>该用户有 <strong>{{ post_count }}</strong> 篇文章，请选择由谁接收：</p>
+  <div class="form-field">
+    {{ form.receiver.label(class="form-label") }}
+    {{ form.receiver(class="form-select") }}
+    {% for error in form.receiver.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% else %}
+  <p>该用户没有文章，可以直接删除。</p>
+  {% endif %}
+  <div class="admin-form__actions">
+    <button class="button button--cta button--danger" type="submit" onclick="return confirm('确定删除此用户？');">确认删除</button>
+    <a class="button button--quiet" href="{{ url_for('admin.users') }}">取消</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}评论{% endblock %}
+{% block admin_content %}
+<section class="admin-section"><h2>文章评论</h2><div class="admin-list">
+  {% for comment in post_comments %}<article class="admin-list__row"><div class="admin-list__main"><strong>{{ comment.name }}</strong><span>{{ comment.email }} · {{ comment.body }}</span></div><form method="post" action="{{ url_for('admin.delete_article_comment', comment_id=comment.id) }}">{{ delete_form.hidden_tag() }}<input type="hidden" name="confirm" value="y"><button class="button button--quiet button--danger" type="submit">删除</button></form></article>{% endfor %}
+</div></section>
+{% endblock %}

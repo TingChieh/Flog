@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Category{% endblock %}
+
+{% block content %}
+  <section class="form-shell" aria-labelledby="page-title">
+    <header class="page-heading"><h1 id="page-title">Edit Category</h1></header>
+    <form method="POST" action="{{ url_for('edit_category', category_id=category.id) }}">
+      {{ form.hidden_tag() }}
+      <div class="form-field">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control" + (' is-invalid' if form.name.errors else '')) }}
+        {% for error in form.name.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary">{{ _('Update') }}</button>
+    </form>
+  </section>
+{% endblock %}

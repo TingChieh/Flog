@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}{{ '编辑页面' if page else '新建页面' }}{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" novalidate
+      {% if not legacy_html %}
+      data-image-upload-url="{{ url_for('upload') }}"
+      data-image-library-url="{{ url_for('admin.image_picker') }}"
+      {% endif %}>
+  {{ form.hidden_tag() }}
+  {% for field in [form.title, form.slug, form.summary] %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else '')) }}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  {% if legacy_html %}
+  <div class="admin-notice">旧版 HTML 内容：保存时会继续按 HTML 处理，不会自动转换。</div>
+  {% endif %}
+  <div class="form-field">
+    {{ form.body.label(class="form-label") }}
+    {% if legacy_html %}
+      {{ form.body(class="form-control" + (' is-invalid' if form.body.errors else ''), rows="18") }}
+    {% else %}
+      {{ form.body(class="form-control" + (' is-invalid' if form.body.errors else ''), rows="18", data_markdown_editor="", data_vditor_cdn=url_for('static', filename='vendor/vditor/4.0.1')) }}
+    {% endif %}
+    {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="form-field">
+    {{ form.nav_order.label(class="form-label") }}
+    {{ form.nav_order(class="form-control" + (' is-invalid' if form.nav_order.errors else '')) }}
+    {% for error in form.nav_order.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="admin-form__checks">
+    <label>{{ form.is_published() }} {{ form.is_published.label.text }}</label>
+    <label>{{ form.show_in_nav() }} {{ form.show_in_nav.label.text }}</label>
+  </div>
+  {{ form.submit(class="button button--cta") }}
+</form>
+{% endblock %}
+
+{% block page_styles %}
+{% if not legacy_html %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.css') }}">
+{% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+{% if not legacy_html %}
+<script src="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.min.js') }}"></script>
+<script src="{{ url_for('static', filename='image-picker.js') }}"></script>
+<script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
+{% endif %}
+{% endblock %}

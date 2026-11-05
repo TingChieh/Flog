@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block page_hero %}{% endblock %}
+
+{% block content %}
+    <section class="content-section public-page public-error">
+      <header class="page-heading"><p class="public-label">404</p><h1>{{ _('Not Found') }}</h1></header>
+      <p><a href="{{ url_for('index') }}">{{ _('Back') }}</a></p>
+    </section>
+{% endblock %}

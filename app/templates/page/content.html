@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block page_hero %}{% endblock %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block page_scripts %}<script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
+
+{% block content %}
+<article class="content-section public-page reading-layout">
+  <header class="page-heading">
+    <h1>{{ page.title }}</h1>
+    {% if page.summary %}<p class="page-summary">{{ page.summary }}</p>{% endif %}
+  </header>
+  <div class="page-body">{{ page.body|render_content(page.body_format) }}</div>
+</article>
+{% endblock %}

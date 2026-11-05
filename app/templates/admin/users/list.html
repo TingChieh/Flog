@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}用户与角色{% endblock %}
+
+{% block admin_actions %}
+<a class="button button--cta" href="{{ url_for('admin.new_user') }}">新建用户</a>
+{% endblock %}
+
+{% block admin_content %}
+<form class="admin-search" method="get" action="{{ url_for('admin.users') }}" role="search">
+  <label class="visually-hidden" for="user-search">搜索用户</label>
+  <input id="user-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="按用户名或邮箱搜索">
+  {% if active_role != 'all' %}<input type="hidden" name="role" value="{{ active_role }}">{% endif %}
+  <button class="button button--quiet" type="submit">搜索</button>
+</form>
+<nav class="admin-filters" aria-label="角色筛选">
+  {% for value, label in [('all', '全部'), ('admin', '管理员'), ('user', '普通用户')] %}
+  <a class="admin-filter{% if active_role == value %} admin-filter--active{% endif %}"
+     href="{{ url_for('admin.users', role=value if value != 'all' else None, q=search or None) }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+<div class="admin-list admin-user-list">
+  {% for user, post_count in user_rows %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <a href="{{ url_for('admin.edit_user', user_id=user.id) }}"><strong>{{ user.username }}</strong></a>
+      <span class="admin-user-email">{{ user.email }}</span>
+    </div>
+    <div class="admin-list__meta">
+      <span>{{ '管理员' if user.role == 'admin' else '普通用户' }}</span>
+      <span>文章 <span>{{ post_count }}</span></span>
+      <span>{{ (user.last_seen|localtime).strftime('%Y-%m-%d %H:%M') if user.last_seen else '从未登录' }}</span>
+    </div>
+    <div class="admin-list__actions">
+      <a href="{{ url_for('admin.edit_user', user_id=user.id) }}">编辑</a>
+      {% if user.id != current_user.id %}<a href="{{ url_for('admin.delete_user', user_id=user.id) }}">删除</a>{% endif %}
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>没有符合条件的用户。</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

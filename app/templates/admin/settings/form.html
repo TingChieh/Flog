@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}网站设置{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="admin-form__checks">
+    <label>{{ form.registration_open() }} {{ form.registration_open.label.text }}</label>
+  </div>
+  <div class="form-field">
+    {{ form.post_revision_limit.label(class="form-label") }}
+    {{ form.post_revision_limit(class="form-control" + (' is-invalid' if form.post_revision_limit.errors else ''), min="1", max="100") }}
+    {% for error in form.post_revision_limit.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {{ form.submit(class="button button--cta") }}
+</form>
+{% endblock %}

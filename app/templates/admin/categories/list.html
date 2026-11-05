@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}分类{% endblock %}
+{% block admin_content %}
+<form class="admin-form admin-form--inline" method="post" novalidate>
+  {{ form.hidden_tag() }}
+  {{ form.name.label(class="form-label") }}
+  {{ form.name(class="form-control" + (' is-invalid' if form.name.errors else '')) }}
+  {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  {{ form.submit(class="button button--cta") }}
+</form>
+<div class="admin-list">
+  {% for category in categories %}
+  <article class="admin-list__row">
+    <form class="admin-list__main admin-inline-edit" method="post" action="{{ url_for('admin.edit_category', category_id=category.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input class="form-control" name="name" value="{{ category.name }}" maxlength="120" required>
+      <button class="button button--quiet" type="submit">保存</button>
+    </form>
+    <form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}">
+      {{ delete_form.hidden_tag() }}<input type="hidden" name="confirm" value="y">
+      <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除此分类？');">删除</button>
+    </form>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

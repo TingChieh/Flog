@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}预览：{{ page.title }}{% endblock %}
+
+{% block page_scripts %}<script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
+
+{% block admin_content %}
+<article class="reading-layout">
+  {% if page.summary %}<p class="page-summary">{{ page.summary }}</p>{% endif %}
+  {% if page.kind == 'content' %}{{ page.body|render_content(page.body_format) }}{% else %}<p>模块页：{{ page.module_key }}</p>{% endif %}
+</article>
+{% endblock %}

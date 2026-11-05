@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ _('Posts in %(name)s', name=category.name) }}
+{% endblock %}
+
+{% block page_hero %}{% endblock %}
+
+{% block content %}
+  <section class="content-section public-page" aria-labelledby="page-title">
+    <header class="page-heading">
+      <div class="public-label">{{ _('Category') }}</div>
+      <h1 id="page-title">{{ _('Posts in %(name)s', name=category.name) }}</h1>
+    </header>
+    {% if posts %}
+    <div class="editorial-list">
+      {% for post in posts %}
+      {% include 'post/_post.html' %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><p>{{ _('No posts available in this category.') }}</p></div>
+    {% endif %}
+  </section>
+{% endblock %}

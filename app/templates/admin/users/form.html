@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}{{ '新建用户' if target is none else '编辑用户' }}{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" novalidate autocomplete="off">
+  {{ form.hidden_tag() }}
+  {% for field in (form.username, form.email) %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else '')) }}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-field">
+    {{ form.password.label(class="form-label") }}
+    {{ form.password(class="form-control" + (' is-invalid' if form.password.errors else ''), autocomplete="new-password") }}
+    {% if target is not none %}<div class="form-text">留空则不修改密码。</div>{% endif %}
+    {% for error in form.password.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="form-field">
+    {{ form.role.label(class="form-label") }}
+    {% if editing_self %}
+    {{ form.role(class="form-select", disabled=True) }}
+    <div class="form-text">不能修改自己的角色。</div>
+    {% else %}
+    {{ form.role(class="form-select") }}
+    {% endif %}
+    {% for error in form.role.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {{ form.submit(class="button button--cta") }}
+</form>
+{% endblock %}

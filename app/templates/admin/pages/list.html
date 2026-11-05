@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}页面管理{% endblock %}
+
+{% block admin_actions %}
+<a class="button button--cta" href="{{ url_for('admin.new_page') }}">新建页面</a>
+{% endblock %}
+
+{% block admin_content %}
+<form class="admin-search" method="get" action="{{ url_for('admin.pages') }}" role="search">
+  <label class="visually-hidden" for="page-search">搜索页面</label>
+  <input id="page-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="按标题或 slug 搜索">
+  {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+  <button class="button button--quiet" type="submit">搜索</button>
+</form>
+<nav class="admin-filters" aria-label="页面筛选">
+  {% for value, label in [('all', '全部'), ('published', '已发布'), ('unpublished', '未发布')] %}
+  <a class="admin-filter{% if active_filter == value %} admin-filter--active{% endif %}"
+     href="{{ url_for('admin.pages', filter=value if value != 'all' else None, q=search or None) }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+<div class="admin-list admin-page-list">
+  {% for page in pages %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <a href="{{ url_for('admin.edit_page', page_id=page.id) }}"><strong>{{ page.title }}</strong></a>
+      <span>/{{ page.slug }} · 更新于 {{ (page.updated_at|localtime).strftime('%Y-%m-%d') }}</span>
+    </div>
+    <div class="admin-list__meta">
+      <span>{{ '已发布' if page.is_published else '未发布' }}</span>
+      <span>{{ '导航可见' if page.show_in_nav else '导航隐藏' }} · {{ page.nav_order }}</span>
+    </div>
+    <div class="admin-list__actions">
+      <form method="post" action="{{ url_for('admin.toggle_page_publication', page_id=page.id, q=search or None, filter=active_filter if active_filter != 'all' else None) }}">
+        {{ toggle_form.hidden_tag() }}
+        <button class="button button--quiet" type="submit">{{ '取消发布' if page.is_published else '发布' }}</button>
+      </form>
+      <form method="post" action="{{ url_for('admin.toggle_page_navigation', page_id=page.id, q=search or None, filter=active_filter if active_filter != 'all' else None) }}">
+        {{ toggle_form.hidden_tag() }}
+        <button class="button button--quiet" type="submit">{{ '隐藏导航' if page.show_in_nav else '显示导航' }}</button>
+      </form>
+      <a href="{{ url_for('admin.preview_page', page_id=page.id) }}">预览</a>
+      <a href="{{ url_for('admin.edit_page', page_id=page.id) }}">编辑</a>
+      <form method="post" action="{{ url_for('admin.delete_page', page_id=page.id) }}">
+        {{ delete_form.hidden_tag() }}
+        <input type="hidden" name="confirm" value="y">
+        <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除此页面？');">删除</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>没有符合条件的页面。</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

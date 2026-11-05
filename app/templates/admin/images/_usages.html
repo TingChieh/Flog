@@ -1,0 +1,13 @@
+{% macro usage_list(usages) %}
+<ul class="image-usages">
+  {% for usage in usages %}
+  <li>
+    {% if usage.kind == 'page' %}
+    <a href="{{ url_for('admin.edit_page', page_id=usage.id) }}">{{ usage.title }}</a><span>页面</span>
+    {% else %}
+    <a href="{{ url_for('admin.edit_post', post_id=usage.id) }}">{{ usage.title or '无标题' }}</a><span>{{ '文章草稿' if usage.kind == 'draft' else '文章' }}</span>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}

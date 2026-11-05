@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block page_hero %}{% endblock %}
+{% block content %}
+<section class="content-section archive" aria-labelledby="page-title">
+  <header class="page-heading"><h1 id="page-title">{{ _('Archive') }}</h1></header>
+  {% for year, year_posts in posts|groupby('local_timestamp.year')|reverse %}
+  <section class="archive-group">
+    <h2 class="archive-year">{{ year }}</h2>
+    {% for month, month_posts in year_posts|groupby('local_timestamp.month')|reverse %}
+    <div class="archive-month-group">
+      <h3 class="archive-month">{{ month_posts[0].timestamp|dateformat('MMMM') }}</h3>
+      <ul class="archive-list">
+        {% for post in month_posts %}
+        <li class="archive-entry"><time datetime="{{ post.local_timestamp.isoformat() }}">{{ post.timestamp|dateformat('medium') }}</time><a class="archive-entry__title" href="{{ url_for('post', post_id=post.id) }}">{{ post.title or _('Untitled') }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </section>
+  {% else %}
+  <p class="empty-state">{{ _('No posts yet.') }}</p>
+  {% endfor %}
+</section>
+{% endblock %}

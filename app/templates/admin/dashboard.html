@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+
+{% block admin_actions %}
+<a class="button button--cta" href="{{ url_for('admin.new_post') }}">新建文章</a>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-dashboard" aria-label="概览数据">
+  {% for metric in metrics %}
+  <a class="admin-metric" href="{{ url_for(metric.endpoint, scope=metric.get('scope')) }}">
+    <span class="admin-metric__label">{{ metric.label }}</span>
+    <span class="admin-metric__value">{{ metric.value }}</span>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

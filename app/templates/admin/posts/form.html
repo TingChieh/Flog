@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}{{ '编辑文章' if post else '新建文章' }}{% endblock %}
+
+{% block admin_actions %}
+<div class="publication-controls" data-publication-controls
+     data-publication-state="{{ 'new' if not post else 'published-draft' if post.is_published and post.draft else 'published' if post.is_published else 'draft' }}">
+  <span class="publication-status" data-publication-status aria-live="polite">
+    {% if post and post.is_published and post.draft %}有未发布修改
+    {% elif post and post.is_published %}已公开
+    {% endif %}
+  </span>
+  <span class="draft-save-status" data-draft-save-status aria-live="polite">{% if post and post.draft and not post.is_published %}草稿已保存{% endif %}</span>
+  <button class="button button--quiet" type="submit" form="article-editor-form">保存草稿</button>
+  {% if post and post.draft and not post.is_published %}
+  <form method="post" data-draft-leave-action action="{{ url_for('admin.publish_post', post_id=post.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button button--cta" type="submit" data-publish>发布</button>
+  </form>
+  {% elif post and post.is_published and not post.draft %}
+  <form method="post" data-draft-leave-action action="{{ url_for('admin.unpublish', post_id=post.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button button--quiet" type="submit" data-unpublish
+            onclick="return confirm('取消公开后读者将看不到这篇文章，确定吗？');">取消公开</button>
+    <button class="button button--cta" type="submit" data-publish-update hidden
+            formaction="{{ url_for('admin.publish_post', post_id=post.id) }}">发布更新</button>
+  </form>
+  {% elif post and post.is_published and post.draft %}
+  <button class="button button--quiet" type="button" data-unpublish disabled>取消公开</button>
+  <form method="post" data-draft-leave-action action="{{ url_for('admin.publish_post', post_id=post.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button button--cta" type="submit" data-publish-update>发布更新</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" id="article-editor-form" method="post"
+      action="{{ url_for('admin.edit_post', post_id=post.id) if post else url_for('admin.new_post') }}"
+      {% if not legacy_html %}
+      data-article-draft-editor
+      data-post-id="{{ post.id if post else '' }}"
+      data-draft-url="{{ url_for('admin.update_draft', post_id=post.id) if post else url_for('admin.create_draft') }}"
+      data-leave-url="{{ url_for('admin.leave_editor', post_id=post.id) if post else url_for('admin.create_draft_and_leave') }}"
+      data-csrf-token="{{ csrf_token() }}"
+      data-draft-key="{{ editor_session_key or '' }}"
+      data-editor-sequence="{{ editor_sequence }}"
+      data-draft-generation="{{ draft_generation }}"
+      data-image-upload-url="{{ url_for('upload') }}"
+      data-image-library-url="{{ url_for('admin.image_picker') }}"
+      {% endif %}
+      novalidate>
+  {{ form.hidden_tag() }}
+  <div class="form-field">
+    {{ form.title.label(class="form-label") }}
+    {{ form.title(class="form-control" + (' is-invalid' if form.title.errors else ''), autofocus=True) }}
+    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="form-field">
+    {{ form.category.label(class="form-label") }}
+    {{ form.category(class="form-select" + (' is-invalid' if form.category.errors else '')) }}
+    {% for error in form.category.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% if legacy_html %}
+  <div class="admin-notice">旧版 HTML 内容：保存时会继续按 HTML 处理，不会自动转换。</div>
+  {% endif %}
+  <div class="form-field">
+    {{ form.post.label('正文', class="form-label") }}
+    {% if legacy_html %}
+      {{ form.post(class="form-control" + (' is-invalid' if form.post.errors else ''), rows="18") }}
+    {% else %}
+      {{ form.post(class="form-control" + (' is-invalid' if form.post.errors else ''), rows="18", data_markdown_editor="", data_vditor_cdn=url_for('static', filename='vendor/vditor/4.0.1')) }}
+    {% endif %}
+    {% for error in form.post.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+</form>
+{% if post %}
+{% if revisions %}
+<section class="admin-list" aria-label="Revision timeline">
+  {% for revision in revisions %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <strong>{{ revision.title or 'Untitled draft' }}</strong>
+      <span>{{ (revision.created_at|localtime).strftime('%Y-%m-%d %H:%M') }} · {{ revision.body[:120] }}</span>
+    </div>
+    <div class="admin-list__actions">
+      <form method="post" data-draft-leave-action action="{{ url_for('admin.restore_post_revision', post_id=post.id, revision_id=revision.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button--quiet" type="submit">Restore</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block page_styles %}
+{% if not legacy_html %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.css') }}">
+{% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+{% if not legacy_html %}
+<script src="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.min.js') }}"></script>
+<script src="{{ url_for('static', filename='image-picker.js') }}"></script>
+<script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
+{% endif %}
+{% endblock %}
