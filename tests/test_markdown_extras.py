@@ -224,3 +224,35 @@ def test_indented_code_after_a_list_is_still_code(application):
     with application.app_context():
         root = tree('- a\n\ntext\n\n    code\n')
     assert root.find('.//pre') is not None
+
+
+# --- hard line breaks ---------------------------------------------------------
+
+def test_hard_breaks_become_adjacent_paragraphs(application):
+    with application.app_context():
+        root = tree('第一行  \n第二行 **粗体**  \n第三行\n')
+    paragraphs = root.findall('p')
+    assert [p.text_content() for p in paragraphs] == ['第一行', '第二行 粗体', '第三行']
+    assert [p.get('class') for p in paragraphs] == ['hard-break', 'hard-break', None]
+    assert paragraphs[1].find('strong').text == '粗体'
+    assert root.find('.//br') is None
+
+
+def test_hard_breaks_inside_list_items_are_left_alone(application):
+    with application.app_context():
+        root = tree('- 甲  \n  乙\n')
+    assert root.find('.//li/br') is not None or root.find('.//li/p/br') is not None
+    assert root.find('.//p[@class="hard-break"]') is None
+
+
+def test_plain_paragraphs_and_html_posts(application):
+    with application.app_context():
+        assert tree('单段落\n\n另一段').findall('p[@class]') == []
+        html = render('<p>a<br>b</p>', 'html')
+    assert '<p class="hard-break">a</p><p>b</p>' in html
+
+
+def test_hard_break_class_is_the_only_paragraph_class_added(application):
+    with application.app_context():
+        html = render('<p class="hard-break evil" onclick="x()">a</p>', 'html')
+    assert 'evil' not in html and 'onclick' not in html

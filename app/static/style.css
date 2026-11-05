@@ -3451,3 +3451,11 @@ html[data-theme="dark"] body.public-site {
     flex: 1 1 280px;
     max-width: 480px;
 }
+.article-body > p.hard-break,
+.page-body > p.hard-break {
+    margin-bottom: 0;
+}
+.article-body > p.hard-break + p,
+.page-body > p.hard-break + p {
+    margin-top: 0;
+}

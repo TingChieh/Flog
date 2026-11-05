@@ -58,6 +58,39 @@ def prepare_content_source(value, body_format):
     return sanitize_html(source)
 
 
+def split_hard_breaks(source):
+    """Turn "line<br>line" paragraphs into adjacent paragraphs.
+
+    A first-line indent only applies to the first line of a paragraph, so each
+    line of a hard-broken paragraph becomes its own paragraph. All but the
+    last carry ``hard-break`` so the stylesheet keeps the lines tight.
+    """
+    if '<br' not in source:
+        return source
+    root = html.fragment_fromstring(source, create_parent='div')
+    for paragraph in root.findall('p'):
+        if paragraph.get('class') or paragraph.find('br') is None:
+            continue
+        parts = [[paragraph.text or '', []]]
+        for child in list(paragraph):
+            if child.tag == 'br':
+                parts.append([(child.tail or '').lstrip(), []])
+            else:
+                parts[-1][1].append(child)
+        parts = [part for part in parts if part[0].strip() or part[1]]
+        for index, (text, children) in enumerate(parts):
+            line = html.Element('p')
+            line.text = text
+            for child in children:
+                line.append(child)
+            if index < len(parts) - 1:
+                line.set('class', 'hard-break')
+            paragraph.addprevious(line)
+        root.remove(paragraph)
+    return str(escape(root.text or '')) + ''.join(
+        html.tostring(child, encoding='unicode', method='html') for child in root)
+
+
 def render_content(value, body_format):
     source = value or ''
     if normalize_body_format(body_format) == BODY_FORMAT_MARKDOWN:
@@ -72,7 +105,7 @@ def render_content(value, body_format):
         except Exception:
             current_app.logger.exception('Markdown rendering failed')
             return Markup(escape(value or ''))
-    return Markup(sanitize_html(source))
+    return Markup(sanitize_html(split_hard_breaks(source)))
 
 
 def render_article(value, body_format):

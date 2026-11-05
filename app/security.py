@@ -36,7 +36,7 @@ def _allowed_attribute(tag, name, value):
         if tag == 'span':
             return value in _TOKEN_CLASSES or value == 'math math-inline'
         if tag == 'p':
-            return value == 'math math-block'
+            return value in {'math math-block', 'hard-break'}
         if tag == 'li':
             return value == 'task-list-item'
         if tag in {'ul', 'ol'}:
