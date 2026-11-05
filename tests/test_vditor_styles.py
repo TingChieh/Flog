@@ -67,3 +67,10 @@ def test_content_theme_colours_are_overridden_with_site_tokens():
         block, '.admin-form .vditor-reset hr')[0]
     assert 'background-color: transparent;' in rule_bodies(
         block, '.admin-form .vditor-reset table tr')[0]
+
+
+def test_editor_blocks_keep_the_pre_wrap_of_the_editing_surface():
+    # The global "p { white-space: normal }" otherwise breaks the caret on Enter.
+    section = vditor_section(STYLESHEET.read_text())
+    bodies = rule_bodies(section, '.admin-form .vditor-reset p')
+    assert any('white-space: inherit' in body for body in bodies)
