@@ -55,6 +55,78 @@ class MathExtension(Extension):
         md.preprocessors.register(MathPreprocessor(md), 'flog_math', 20)
 
 
+LIST_MARKER = re.compile(r'^( *)(?:[*+-]|\d{1,9}[.)])( +|$)')
+FENCE = re.compile(r'^ *(`{3,}|~{3,})')
+
+
+class ListIndentPreprocessor(Preprocessor):
+    """Accept CommonMark list continuation indents.
+
+    Python-Markdown only keeps a paragraph or sub-list inside a list item when
+    it is indented by a multiple of four spaces, while CommonMark (and the
+    Vditor editor) indent to the item's content column, e.g. three spaces
+    under "1. ". Lines indented between the content column and the next
+    multiple of four are moved to that multiple. A list marker that directly
+    follows such a continuation paragraph gets a blank line before it, since
+    Python-Markdown would otherwise read it as paragraph text.
+    """
+
+    def run(self, lines):
+        out, items, fence_delta = [], [], None
+        blank_before = False
+        in_block = False  # last line is a continuation block of a list item
+        for line in lines:
+            if fence_delta is not None:
+                fence = FENCE.match(line)
+                out.append(self._shift(line, fence_delta))
+                if fence:
+                    fence_delta = None
+                continue
+            if not line.strip():
+                out.append(line)
+                blank_before = True
+                continue
+            indent = len(line) - len(line.lstrip(' '))
+            while items and indent < items[-1]:
+                items.pop()
+            depth = len(items)
+            delta = 0
+            if depth and items[-1] <= indent < 4 * depth:
+                delta = 4 * depth - indent
+            marker = LIST_MARKER.match(line)
+            if marker and in_block and not blank_before:
+                out.append('')
+            out.append(self._shift(line, delta))
+            if marker:
+                in_block = False
+            elif depth and indent >= items[-1]:
+                in_block = in_block or blank_before
+            else:
+                in_block = False
+            blank_before = False
+            if FENCE.match(line):
+                fence_delta = delta
+                continue
+            if marker:
+                width = len(marker.group(0)) - len(marker.group(1))
+                spaces = len(marker.group(2))
+                # Five or more spaces after the marker is an indented code
+                # block inside the item: its content column is one space in.
+                items.append(indent + width - (spaces if spaces > 4 else 0)
+                             + (1 if spaces > 4 else 0))
+        return out
+
+    @staticmethod
+    def _shift(line, delta):
+        return ' ' * delta + line if delta > 0 else line
+
+
+class ListIndentExtension(Extension):
+    def extendMarkdown(self, md):
+        # After whitespace normalisation (30), before fenced code (25).
+        md.preprocessors.register(ListIndentPreprocessor(md), 'flog_list_indent', 27)
+
+
 TASK_MARKER = re.compile(r'^\[([ xX])\][ \t]+')
 
 

@@ -9,7 +9,7 @@ from markdown import markdown
 from markupsafe import Markup, escape
 from pygments.formatters import HtmlFormatter
 
-from app.markdown_extras import MathExtension, TaskListExtension
+from app.markdown_extras import ListIndentExtension, MathExtension, TaskListExtension
 from app.security import sanitize_html
 
 
@@ -63,7 +63,8 @@ def render_content(value, body_format):
     if normalize_body_format(body_format) == BODY_FORMAT_MARKDOWN:
         try:
             source = markdown(source, extensions=['extra', 'sane_lists', 'codehilite',
-                                        MathExtension(), TaskListExtension()],
+                                        ListIndentExtension(), MathExtension(),
+                                        TaskListExtension()],
                               extension_configs={'codehilite': {
                                   'guess_lang': False,
                                   'pygments_formatter': CodeFormatter,

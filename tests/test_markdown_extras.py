@@ -181,3 +181,46 @@ def test_mermaid_blocks_keep_their_source_in_a_code_block(application):
     assert code.get('data-language-label') == 'Mermaid'
     assert code.text_content() == 'graph TD\n  A["<b>x</b>"] --> B\n'
     assert not root.xpath('//b')
+
+
+# --- list continuation indent (CommonMark style) ------------------------------
+
+def test_three_space_list_continuation_stays_in_the_item(application):
+    source = '1. first\n\n   detail one\n2. second\n\n   detail two\n'
+    with application.app_context():
+        root = tree(source)
+    items = root.findall('.//ol/li')
+    assert len(root.findall('.//ol')) == 1
+    assert [li.findtext('p') for li in items] == ['first', 'second']
+    assert [li.findall('p')[1].text for li in items] == ['detail one', 'detail two']
+
+
+def test_ten_item_list_with_mixed_indent_is_one_list_without_code(application):
+    source = ''.join(f'{n}. item {n}\n\n{" " * (4 if n >= 9 else 3)}note {n}\n'
+                     for n in range(1, 12))
+    with application.app_context():
+        root = tree(source)
+    assert len(root.findall('.//ol')) == 1
+    assert len(root.findall('.//ol/li')) == 11
+    assert root.find('.//pre') is None
+
+
+def test_nested_bullets_under_numbered_item(application):
+    source = '1. parent\n   - child a\n   - child b\n2. next\n'
+    with application.app_context():
+        root = tree(source)
+    assert [li.text.strip() for li in root.findall('.//ol/li/ul/li')] == ['child a', 'child b']
+
+
+def test_four_space_continuation_and_fences_are_unchanged(application):
+    source = '- a\n\n    para\n\n```\n   keep\n```\n'
+    with application.app_context():
+        root = tree(source)
+    assert root.find('.//ul/li').findall('p')[1].text == 'para'
+    assert root.find('.//pre').text_content().strip() == 'keep'
+
+
+def test_indented_code_after_a_list_is_still_code(application):
+    with application.app_context():
+        root = tree('- a\n\ntext\n\n    code\n')
+    assert root.find('.//pre') is not None

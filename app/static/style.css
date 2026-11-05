@@ -3392,3 +3392,37 @@ html[data-theme="dark"] body.public-site {
     color: var(--danger);
     font: .75rem/1.4 sans-serif;
 }
+
+/* Reading layout: Chinese first-line indent and centred images */
+.article-body > p,
+.page-body > p {
+    text-indent: 2em;
+}
+.article-body > p:has(> img:only-child),
+.article-body > p.math-block,
+.page-body > p:has(> img:only-child),
+.page-body > p.math-block {
+    text-indent: 0;
+}
+.article-body img,
+.page-body img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1.5rem auto;
+}
+.article-body figure,
+.page-body figure {
+    margin: 1.5rem auto;
+    text-align: center;
+}
+.article-body figure img,
+.page-body figure img {
+    margin: 0 auto;
+}
+.article-body figcaption,
+.page-body figcaption {
+    margin-top: .5rem;
+    text-indent: 0;
+    text-align: center;
+}
