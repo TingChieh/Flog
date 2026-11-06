@@ -57,7 +57,7 @@
         item.type = 'button';
         item.className = 'image-picker__item';
         const thumb = document.createElement('img');
-        thumb.src = image.url;
+        thumb.src = image.thumb || image.url;
         thumb.alt = image.title;
         thumb.loading = 'lazy';
         const title = document.createElement('span');

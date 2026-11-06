@@ -67,7 +67,7 @@ function createHarness({ responses } = {}) {
 }
 
 const IMAGES = [
-  { id: 1, title: 'Sunset', url: '/files/a.png', size: 10 },
+  { id: 1, title: 'Sunset', url: '/files/a.png', thumb: '/files/_w/480/a.webp', size: 10 },
   { id: 2, title: 'Odd [name]\\', url: '/files/b.png', size: 20 },
 ];
 
@@ -87,8 +87,9 @@ test('open shows a modal dialog and loads the images with the session cookie', a
   assert.equal(harness.requests[0].credentials, 'same-origin');
   assert.equal(harness.items().length, 2);
   const image = harness.find((n) => n.tagName === 'img')[0];
-  assert.equal(image.src, '/files/a.png');
+  assert.equal(image.src, '/files/_w/480/a.webp');
   assert.equal(image.loading, 'lazy');
+  assert.equal(harness.find((n) => n.tagName === 'img')[1].src, '/files/b.png');
 });
 
 test('choosing an image inserts its Markdown and closes the dialog', async () => {

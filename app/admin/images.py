@@ -8,8 +8,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.admin import bp
 from app.admin.forms import ImageDeleteForm, ImageEditForm, ImageUploadForm
-from app.images import (ImageUploadError, image_usage, save_uploaded_image,
-                        sync_untracked_images, upload_folder, visible_images)
+from app.images import (ImageUploadError, image_usage, remove_variants,
+                        save_uploaded_image, sync_untracked_images,
+                        thumbnail_url, upload_folder, visible_images)
 from app.models import Image
 
 
@@ -24,6 +25,9 @@ def filesize(value):
         if size < 1024 or unit == 'MB':
             return f'{int(size)} B' if unit == 'B' else f'{size:.1f} {unit}'
         size /= 1024
+
+
+bp.app_template_filter('thumbnail')(thumbnail_url)
 
 
 def _like_pattern(text):
@@ -91,6 +95,7 @@ def image_picker():
     return {'images': [{
         'id': image.id, 'title': image.title, 'size': image.size,
         'url': url_for('uploaded_files', filename=image.filename),
+        'thumb': thumbnail_url(image),
     } for image in db.session.scalars(query)]}
 
 
@@ -141,6 +146,7 @@ def delete_image(image_id):
             flash('图片删除失败，请重试。')
         else:
             (upload_folder() / filename).unlink(missing_ok=True)
+            remove_variants(filename)
             flash('图片已删除。')
             return redirect(url_for('admin.images'))
     elif form.is_submitted() and usages:

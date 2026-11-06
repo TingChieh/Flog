@@ -26,6 +26,7 @@ mako==1.4.3
 markdown==3.11.2
 markupsafe==3.0.4
 packaging==26.3
+pillow==13.0.0
 pycparser==3.12
 pygments==2.21.0
 pyjwt==2.15.1

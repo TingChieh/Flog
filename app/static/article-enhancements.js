@@ -30,11 +30,14 @@ if (body && bar) {
       const scrollX = window.scrollX, scrollY = window.scrollY;
       const focus = document.activeElement;
       const sizes = await Promise.all(images.map(image => new Promise(resolve => {
-        const source = image.currentSrc || image.src;
+        // Always open the full-size file, not the srcset candidate on screen.
+        const source = image.src;
+        const caption = image.closest('figure')?.querySelector('figcaption')?.textContent.trim() || image.alt || '';
         const finish = (loaded) => resolve({ src: source,
-          width: loaded.naturalWidth || 1, height: loaded.naturalHeight || 1,
-          caption: image.closest('figure')?.querySelector('figcaption')?.textContent.trim() || image.alt || '' });
-        if (image.complete && image.naturalWidth) finish(image);
+          width: loaded.naturalWidth || 1, height: loaded.naturalHeight || 1, caption });
+        const width = Number(image.getAttribute('width')), height = Number(image.getAttribute('height'));
+        if (width > 0 && height > 0) resolve({ src: source, width, height, caption });
+        else if (image.complete && image.naturalWidth && !image.srcset) finish(image);
         else {
           const loader = new Image();
           loader.onload = loader.onerror = () => finish(loader);

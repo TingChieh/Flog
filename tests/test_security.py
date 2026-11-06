@@ -7,7 +7,7 @@ from app import db
 from app.content import render_content
 from app.models import Post
 from app.security import sanitize_html
-from tests.conftest import login
+from tests.conftest import login, make_image
 
 
 def test_sanitize_html_removes_scripts_and_event_handlers():
@@ -142,7 +142,8 @@ def test_authenticated_image_upload_preserves_legacy_success_contract(
 def test_authenticated_image_upload_accepts_images_over_legacy_five_mb_limit(
         client, application, users):
     """Catch camera exports and screenshots being rejected by the old 5 MB cap."""
-    image_bytes = b'\x89PNG\r\n\x1a\n' + b'0' * (6 * 1024 * 1024)
+    image_bytes = make_image(size=(1700, 1300), noise=True)
+    assert len(image_bytes) > 6 * 1024 * 1024
     login(client, 'author')
 
     response = client.post('/upload', data={

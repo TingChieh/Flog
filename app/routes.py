@@ -23,7 +23,8 @@ from app.post_views import (
     attach_view_cookie, has_recent_view, record_view, view_cookie_name,
 )
 from app.authorization import owned_post_or_404
-from app.images import ImageUploadError, save_uploaded_image
+from app.images import (VARIANT_FOLDER, ImageUploadError, make_variant,
+                        save_uploaded_image)
 from app.admin.forms import CategoryAdminForm
 
 
@@ -200,9 +201,30 @@ def api_search():
     return jsonify(results=[result_data(post, query) for post in search_posts(query, limit)])
 
 
+UPLOAD_MAX_AGE = 365 * 24 * 60 * 60
+
+
 @app.route('/files/<path:filename>')
 def uploaded_files(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    return send_upload(filename)
+
+
+@app.route('/files/_w/<int:width>/<stem>.webp')
+def variant_file(width, stem):
+    """A resized WebP copy of an upload, made the first time it is asked for."""
+    if make_variant(stem, width) is None:
+        abort(404)
+    return send_upload(f'{VARIANT_FOLDER}/{width}/{stem}.webp')
+
+
+def send_upload(filename):
+    # Stored names are random and a file is never rewritten, so browsers and
+    # proxies may keep them for good.
+    response = send_from_directory(
+        app.config['UPLOAD_FOLDER'], filename, max_age=UPLOAD_MAX_AGE)
+    response.cache_control.immutable = True
+    return response
+
 
 @app.route('/upload', methods=['POST'])
 @login_required
@@ -397,7 +419,7 @@ def feed():
         entry.title(post.title)
         entry.link(href=permalink)
         entry.guid(permalink, permalink=True)
-        entry.description(str(render_content(post.body, post.body_format)))
+        entry.description(str(render_content(post.body, post.body_format, images=False)))
         timestamp = post.timestamp
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=timezone.utc)

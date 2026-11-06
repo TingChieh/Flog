@@ -7,9 +7,9 @@ from lxml import html as lxml_html
 
 from app import db
 from app.models import Image, Post
-from tests.conftest import login
+from tests.conftest import login, make_image
 
-PNG = b'\x89PNG\r\n\x1a\n' + b'0' * 20
+PNG = make_image()
 
 
 def name():
@@ -156,7 +156,7 @@ def test_picker_returns_visible_images_newest_first(client, application, users):
     assert [i['title'] for i in payload['images']] == ['Second', 'First']
     assert payload['images'][0] == {
         'id': second_id, 'title': 'Second', 'url': f'/files/{second}',
-        'size': 2048}
+        'thumb': f'/files/{second}', 'size': 2048}
 
 
 def test_picker_filters_and_limits(client, application, users):

@@ -1,12 +1,14 @@
 import io
 import os
 
+from PIL import Image as PILImage
+
 from app import db
 from app.models import User
-from tests.conftest import login
+from tests.conftest import login, make_image
 
-PNG = b'\x89PNG\r\n\x1a\n' + b'0' * 20
-JPG = b'\xff\xd8\xff\xe0' + b'0' * 20
+PNG = make_image()
+JPG = make_image('JPEG')
 
 
 def upload(client, data=PNG, filename='me.png', **extra):
@@ -117,3 +119,17 @@ def test_deleting_a_user_removes_their_avatar_file(client, application, users):
     client.post(f'/admin/users/{users["other"]}/delete',
                 data={'receiver': users['author']})
     assert not os.path.exists(os.path.join(avatar_dir(application), name))
+
+
+def test_large_avatars_are_shrunk_to_256_pixels(client, application, users):
+    login(client, 'author')
+    upload(client, make_image('JPEG', (1200, 600), photo=True), 'me.jpg')
+    name = avatar_filename(application, users['author'])
+    with PILImage.open(os.path.join(avatar_dir(application), name)) as stored:
+        assert stored.size == (256, 128)
+
+
+def test_signature_only_avatars_are_rejected(client, application, users):
+    login(client, 'author')
+    upload(client, b'\x89PNG\r\n\x1a\n' + b'0' * 20)
+    assert avatar_filename(application, users['author']) is None

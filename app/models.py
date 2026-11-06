@@ -298,6 +298,9 @@ class Image(db.Model):
     title: so.Mapped[str] = so.mapped_column(sa.String(120))
     note: so.Mapped[Optional[str]] = so.mapped_column(sa.String(500))
     size: so.Mapped[int] = so.mapped_column(sa.Integer, default=0)
+    # Pixel size of the stored file; None for images that predate the columns.
+    width: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)
+    height: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)
     user_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey(User.id, ondelete='SET NULL'), index=True)
     created_at: so.Mapped[datetime] = so.mapped_column(

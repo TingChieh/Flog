@@ -17,6 +17,7 @@ gunicorn
 langdetect
 lxml
 Markdown
+Pillow
 Pygments
 PyJWT
 PyMySQL

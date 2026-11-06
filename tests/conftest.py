@@ -1,6 +1,8 @@
+import io
 import os
 
 import pytest
+from PIL import Image as PILImage, ImageChops
 from sqlalchemy.engine import make_url
 
 
@@ -73,6 +75,33 @@ def role_users(application):
         db.session.add_all([admin, member])
         db.session.commit()
         return {'admin': admin.id, 'member': member.id}
+
+
+def photo_like(size):
+    """Smooth gradients plus sensor-style noise: lots of colours, JPEG-friendly."""
+    channels = [
+        PILImage.linear_gradient('L').rotate(90).resize(size),
+        PILImage.linear_gradient('L').resize(size),
+        PILImage.radial_gradient('L').resize(size),
+    ]
+    return PILImage.merge('RGB', [
+        ImageChops.add(channel, PILImage.effect_noise(size, 6), 1, 0)
+        for channel in channels])
+
+
+def make_image(fmt='PNG', size=(8, 8), mode='RGB', noise=False, photo=False,
+               **save_kwargs):
+    """Bytes of a real image; ``noise`` is incompressible, ``photo`` photo-like."""
+    if photo:
+        image = photo_like(size)
+    elif noise:
+        image = PILImage.frombytes(
+            mode, size, os.urandom(size[0] * size[1] * len(mode)))
+    else:
+        image = PILImage.new(mode, size, (30, 120, 200, 255)[:len(mode)])
+    buffer = io.BytesIO()
+    image.save(buffer, fmt, **save_kwargs)
+    return buffer.getvalue()
 
 
 def login(client, username):

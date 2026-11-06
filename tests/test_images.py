@@ -4,9 +4,9 @@ import sqlalchemy as sa
 
 from app import db
 from app.models import Image
-from tests.conftest import login
+from tests.conftest import login, make_image
 
-PNG = b'\x89PNG\r\n\x1a\n' + b'0' * 20
+PNG = make_image()
 
 
 def upload(client, name='photo.png', data=PNG):

@@ -23,7 +23,7 @@ class _Text(HTMLParser):
 
 def plain_text(source, body_format='html'):
     if body_format == 'markdown':
-        source = str(render_content(source, body_format))
+        source = str(render_content(source, body_format, images=False))
     parser = _Text()
     parser.feed(source or '')
     return ' '.join(' '.join(parser.parts).split())

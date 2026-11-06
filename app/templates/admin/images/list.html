@@ -20,7 +20,7 @@
     {% if card.missing %}
     <span class="image-card__thumb image-card__missing">文件缺失</span>
     {% else %}
-    <img class="image-card__thumb" src="{{ url_for('uploaded_files', filename=image.filename) }}" alt="{{ image.title }}" loading="lazy">
+    <img class="image-card__thumb" src="{{ image|thumbnail }}" alt="{{ image.title }}" loading="lazy">
     {% endif %}
     <span class="image-card__title">{{ image.title }}</span>
     <span class="image-card__meta">{{ image.size|filesize }} · {{ (image.created_at|localtime).strftime('%Y-%m-%d') }} · {{ '被 %d 处引用'|format(card.uses) if card.uses else '未被引用' }}</span>

@@ -47,3 +47,23 @@ def rebuild_search():
         click.echo('Search index rebuilt.')
     else:
         click.echo('Full-text index unavailable; LIKE search remains enabled.')
+
+
+@app.cli.group()
+def images():
+    """Uploaded image maintenance."""
+    pass
+
+
+@images.command()
+@click.option('--recompress', is_flag=True,
+              help='Also shrink stored files in place (same name and format).')
+def optimize(recompress):
+    """Record pixel sizes of older uploads so pages can use responsive images."""
+    from app.images import optimize_existing_images
+    stats = optimize_existing_images(recompress=recompress)
+    click.echo(f'Registered {stats.untracked} untracked file(s), '
+               f'recorded sizes for {stats.dimensions}, '
+               f'recompressed {stats.recompressed} '
+               f'(saved {stats.saved_bytes / 1024:.0f} KB), '
+               f'{stats.missing} missing on disk.')

@@ -1,8 +1,9 @@
 import re
 import math
 import unicodedata
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
+import sqlalchemy as sa
 from flask import current_app
 from lxml import html
 from markdown import markdown
@@ -91,7 +92,53 @@ def split_hard_breaks(source):
         html.tostring(child, encoding='unicode', method='html') for child in root)
 
 
-def render_content(value, body_format):
+UPLOADED_PATH_RE = re.compile(r'^/files/([0-9a-f]{32}\.(?:png|jpe?g|gif))$')
+
+
+def optimize_images(rendered):
+    """Let the browser defer and reserve space for sanitized HTML's images.
+
+    Every ``<img>`` becomes lazy and async-decoded; uploaded ones whose pixel
+    size is known also get ``width``/``height`` so the page does not jump when
+    they arrive, and a ``srcset`` of smaller WebP copies when there are any.
+    """
+    if '<img' not in rendered:
+        return rendered
+    root = html.fragment_fromstring(rendered, create_parent='div')
+    images = list(root.iter('img'))
+    names = {}
+    for image in images:
+        match = UPLOADED_PATH_RE.match(urlsplit(image.get('src', '')).path)
+        if match:
+            names[image] = match.group(1)
+    sizes = {}
+    if names:
+        # app.content loads before the database exists, so import it late.
+        from app import db
+        from app.models import Image
+        from app.images import VARIANT_SIZES, variant_srcset
+        sizes = {row.filename: (row.width, row.height) for row in db.session.execute(
+            sa.select(Image.filename, Image.width, Image.height)
+            .where(Image.filename.in_(set(names.values())),
+                   Image.width.is_not(None), Image.height.is_not(None)))}
+    for image in images:
+        image.set('loading', 'lazy')
+        image.set('decoding', 'async')
+        size = sizes.get(names.get(image))
+        if size and 'width' not in image.attrib and 'height' not in image.attrib:
+            image.set('width', str(size[0]))
+            image.set('height', str(size[1]))
+            src = image.get('src')
+            srcset = '' if urlsplit(src).netloc else variant_srcset(
+                names[image], src, size[0])
+            if srcset:
+                image.set('srcset', srcset)
+                image.set('sizes', VARIANT_SIZES)
+    return str(escape(root.text or '')) + ''.join(
+        html.tostring(child, encoding='unicode', method='html') for child in root)
+
+
+def _render_html(value, body_format):
     source = value or ''
     if normalize_body_format(body_format) == BODY_FORMAT_MARKDOWN:
         try:
@@ -104,14 +151,19 @@ def render_content(value, body_format):
                               }})
         except Exception:
             current_app.logger.exception('Markdown rendering failed')
-            return Markup(escape(value or ''))
-    return Markup(sanitize_html(split_hard_breaks(source)))
+            return str(escape(value or ''))
+    return sanitize_html(split_hard_breaks(source))
+
+
+def render_content(value, body_format, images=True):
+    rendered = _render_html(value, body_format)
+    return Markup(optimize_images(rendered) if images else rendered)
 
 
 def render_article(value, body_format):
     """Render a sanitized article and build links without replacing existing IDs."""
-    rendered = render_content(value, body_format)
-    root = html.fragment_fromstring(str(rendered), create_parent='div')
+    rendered = _render_html(value, body_format)
+    root = html.fragment_fromstring(rendered, create_parent='div')
     used = {element.get('id') for element in root.iter() if element.get('id') is not None}
     entries = []
     for heading in root.iter('h2', 'h3'):
@@ -131,7 +183,8 @@ def render_article(value, body_format):
         entries.append({'title': title, 'level': heading.tag, 'href': '#' + quote(anchor, safe='')})
     result = str(escape(root.text or '')) + ''.join(
         html.tostring(child, encoding='unicode', method='html') for child in root)
-    return Markup(sanitize_html(result)), entries if len(entries) >= 3 else []
+    return (Markup(optimize_images(sanitize_html(result))),
+            entries if len(entries) >= 3 else [])
 
 
 # Count CJK characters separately from whitespace-delimited words.

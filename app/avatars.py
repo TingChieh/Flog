@@ -3,10 +3,13 @@ from pathlib import Path
 from uuid import uuid4
 
 from app import db
-from app.images import ALLOWED_SIGNATURES, upload_folder
+from app.images import (ALLOWED_SIGNATURES, ImageUploadError, process_image,
+                        upload_folder)
 
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024
+# Avatars show at most ~120 px, so 256 px covers high-density screens.
+AVATAR_EDGE = 256
 
 
 class AvatarUploadError(ValueError):
@@ -39,10 +42,16 @@ def save_avatar(file, user):
     if size > AVATAR_MAX_BYTES:
         raise AvatarUploadError('头像不能超过 2 MB。')
 
+    try:
+        processed = process_image(
+            file.stream.read(), extension, max_edge=AVATAR_EDGE)
+    except ImageUploadError as exc:
+        raise AvatarUploadError('不是有效的 gif/jpg/png 图片。') from exc
+
     folder = avatar_folder()
     folder.mkdir(parents=True, exist_ok=True)
-    filename = f'{uuid4().hex}{extension}'
-    file.save(folder / filename)
+    filename = f'{uuid4().hex}{processed.extension}'
+    (folder / filename).write_bytes(processed.data)
     previous, user.avatar_filename = user.avatar_filename, filename
     try:
         db.session.commit()
