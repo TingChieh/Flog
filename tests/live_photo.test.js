@@ -86,7 +86,7 @@ test('nothing is fetched until the photo scrolls into view', () => {
   assert.equal(harness.videos.length, 0);
   assert.equal(harness.observed.length, 1);
   assert.equal(harness.observed[0].element, box);
-  assert.ok(harness.observed[0].ratio > 0.3, 'waits until it is mostly visible');
+  assert.ok(harness.observed[0].ratio >= 0.9, 'waits until (nearly) the whole photo is visible');
 });
 
 test('it plays by itself once when it comes into view', () => {
@@ -192,4 +192,70 @@ test('init skips automatic playback when the visitor prefers reduced motion', ()
   assert.ok(harness.live);
   assert.equal(harness.videos.length, 0);
   assert.equal(box.badge.listeners.click.length, 1, 'the button is still wired up');
+});
+
+function createObserverHarness() {
+  const timers = [];
+  const observers = [];
+  class FakeObserver {
+    constructor(callback, options) { this.callback = callback; this.options = options; this.disconnected = false; observers.push(this); }
+    observe(element) { this.element = element; }
+    disconnect() { this.disconnected = true; }
+    report(isIntersecting) { this.callback([{ isIntersecting }]); }
+  }
+  const context = {
+    window: {},
+    document: { readyState: 'complete', querySelectorAll: () => [], addEventListener() {} },
+    IntersectionObserver: FakeObserver,
+    setTimeout: (fn, ms) => { timers.push({ fn, ms, cancelled: false }); return timers.length; },
+    clearTimeout: (id) => { if (timers[id - 1]) timers[id - 1].cancelled = true; },
+  };
+  vm.runInNewContext(source, context);
+  return {
+    observeOnce: context.window.FlogLivePhoto.observeOnce, observers, timers,
+    fire() { timers.filter((t) => !t.cancelled && !t.done).forEach((t) => { t.done = true; t.fn(); }); },
+  };
+}
+
+test('automatic play needs the photo (nearly) fully on screen and a moment of stillness', () => {
+  const harness = createObserverHarness();
+  const element = {};
+  const calls = [];
+  harness.observeOnce(element, () => calls.push('play'), 0.9);
+
+  const [observer] = harness.observers;
+  assert.equal(observer.element, element);
+  assert.equal(observer.options.threshold, 0.9);
+
+  observer.report(true);
+  assert.deepEqual(calls, [], 'not at the instant it appears');
+  assert.ok(harness.timers[0].ms >= 300);
+  harness.fire();
+  assert.deepEqual(calls, ['play']);
+  assert.equal(observer.disconnected, true, 'only ever once');
+});
+
+test('flicking past the photo does not start it', () => {
+  const harness = createObserverHarness();
+  const calls = [];
+  harness.observeOnce({}, () => calls.push('play'), 0.9);
+  const [observer] = harness.observers;
+
+  observer.report(true);
+  observer.report(false);
+  harness.fire();
+  assert.deepEqual(calls, []);
+  assert.equal(observer.disconnected, false, 'still waiting for it to come back');
+
+  observer.report(true);
+  harness.fire();
+  assert.deepEqual(calls, ['play']);
+});
+
+test('a browser without IntersectionObserver just skips the automatic play', () => {
+  const context = {
+    window: {}, document: { readyState: 'complete', querySelectorAll: () => [], addEventListener() {} },
+  };
+  vm.runInNewContext(source, context);
+  assert.doesNotThrow(() => context.window.FlogLivePhoto.observeOnce({}, () => {}, 0.9));
 });

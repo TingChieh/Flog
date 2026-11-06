@@ -3415,6 +3415,10 @@ html[data-theme="dark"] body.public-site {
     display: block;
     max-width: 100%;
     height: auto;
+    /* A tall photo must not fill the whole screen: cap the height and let the
+       width follow (width: auto keeps the proportions). */
+    width: auto;
+    max-height: min(75vh, 640px);
     margin: 1.5rem auto;
 }
 /* Live Photo: the still with a clip that plays once on arrival, then on the LIVE button */
@@ -3429,10 +3433,6 @@ html[data-theme="dark"] body.public-site {
 .article-body .live-photo img,
 .page-body .live-photo img {
     margin: 0;
-    /* A tall photo must not fill the whole screen: cap the height and let the
-       width follow. */
-    width: auto;
-    max-height: min(75vh, 640px);
 }
 .article-body figure .live-photo,
 .page-body figure .live-photo {

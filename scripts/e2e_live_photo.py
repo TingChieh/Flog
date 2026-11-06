@@ -60,8 +60,10 @@ def seed(work):
         live = upload(make_heic((1600, 2400), 'steelblue'), 'IMG_0001.HEIC', admin,
                       video=FileStorage(io.BytesIO(clip), filename='IMG_0001.MOV'))
         plain = upload(make_image('JPEG', (2400, 1200), photo=True), 'plain.jpg', admin)
+        tall = upload(make_image('JPEG', (1200, 2400), photo=True), 'tall.jpg', admin)
         body = (f'开头。\n\n![海边](/files/{live.filename})\n\n中间。\n\n'
-                f'![普通图](/files/{plain.filename})\n\n结尾。')
+                f'![普通图](/files/{plain.filename})\n\n'
+                f'![竖图](/files/{tall.filename})\n\n结尾。')
         db.session.add(Post(title='Live Photo 测试', body=body, author=admin,
                             body_format='markdown', category=category,
                             is_published=True))
@@ -149,10 +151,36 @@ def scenarios(t):
     t.check('image is lazy with intrinsic size', layout['lazy'] == 'lazy' and layout['hasSize'])
     t.check('only the Live Photo is wrapped', layout['boxes'] == 1, layout['boxes'])
 
+    plain = t.run(head + GOTO_POST + """
+      await page.waitForFunction(() => [...document.querySelectorAll('.article-body img')].every((i) => i.complete));
+      return await page.evaluate(() => [...document.querySelectorAll('.article-body img')]
+        .filter((i) => !i.closest('.live-photo')).map((i) => {
+          const r = i.getBoundingClientRect();
+          return {alt: i.alt, w: r.width, h: r.height, ratio: i.naturalWidth / i.naturalHeight, vh: innerHeight, x: r.x + r.width / 2};
+        }));
+    """ + "}")
+    by_alt = {item['alt']: item for item in plain}
+    tall, wide = by_alt['竖图'], by_alt['普通图']
+    t.check('an ordinary tall photo is capped too', tall['h'] <= min(0.75 * tall['vh'], 640) + 1, tall)
+    t.check('the capped ordinary photo keeps its proportions and stays centred',
+            abs(tall['w'] / tall['h'] - 0.5) < 0.01 and abs(tall['x'] - 640) < 2, tall)
+    t.check('a wide photo is untouched by the cap', abs(wide['w'] / wide['h'] - 2) < 0.01 and wide['h'] < 540, wide)
+
     print('playback')
     auto = t.run(head + GOTO_POST + f"""
+      const box = page.locator('.live-photo');
       const playing = () => page.evaluate(() => document.querySelector('.live-photo').classList.contains('is-playing'));
-      await page.locator('.live-photo').scrollIntoViewIfNeeded();
+      // Only the top of the photo is on screen at load: it must not start yet.
+      await page.waitForTimeout(1500);
+      const atLoad = await playing();
+      // Flicking past it must not start it either.
+      await page.evaluate(() => document.querySelector('.live-photo').scrollIntoView({{block: 'center'}}));
+      await page.waitForTimeout(150);
+      await page.evaluate(() => scrollTo(0, 0));
+      await page.waitForTimeout(900);
+      const flyBy = await playing();
+      // Scrolling it into place and staying there starts it.
+      await page.evaluate(() => document.querySelector('.live-photo').scrollIntoView({{block: 'center'}}));
       await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
       const during = await page.evaluate(() => {{
         const box = document.querySelector('.live-photo'), v = box.querySelector('video');
@@ -161,12 +189,14 @@ def scenarios(t):
                  covers: Math.abs(vr.width - r.width) < 1 && Math.abs(vr.height - r.height) < 1}};
       }});
       await page.waitForTimeout(400);
-      await page.locator('.live-photo').screenshot({{path: {json.dumps(str(shots / 'autoplay.png'))}}});
+      await box.screenshot({{path: {json.dumps(str(shots / 'autoplay.png'))}}});
       await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
       await page.waitForTimeout(1500);
-      return {{during, again: await playing()}};
+      return {{atLoad, flyBy, during, again: await playing()}};
     }}""")
-    t.check('it plays by itself on arrival: muted, covering the still', auto['during']['muted'] and auto['during']['covers'], auto)
+    t.check('it does not start while only part of it is on screen', not auto['atLoad'], auto)
+    t.check('flicking past it does not start it', not auto['flyBy'], auto)
+    t.check('scrolled into place, it plays by itself: muted, covering the still', auto['during']['muted'] and auto['during']['covers'], auto)
     t.check('clip is the transcoded 960px one', auto['during']['w'] == 960, auto)
     t.check('it plays only once on its own', not auto['again'], auto)
 
@@ -228,14 +258,16 @@ def scenarios(t):
 
     print('lightbox')
     box = t.run(head + GOTO_POST + """
+      const stem = await page.evaluate(() => document.querySelector('.live-photo img').src.split('/').pop().split('.')[0]);
       await page.locator('.live-photo img').click();
       await page.waitForSelector('.pswp--open');
-      await page.waitForFunction(() => document.querySelector('.pswp__img') && document.querySelector('.pswp__img').naturalWidth > 0);
-      return await page.evaluate(() => {
-        const img = document.querySelector('.pswp__img');
+      await page.waitForFunction((stem) => [...document.querySelectorAll('img.pswp__img')]
+        .some((i) => i.src.includes(stem) && i.naturalWidth > 0), stem);
+      return await page.evaluate((stem) => {
+        const img = [...document.querySelectorAll('img.pswp__img')].find((i) => i.src.includes(stem));
         return {src: img.src, w: img.naturalWidth};
-      });
-    }""")
+      }, stem);
+    """ + "}")
     t.check('lightbox shows the full-size file, not a variant', '/_w/' not in box['src'] and box['src'].endswith('.jpg') and box['w'] == 1333, box)
 
     print('admin library')
@@ -256,7 +288,7 @@ def scenarios(t):
       }}));
     }}""")
     t.check('pair upload reports one image and no failure', admin['flash'] == '已上传 1 张。', admin)
-    t.check('both Live Photos are tagged in the library', admin['cards'] == 3 and admin['live'] == 2, admin)
+    t.check('both Live Photos are tagged in the library', admin['cards'] == 4 and admin['live'] == 2, admin)
     detail = t.run(head + """
       await page.click('.image-card:has(.image-card__live)');
       await page.waitForSelector('.image-detail__preview video');

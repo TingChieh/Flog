@@ -1,7 +1,10 @@
 (() => {
-  // A Live Photo plays once by itself the first time it scrolls into view;
-  // after that the LIVE button plays (or stops) it.
-  const VISIBLE_RATIO = 0.6;
+  // A Live Photo plays once by itself when the visitor scrolls it into place:
+  // (nearly) the whole photo is on screen and stays there a moment, so peeking
+  // at its edge or flicking past does not start it. After that the LIVE button
+  // plays (or stops) it.
+  const VISIBLE_RATIO = 0.9;
+  const DWELL_MS = 400;
 
   const attach = (box, { autoplay = true, observe } = {}) => {
     const badge = box.querySelector('.live-photo__badge');
@@ -60,14 +63,19 @@
     }
   };
 
-  // Calls ``callback`` once, the first time ``element`` is mostly on screen.
+  // Calls ``callback`` once, after ``element`` has been on screen (at least
+  // ``ratio`` of it) for ``DWELL_MS`` without leaving.
   const observeOnce = (element, callback, ratio) => {
     if (typeof IntersectionObserver !== 'function') return;
+    let timer = null;
     const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
+      const entry = entries[entries.length - 1];
+      clearTimeout(timer);
+      if (!entry.isIntersecting) return;
+      timer = setTimeout(() => {
         observer.disconnect();
         callback();
-      }
+      }, DWELL_MS);
     }, { threshold: ratio });
     observer.observe(element);
   };
@@ -79,7 +87,7 @@
       (box) => attach(box, { autoplay: !reducedMotion, observe: observeOnce }));
   };
 
-  window.FlogLivePhoto = { attach, init };
+  window.FlogLivePhoto = { attach, init, observeOnce };
   if (typeof document !== 'undefined' && document.querySelectorAll) {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
