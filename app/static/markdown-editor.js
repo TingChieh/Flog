@@ -140,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
         name: 'emoji-picker',
         tip: '表情',
         tipPosition: 's',
-        icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.4 2.2 2 3.5 2s2.5-.6 3.5-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>',
+        // Vditor fills toolbar icons, so the face is cut out of a solid disc.
+        icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm-3.2 6.2a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Zm6.4 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2ZM8 14.2c.9 1.5 2.3 2.4 4 2.4s3.1-.9 4-2.4l-1.2-.8c-.6 1.1-1.6 1.7-2.8 1.7s-2.2-.6-2.8-1.7L8 14.2Z"/></svg>',
         click: (event) => window.FlogEmojiPicker.open({
           anchor: event?.currentTarget || host,
           onPick: (chars) => {
