@@ -33,6 +33,12 @@
     <button class="button button--cta" type="submit" data-publish-update>发布更新</button>
   </form>
   {% endif %}
+  {% if post %}
+  <form method="post" action="{{ url_for('admin.toggle_post_comments', post_id=post.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button button--quiet" type="submit" data-comments-toggle>{{ '关闭评论' if post.comments_enabled else '开启评论' }}</button>
+  </form>
+  {% endif %}
 </div>
 {% endblock %}
 

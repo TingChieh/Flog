@@ -24,6 +24,7 @@ def _page_values(form):
         'body': form.body.data,
         'is_published': form.is_published.data,
         'show_in_nav': form.show_in_nav.data,
+        'comments_enabled': form.comments_enabled.data,
         'nav_order': form.nav_order.data,
     }
 

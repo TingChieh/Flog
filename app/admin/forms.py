@@ -17,6 +17,7 @@ class PageForm(FlaskForm):
     body = TextAreaField('正文')
     is_published = BooleanField('已发布')
     show_in_nav = BooleanField('显示在导航中')
+    comments_enabled = BooleanField('允许评论')
     nav_order = IntegerField(
         '导航顺序', validators=[InputRequired(), NumberRange(min=-100000,
                                                            max=100000)])

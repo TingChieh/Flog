@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import db
 from app.admin import bp
+from app.admin.forms import ToggleForm
 from app.authorization import owned_post_or_404
 from app.content import (BODY_FORMAT_MARKDOWN, normalize_body_format,
                          render_article)
@@ -290,6 +291,18 @@ def publish_post(post_id):
         return _after_publication_change(post_id)
     _commit_post_change('文章发布失败，请重试。')
     flash('文章已发布。')
+    return _after_publication_change(post_id)
+
+
+@bp.route('/posts/<int:post_id>/comments', methods=['POST'])
+@login_required
+def toggle_post_comments(post_id):
+    post = owned_post_or_404(post_id, current_user)
+    if not ToggleForm().validate_on_submit():
+        abort(400)
+    post.comments_enabled = not post.comments_enabled
+    _commit_post_change('评论设置保存失败，请重试。')
+    flash('评论已开启。' if post.comments_enabled else '评论已关闭。')
     return _after_publication_change(post_id)
 
 

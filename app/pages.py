@@ -90,6 +90,9 @@ def save_page(page, values):
         'is_published', page.is_published if page.id is not None else False))
     page.show_in_nav = bool(values.get(
         'show_in_nav', page.show_in_nav if page.id is not None else False))
+    page.comments_enabled = bool(values.get(
+        'comments_enabled',
+        page.comments_enabled if page.id is not None else False))
     page.nav_order = int(values.get(
         'nav_order', page.nav_order if page.id is not None else 0) or 0)
     page.body_format = normalize_body_format(

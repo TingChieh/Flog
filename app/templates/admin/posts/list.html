@@ -30,6 +30,11 @@
         <button class="button button--quiet" type="submit" data-unpublish onclick="return confirm('取消公开后读者将看不到这篇文章，确定吗？');">取消公开</button>
       </form>
       {% endif %}
+      <form method="post" action="{{ url_for('admin.toggle_post_comments', post_id=post.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="list">
+        <button class="button button--quiet" type="submit" data-comments-toggle>{{ '关闭评论' if post.comments_enabled else '开启评论' }}</button>
+      </form>
       <form method="post" action="{{ url_for('admin.delete_post', post_id=post.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除这篇文章？');">删除</button>

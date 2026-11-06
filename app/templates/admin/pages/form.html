@@ -36,6 +36,7 @@
   <div class="admin-form__checks">
     <label>{{ form.is_published() }} {{ form.is_published.label.text }}</label>
     <label>{{ form.show_in_nav() }} {{ form.show_in_nav.label.text }}</label>
+    <label>{{ form.comments_enabled() }} {{ form.comments_enabled.label.text }}</label>
   </div>
   {{ form.submit(class="button button--cta") }}
 </form>
