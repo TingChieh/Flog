@@ -1,0 +1,9 @@
+The emoji images in this directory come from Noto Emoji
+(https://github.com/googlefonts/noto-emoji), Copyright Google Inc.,
+licensed under the Apache License, Version 2.0. See LICENSE.
+
+The images (the 72px PNGs) are copied unmodified and renamed after their code points.
+Run scripts/build_emoji.py to regenerate them.
+
+Source: googlefonts/noto-emoji at commit 99701e07d3d1fe1bdbcdb14964547f0fd592966f
+Names and keywords: Unicode CLDR (annotations/zh.xml) and Unicode emoji-test.txt (version 18.0)
