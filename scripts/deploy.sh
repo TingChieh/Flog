@@ -16,13 +16,16 @@
 # test. Nothing is changed before the backup. Caddy is not touched.
 #
 # Settings (environment): DEPLOY_HOST, DEPLOY_DIR, DEPLOY_USER, DEPLOY_SERVICE,
-# DEPLOY_UPLOADS (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_LOCAL_URL
-# (checked on the server), DEPLOY_SITE.
+# DEPLOY_VENV (relative to DEPLOY_DIR), DEPLOY_UV (absolute path), DEPLOY_UPLOADS
+# (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_LOCAL_URL (checked on the
+# server), DEPLOY_SITE.
 set -euo pipefail
 
-HOST=${DEPLOY_HOST:-hk_server}
-DIR=${DEPLOY_DIR:-/home/ubuntu/flog}
-APP_USER=${DEPLOY_USER:-ubuntu}
+HOST=${DEPLOY_HOST:-Isvoro_hk}
+DIR=${DEPLOY_DIR:-/opt/flog}
+APP_USER=${DEPLOY_USER:-flog}
+VENV=${DEPLOY_VENV:-.venv}
+UV=${DEPLOY_UV:-/opt/uv-tool/bin/uv}
 SERVICE=${DEPLOY_SERVICE:-flog}
 UPLOADS=${DEPLOY_UPLOADS:-/var/www/flog-uploads}
 BACKUPS=${DEPLOY_BACKUPS:-/root/flog-backups}
@@ -36,7 +39,7 @@ for arg in "$@"; do
         --dry-run) dry_run=1 ;;
         --no-optimize) optimize=0 ;;
         --recompress) recompress="--recompress" ;;
-        -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -84,7 +87,7 @@ git cat-file -e "$current^{commit}" 2>/dev/null \
     || die "server is at $current, which is not in this repository"
 git merge-base --is-ancestor "$current" "$target" \
     || die "server ($current) is not an ancestor of origin/main ($target); resolve by hand"
-db_before=$(remote "$(as_app '.venv314/bin/flask db current 2>/dev/null | grep -oE "^[0-9a-f]{12}" | head -1')" || true)
+db_before=$(remote "$(as_app "$VENV/bin/flask db current 2>/dev/null | grep -oE '^[0-9a-f]{12}' | head -1")" || true)
 
 echo "   server: ${current:0:7}   ->   origin/main: $short   (database revision: ${db_before:-none})"
 git log --oneline "$current..$target" | sed 's/^/   /'
@@ -118,7 +121,7 @@ fi
 
 # ------------------------------------------------------------- dependencies
 log "Installing Python dependencies"
-remote "$(as_app '"$HOME/.local/bin/uv" pip install --python .venv314/bin/python -q -r requirements.txt')"
+remote "$(as_app "'$UV' pip install --python $VENV/bin/python -q -r requirements.txt")"
 
 log "Checking ffmpeg (Live Photo clips)"
 remote "set -e
@@ -130,8 +133,8 @@ ffmpeg -version | head -1"
 
 # ---------------------------------------------------------------- migration
 log "Migrating the database"
-remote "$(as_app 'set -o pipefail; .venv314/bin/flask db upgrade 2>&1 | tail -5')"
-db_after=$(remote "$(as_app '.venv314/bin/flask db current 2>/dev/null | grep -oE "^[0-9a-f]{12}" | head -1')")
+remote "$(as_app "set -o pipefail; $VENV/bin/flask db upgrade 2>&1 | tail -5")"
+db_after=$(remote "$(as_app "$VENV/bin/flask db current 2>/dev/null | grep -oE '^[0-9a-f]{12}' | head -1")")
 echo "   database revision: ${db_before:-none} -> $db_after"
 
 # ------------------------------------------------------------------ restart
@@ -139,7 +142,7 @@ rollback_hint() {
     cat >&2 <<EOF
 
 To roll back:
-  ssh $HOST "cd $DIR && sudo -u $APP_USER git reset --hard ${current:0:7} && sudo -u $APP_USER .venv314/bin/flask db downgrade ${db_before:-base} && systemctl restart $SERVICE"
+  ssh $HOST "cd $DIR && sudo -u $APP_USER git reset --hard ${current:0:7} && sudo -u $APP_USER $VENV/bin/flask db downgrade ${db_before:-base} && systemctl restart $SERVICE"
 Full backup: $backup (database dump, uploads, .env)
 EOF
 }
@@ -156,7 +159,7 @@ done
 # ----------------------------------------------------------------- optimize
 if (( optimize )); then
     log "Back-filling older uploads"
-    remote "$(as_app "set -o pipefail; .venv314/bin/flask images optimize $recompress 2>&1 | tail -3")"
+    remote "$(as_app "set -o pipefail; $VENV/bin/flask images optimize $recompress 2>&1 | tail -3")"
 fi
 
 # --------------------------------------------------------------- smoke test
