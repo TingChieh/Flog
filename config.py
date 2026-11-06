@@ -73,6 +73,11 @@ class Config:
     TRUSTED_PROXY_HOPS = trusted_proxy_hops()
     # Likes one network address (hashed) may leave on a single post.
     LIKES_PER_IP_PER_POST = 3
+    # Comments one network address (hashed) may leave, and the quickest a
+    # reader could plausibly fill the form in.
+    COMMENTS_PER_MINUTE_PER_IP = 3
+    COMMENTS_PER_HOUR_PER_IP = 20
+    COMMENTS_MIN_FILL_SECONDS = 3
     DISPLAY_TIMEZONE = display_timezone()
     BABEL_DEFAULT_TIMEZONE = DISPLAY_TIMEZONE
     GTM_ID = analytics_id('GTM_ID', r'GTM-[A-Z0-9]{4,20}')

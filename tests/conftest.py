@@ -29,6 +29,7 @@ def application(tmp_path):
     app.config.update(
         TESTING=True,
         WTF_CSRF_ENABLED=False,
+        COMMENTS_MIN_FILL_SECONDS=0,
         UPLOAD_FOLDER=str(tmp_path / 'uploads'),
     )
     with app.app_context():

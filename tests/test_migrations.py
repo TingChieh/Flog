@@ -281,7 +281,7 @@ def test_site_text_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'c4e8a1f2b7d9']
+        'a1d9c3e5f7b2']
 
 
 def test_draft_generation_migration_preserves_existing_sequence():
@@ -885,3 +885,104 @@ def test_legacy_id_migration_adds_and_removes_the_column():
             revision.downgrade()
             assert 'legacy_id' not in {
                 c['name'] for c in sa.inspect(connection).get_columns('post')}
+
+
+COMMENT_REVISION_PATH = Path(__file__).parents[1] / 'migrations' / 'versions' / (
+    'a1d9c3e5f7b2_comment_replies_moderation_pages.py')
+
+
+def load_comment_revision():
+    spec = importlib.util.spec_from_file_location(
+        'comment_replies', COMMENT_REVISION_PATH)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def create_old_comment_schema(engine):
+    metadata = sa.MetaData()
+    sa.Table('user', metadata, sa.Column('id', sa.Integer, primary_key=True))
+    sa.Table('page', metadata, sa.Column('id', sa.Integer, primary_key=True))
+    sa.Table('post', metadata, sa.Column('id', sa.Integer, primary_key=True))
+    sa.Table(
+        'post_comment', metadata,
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('post_id', sa.Integer,
+                  sa.ForeignKey('post.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('name', sa.String(64), nullable=False),
+        sa.Column('email', sa.String(120), nullable=False),
+        sa.Column('body', sa.Text, nullable=False),
+        sa.Column('timestamp', sa.DateTime, nullable=False))
+    metadata.create_all(engine)
+
+
+def test_comment_migration_keeps_comments_approved_and_adds_targets():
+    revision = load_comment_revision()
+    engine = sa.create_engine('sqlite://')
+    create_old_comment_schema(engine)
+
+    with engine.begin() as connection:
+        connection.execute(sa.text('INSERT INTO post (id) VALUES (1)'))
+        connection.execute(sa.text('INSERT INTO page (id) VALUES (1)'))
+        connection.execute(sa.text(
+            "INSERT INTO post_comment (id, post_id, name, email, body, timestamp)"
+            " VALUES (1, 1, 'A', 'a@example.com', 'hi', '2026-01-01 00:00:00')"))
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            revision.upgrade()
+
+            inspector = sa.inspect(connection)
+            columns = {c['name']: c for c in inspector.get_columns('post_comment')}
+            assert {'page_id', 'parent_id', 'status', 'user_id', 'ip_hash'} <= set(columns)
+            assert columns['post_id']['nullable'] is True
+            assert 'comments_enabled' in {c['name'] for c in inspector.get_columns('post')}
+            assert 'comments_enabled' in {c['name'] for c in inspector.get_columns('page')}
+
+            assert tuple(connection.execute(sa.text(
+                'SELECT status, post_id FROM post_comment')).one()) == ('approved', 1)
+            assert connection.execute(sa.text(
+                'SELECT comments_enabled FROM post')).scalar_one() == 1
+            assert connection.execute(sa.text(
+                'SELECT comments_enabled FROM page')).scalar_one() == 0
+
+            connection.execute(sa.text(
+                "INSERT INTO post_comment (id, page_id, name, email, body, timestamp)"
+                " VALUES (2, 1, 'B', 'b@example.com', 'on a page', '2026-01-02 00:00:00')"))
+            with pytest.raises(sa.exc.IntegrityError):
+                with connection.begin_nested():
+                    connection.execute(sa.text(
+                        "INSERT INTO post_comment (id, name, email, body, timestamp)"
+                        " VALUES (3, 'C', 'c@example.com', 'nowhere', '2026-01-03 00:00:00')"))
+
+
+def test_comment_migration_downgrade_drops_what_old_schema_cannot_hold():
+    revision = load_comment_revision()
+    engine = sa.create_engine('sqlite://')
+    create_old_comment_schema(engine)
+
+    with engine.begin() as connection:
+        connection.execute(sa.text('INSERT INTO post (id) VALUES (1)'))
+        connection.execute(sa.text('INSERT INTO page (id) VALUES (1)'))
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            revision.upgrade()
+            connection.execute(sa.text(
+                "INSERT INTO post_comment (id, post_id, name, email, body, status, timestamp)"
+                " VALUES (1, 1, 'A', 'a@example.com', 'kept', 'approved', '2026-01-01 00:00:00'),"
+                " (2, 1, 'B', 'b@example.com', 'pending', 'pending', '2026-01-02 00:00:00')"))
+            connection.execute(sa.text(
+                "INSERT INTO post_comment (id, post_id, parent_id, name, email, body, status, timestamp)"
+                " VALUES (3, 1, 1, 'C', 'c@example.com', 'a reply', 'approved', '2026-01-03 00:00:00')"))
+            connection.execute(sa.text(
+                "INSERT INTO post_comment (id, page_id, name, email, body, status, timestamp)"
+                " VALUES (4, 1, 'D', 'd@example.com', 'on a page', 'approved', '2026-01-04 00:00:00')"))
+
+            revision.downgrade()
+
+            inspector = sa.inspect(connection)
+            names = {c['name'] for c in inspector.get_columns('post_comment')}
+            assert names == {'id', 'post_id', 'name', 'email', 'body', 'timestamp'}
+            assert 'comments_enabled' not in {c['name'] for c in inspector.get_columns('post')}
+            assert 'comments_enabled' not in {c['name'] for c in inspector.get_columns('page')}
+            assert connection.execute(sa.text(
+                'SELECT id FROM post_comment')).scalars().all() == [1]

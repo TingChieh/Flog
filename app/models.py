@@ -123,6 +123,8 @@ class Post(db.Model):
         sa.Integer, nullable=False, default=0, server_default=sa.text('0'))
     is_published: so.Mapped[bool] = so.mapped_column(
         sa.Boolean, nullable=False, default=False, server_default=sa.true())
+    comments_enabled: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=True, server_default=sa.true())
     body_format: so.Mapped[str] = so.mapped_column(
         sa.String(20), nullable=False, default='html',
         server_default=sa.text("'html'"))
@@ -145,7 +147,7 @@ class Post(db.Model):
     category_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(Category.id), nullable=True)
     category: so.Mapped[Category] = so.relationship('Category',back_populates='posts')
     comments: so.Mapped[list['PostComment']] = so.relationship(
-        back_populates='post', cascade='all, delete-orphan',
+        back_populates='post', cascade='all, delete',
         order_by='PostComment.timestamp')
     likes: so.WriteOnlyMapped['PostLike'] = so.relationship(
         back_populates='post', cascade='all, delete-orphan',
@@ -213,16 +215,47 @@ class PostRevision(db.Model):
 
 
 class PostComment(db.Model):
+    __table_args__ = (
+        sa.CheckConstraint(
+            '(post_id IS NOT NULL) <> (page_id IS NOT NULL)',
+            name='ck_post_comment_target'),
+        sa.CheckConstraint(
+            "status IN ('pending', 'approved')", name='ck_post_comment_status'),
+    )
+
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    post_id: so.Mapped[int] = so.mapped_column(
+    # Exactly one of post_id and page_id is set.
+    post_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey(Post.id, ondelete='CASCADE'), index=True)
+    page_id: so.Mapped[Optional[int]] = so.mapped_column(
+        sa.ForeignKey('page.id', ondelete='CASCADE'), index=True)
+    # A reply points at its top-level comment; replies never nest deeper.
+    parent_id: so.Mapped[Optional[int]] = so.mapped_column(
+        sa.ForeignKey('post_comment.id', ondelete='CASCADE'), index=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64))
     email: so.Mapped[str] = so.mapped_column(sa.String(120))
     body: so.Mapped[str] = so.mapped_column(sa.Text)
+    status: so.Mapped[str] = so.mapped_column(
+        sa.String(10), nullable=False, default='approved',
+        server_default=sa.text("'approved'"))
+    # Set only when the site owner wrote it while signed in.
+    user_id: so.Mapped[Optional[int]] = so.mapped_column(
+        sa.ForeignKey(User.id, ondelete='SET NULL'), index=True)
+    # A keyed hash of the network address, for rate limits; never the address.
+    ip_hash: so.Mapped[Optional[str]] = so.mapped_column(
+        sa.String(64), index=True)
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
 
-    post: so.Mapped[Post] = so.relationship(back_populates='comments')
+    post: so.Mapped[Optional[Post]] = so.relationship(back_populates='comments')
+    page: so.Mapped[Optional['Page']] = so.relationship(
+        back_populates='comments')
+    parent: so.Mapped[Optional['PostComment']] = so.relationship(
+        back_populates='replies', remote_side='PostComment.id')
+    replies: so.Mapped[list['PostComment']] = so.relationship(
+        back_populates='parent', cascade='all, delete',
+        order_by='PostComment.timestamp')
+    user: so.Mapped[Optional[User]] = so.relationship()
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
@@ -280,6 +313,8 @@ class Page(db.Model):
         sa.Boolean, nullable=False, default=False, server_default=sa.false())
     show_in_nav: so.Mapped[bool] = so.mapped_column(
         sa.Boolean, nullable=False, default=False, server_default=sa.false())
+    comments_enabled: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=False, server_default=sa.false())
     nav_order: so.Mapped[int] = so.mapped_column(
         nullable=False, default=0, server_default=sa.text('0'))
     created_at: so.Mapped[datetime] = so.mapped_column(
@@ -291,6 +326,9 @@ class Page(db.Model):
     redirects: so.Mapped[list['PageRedirect']] = so.relationship(
         back_populates='page', cascade='all, delete-orphan',
         passive_deletes=True)
+    comments: so.Mapped[list['PostComment']] = so.relationship(
+        back_populates='page', cascade='all, delete',
+        order_by='PostComment.timestamp')
 
 
 class PageRedirect(db.Model):
