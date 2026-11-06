@@ -33,6 +33,11 @@ def read_visitor_token():
     return token if 16 <= len(token) <= 100 else None
 
 
+def hash_address():
+    """A keyed hash of the requester's network address."""
+    return _digest('ip', request.remote_addr or '')
+
+
 def new_visitor_token():
     return secrets.token_urlsafe(32)
 
@@ -68,7 +73,7 @@ def toggle_like(post, token):
         for like in existing:
             db.session.delete(like)
         return UNLIKED
-    address = _digest('ip', request.remote_addr or '')
+    address = hash_address()
     taken = db.session.scalar(sa.select(sa.func.count()).select_from(PostLike).where(
         PostLike.post_id == post.id, PostLike.ip_hash == address))
     if taken >= current_app.config['LIKES_PER_IP_PER_POST']:
