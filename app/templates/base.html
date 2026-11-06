@@ -59,7 +59,6 @@
           <ul class="site-nav__links">
             <li><a href="{{ url_for('index') }}">{{ site_text.nav_home }}</a></li>
             <li><a href="{{ url_for('archive') }}">{{ site_text.nav_archive }}</a></li>
-            <li><a href="{{ url_for('categories') }}">{{ site_text.nav_categories }}</a></li>
             {% for page in navigation_pages %}
             <li><a href="{{ url_for('public_page', slug=page.slug) }}">{{ page.title }}</a></li>
             {% endfor %}

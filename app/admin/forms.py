@@ -153,5 +153,5 @@ class SiteSettingsForm(FlaskForm):
     nav_archive_label = StringField(
         '导航栏：归档', validators=[Optional(), Length(max=20)])
     nav_categories_label = StringField(
-        '导航栏：分类', validators=[Optional(), Length(max=20)])
+        '分类名称（首页侧栏、分类页）', validators=[Optional(), Length(max=20)])
     submit = SubmitField('保存设置')

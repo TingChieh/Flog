@@ -14,7 +14,7 @@ FIELDS = {
     'home_heading': '首页大标题',
     'nav_home_label': '导航栏：首页',
     'nav_archive_label': '导航栏：归档',
-    'nav_categories_label': '导航栏：分类',
+    'nav_categories_label': '分类名称（首页侧栏、分类页）',
 }
 
 

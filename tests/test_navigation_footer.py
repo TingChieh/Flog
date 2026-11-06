@@ -44,10 +44,10 @@ def test_moment_is_set_to_a_locale_that_exists_in_moment_js(client, users):
     assert 'moment.locale("zh")' not in body
 
 
-def test_primary_navigation_links_to_categories(client, users):
+def test_primary_navigation_has_no_categories_link(client, users):
     page = page_for(client)
-    assert '分类' in nav_labels(page)
-    assert page.xpath('//ul[contains(@class, "site-nav__links")]//a[@href="/categories"]')
+    assert '分类' not in nav_labels(page)
+    assert not page.xpath('//ul[contains(@class, "site-nav__links")]//a[@href="/categories"]')
 
 
 def tab_title(client, path):
@@ -79,7 +79,8 @@ def test_site_wording_defaults_and_admin_overrides(client, users):
     assert home.xpath('//a[@class="site-brand"]')[0].text_content() == 'Ai 的小站'
     assert home.xpath('//title')[0].text_content().strip() == 'Ai 的小站 · 首页'
     assert home.xpath('//h1')[0].text_content().strip() == '最新文章'
-    assert nav_labels(home)[:3] == ['主页', '归档', '专题']
+    assert nav_labels(home)[:2] == ['主页', '归档']
+    assert home.xpath('//aside[contains(@class, "category-sidebar")]//h2')[0].text_content().strip() == '专题'
     assert tab_title(client, '/categories') == '专题 - Ai 的小站'
     assert tab_title(client, f'/post/{users["post"]}') == 'Test - Ai 的小站'
 
@@ -88,7 +89,7 @@ def test_site_wording_defaults_and_admin_overrides(client, users):
         'home_tab_title': '', 'home_heading': '', 'nav_home_label': '',
         'nav_archive_label': '', 'nav_categories_label': ''})
     assert tab_title(client, '/') == "Aisaka's Blog"
-    assert nav_labels(page_for(client))[:3] == ['首页', '归档', '分类']
+    assert nav_labels(page_for(client))[:2] == ['首页', '归档']
 
 
 def test_home_page_lists_categories_with_published_posts(client, users):
