@@ -101,13 +101,13 @@
 
 **存储**:始终存 Unicode 字符,不存图片地址或短代码。评论正文的 Markdown 渲染与 `sanitize_html` 不需要改动。
 
-**统一样式**:用 Noto Emoji 的 SVG 图片(Apache 2.0)统一各平台的显示,不用 Noto 字体。原因是 Safari 对 Noto 彩色字体格式的支持不可靠,图片在所有浏览器上表现一致。
+**统一样式**:用 Noto Emoji 的图片(Apache 2.0)统一各平台的显示,不用 Noto 字体。原因是 Safari 对 Noto 彩色字体格式的支持不可靠,图片在所有浏览器上表现一致。图片用 72 像素的 PNG 而不是 SVG:同一批 1407 个表情,PNG 共 3.7 MB,SVG 要 13.8 MB,超出 8 MB 的体积预算;最大显示尺寸 26 像素,72 像素在高清屏上足够清晰。
 
 - 新增 `app/static/emoji.js`:在页面的评论正文、文章正文、页面正文里,把文本节点中的表情替换成 `<img class="emoji" alt="😀" draggable="false">`,`alt` 保留原字符,复制出来仍是表情。
 - 没有 JS 或图片缺失时退回系统表情。
 - 只替换已打包的表情,未打包的保持系统样式。
-- 静态文件放在 `app/static/emoji/noto/`,文件名按码点命名,附 Apache 2.0 许可文件和 NOTICE;由一个生成脚本从 Noto 仓库挑选并复制,脚本同时产出 `emoji-data.js`。
-- 打包范围先限于选择器里的常用表情(约 600 个,按分类),脚本可重新生成以扩充。
+- 静态文件放在 `app/static/emoji/noto/`,文件名按去掉 `FE0F` 的小写十六进制码点命名(如 `1f600.png`),附 Apache 2.0 许可文件和 NOTICE;由 `scripts/build_emoji.py` 从 Noto 仓库挑选并复制,同时产出 `emoji-keys.js`(哪些表情能替换)和 `emoji-data.js`(选择器的分类、中文名称与关键词)。许可文件取自 Noto 仓库 `2D/svg/LICENSE`(Apache 2.0);仓库根目录的 `LICENSE` 是字体用的 OFL,不是图片的。
+- 打包范围:Unicode 全部「完整限定」表情,去掉国旗、肤色变体和 ZWJ 组合,共 1407 个,分八个分类(表情、人物、动物与自然、食物、旅行、活动、物品、符号)。中文名称与关键词来自 Unicode CLDR 的 zh 注释;没有中文注释的退回英文名。数据版本记在 NOTICE 里。
 
 **选择器**:一个共用组件 `app/static/emoji-picker.js`。
 
