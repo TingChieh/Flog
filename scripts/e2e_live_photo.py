@@ -277,16 +277,40 @@ def scenarios(t):
       await page.fill('input[name=password]', {json.dumps(PASSWORD)});
       await page.click('input[type=submit], button[type=submit]');
       await page.goto(BASE + '/admin/images');
+      // Hold the request back so the waiting state can be inspected.
+      let posts = 0;
+      page.on('request', (r) => {{ if (r.method() === 'POST' && r.url().endsWith('/admin/images/upload')) posts += 1; }});
+      await page.route('**/admin/images/upload', async (route) => {{ await new Promise((r) => setTimeout(r, 1500)); await route.continue(); }});
       await page.setInputFiles('#image-files', [{json.dumps(str(t.work / 'IMG_7777.HEIC'))}, {json.dumps(str(t.work / 'IMG_7777.MOV'))}]);
       await page.click('.image-upload button[type=submit]');
+      await page.waitForTimeout(500);
+      const during = await page.evaluate(() => {{
+        const status = document.querySelector('[data-upload-status]'), bar = status.querySelector('progress');
+        return {{button: document.querySelector('.image-upload button').disabled,
+                 label: document.querySelector('.image-upload button').textContent,
+                 input: document.querySelector('#image-files').disabled,
+                 busy: document.querySelector('.image-upload').getAttribute('aria-busy'),
+                 visible: !status.hidden && status.getBoundingClientRect().height > 0,
+                 hasBar: !!bar && !bar.hidden, text: status.innerText}};
+      }});
+      await page.screenshot({{path: {json.dumps(str(shots / 'uploading.png'))}}});
+      await page.evaluate(() => document.querySelector('.image-upload').requestSubmit());
+      await page.evaluate(() => document.querySelector('.image-upload').requestSubmit());
+      await page.waitForSelector('.flash, [role=status]:has-text("已上传")', {{timeout: 15000}});
       await page.waitForSelector('.image-card');
+      await page.unroute('**/admin/images/upload');
       await page.screenshot({{path: {json.dumps(str(shots / 'library.png'))}}});
-      return await page.evaluate(() => ({{
+      return await page.evaluate((extra) => ({{
+        ...extra,
         flash: document.body.innerText.match(/已上传 \\d+ 张[^\\n]*/)?.[0],
         cards: document.querySelectorAll('.image-card').length,
         live: document.querySelectorAll('.image-card__live').length,
-      }}));
+      }}), {{during, posts}});
     }}""")
+    d = admin['during']
+    t.check('while uploading the button and file field are locked', d['button'] and d['input'] and d['busy'] == 'true' and d['label'] == '上传中…', d)
+    t.check('while uploading a status line with a progress bar is visible', d['visible'] and d['hasBar'] and ('上传' in d['text'] or '处理' in d['text']), d)
+    t.check('submitting again while it is busy sends nothing more', admin['posts'] == 1, admin['posts'])
     t.check('pair upload reports one image and no failure', admin['flash'] == '已上传 1 张。', admin)
     t.check('both Live Photos are tagged in the library', admin['cards'] == 4 and admin['live'] == 2, admin)
     detail = t.run(head + """

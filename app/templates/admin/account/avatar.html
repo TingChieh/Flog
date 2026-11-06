@@ -5,7 +5,7 @@
 <div class="avatar-settings">
   <img class="avatar-settings__preview" src="{{ current_user.avatar(120) }}" width="120" height="120" alt="{{ current_user.username }}">
   <div class="avatar-settings__actions">
-    <form class="admin-form" method="post" action="{{ url_for('admin.avatar') }}" enctype="multipart/form-data">
+    <form class="admin-form" method="post" action="{{ url_for('admin.avatar') }}" enctype="multipart/form-data" data-upload-lock>
       {{ form.hidden_tag() }}
       <div class="form-field">
         <label class="form-label" for="avatar-file">上传新头像</label>
@@ -25,3 +25,4 @@
   </div>
 </div>
 {% endblock %}
+{% block page_scripts %}<script src="{{ url_for('static', filename='upload-progress.js') }}" defer></script>{% endblock %}

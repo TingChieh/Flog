@@ -371,3 +371,78 @@ def test_editors_carry_the_library_url_and_load_the_picker_script(
         picker = [i for i, s in enumerate(scripts) if s.endswith('/image-picker.js')]
         editor = [i for i, s in enumerate(scripts) if s.endswith('/markdown-editor.js')]
         assert picker and editor and picker[0] < editor[0], path
+
+
+# --- the library's script uploads set by set -------------------------------------
+
+JSON = {'Accept': 'application/json'}
+
+
+def test_json_upload_reports_counts_without_redirecting_or_flashing(
+        client, application, users):
+    login(client, 'author')
+    response = client.post('/admin/images/upload', data={
+        'images': files(('a.png', PNG), ('bad.png', b'nope')),
+    }, content_type='multipart/form-data', headers=JSON)
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        'saved': 1, 'failed': ['bad.png：不是有效的 gif/jpg/png/heic 图片']}
+    with client.session_transaction() as session:
+        assert not session.get('_flashes')
+    with application.app_context():
+        assert db.session.scalar(sa.select(sa.func.count(Image.id))) == 1
+
+
+def test_json_upload_without_files_is_a_bad_request(client, users):
+    login(client, 'author')
+    response = client.post('/admin/images/upload', data={},
+                           content_type='multipart/form-data', headers=JSON)
+    assert response.status_code == 400
+
+
+def test_json_upload_still_needs_a_login(client):
+    response = client.post('/admin/images/upload', data={
+        'images': files(('a.png', PNG))},
+        content_type='multipart/form-data', headers=JSON)
+    assert response.status_code in (302, 401)
+
+
+def test_form_post_without_the_json_header_keeps_flash_and_redirect(
+        client, users):
+    login(client, 'author')
+    response = client.post('/admin/images/upload', data={
+        'images': files(('a.png', PNG))}, content_type='multipart/form-data')
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        assert any('已上传 1 张' in message for _, message in session['_flashes'])
+
+
+def test_the_uploaded_count_becomes_one_flash_on_a_clean_url(client, users):
+    login(client, 'author')
+
+    first = client.get('/admin/images?uploaded=3')
+    assert first.status_code == 302
+    assert first.headers['Location'].endswith('/admin/images')
+
+    page = client.get(first.headers['Location']).get_data(as_text=True)
+    assert '已上传 3 张。' in page
+    assert '已上传 3 张。' not in client.get('/admin/images').get_data(as_text=True)
+
+
+def test_library_page_wires_up_the_progress_scripts(client, users):
+    login(client, 'author')
+    page = client.get('/admin/images').get_data(as_text=True)
+
+    assert 'data-image-upload' in page and 'data-upload-status' in page
+    assert '/static/upload-progress.js' in page and '/static/image-upload.js' in page
+
+
+def test_avatar_and_editor_pages_load_the_progress_helper(client, users):
+    login(client, 'author')
+    assert '/static/upload-progress.js' in client.get(
+        '/admin/account/avatar').get_data(as_text=True)
+    assert 'data-upload-lock' in client.get(
+        '/admin/account/avatar').get_data(as_text=True)
+    editor = client.get('/admin/posts/new').get_data(as_text=True)
+    assert editor.index('upload-progress.js') < editor.index('markdown-editor.js')

@@ -2,12 +2,13 @@
 {% block admin_title %}图片{% endblock %}
 
 {% block admin_content %}
-<form class="image-upload" method="post" action="{{ url_for('admin.upload_images') }}" enctype="multipart/form-data">
+<form class="image-upload" method="post" action="{{ url_for('admin.upload_images') }}" enctype="multipart/form-data" data-image-upload>
   {{ upload_form.hidden_tag() }}
   <label class="visually-hidden" for="image-files">选择图片</label>
   <input id="image-files" class="form-control" type="file" name="images" accept="image/png,image/jpeg,image/gif,image/heic,image/heif,.heic,.heif,video/quicktime,video/mp4,.mov,.mp4" multiple required>
   <button class="button button--cta" type="submit">上传</button>
 </form>
+<div class="upload-progress" role="status" aria-live="polite" data-upload-status hidden></div>
 <form class="admin-search" method="get" action="{{ url_for('admin.images') }}" role="search">
   <label class="visually-hidden" for="image-search">搜索图片</label>
   <input id="image-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="按名称、备注或文件名搜索">
@@ -31,3 +32,4 @@
   {% endfor %}
 </div>
 {% endblock %}
+{% block page_scripts %}<script src="{{ url_for('static', filename='upload-progress.js') }}" defer></script><script src="{{ url_for('static', filename='image-upload.js') }}" defer></script>{% endblock %}

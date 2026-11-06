@@ -58,28 +58,46 @@ document.addEventListener('DOMContentLoaded', () => {
       listeners.forEach((listener) => listener(value));
     };
 
+    // With the shared helper the status line also carries a progress bar.
+    const progressUi = window.FlogUploadProgress
+      ? window.FlogUploadProgress.createProgress(status) : null;
     const setStatus = (state, message) => {
       status.hidden = false;
       status.dataset.state = state;
-      status.textContent = message;
+      if (progressUi) progressUi.message(message, state);
+      else status.textContent = message;
     };
+    let uploading = false;
     const isImageFile = (file) => file?.type?.startsWith('image/');
 
     const uploadImages = async (files) => {
       const images = Array.from(files || []).filter(isImageFile);
       if (!images.length) return null;
+      // A second drop while photos are still going up would only pile on.
+      if (uploading) return null;
+      uploading = true;
 
-      setStatus('uploading', `正在上传 ${images.length} 张图片…`);
+      const heading = `正在上传 ${images.length} 张图片…`;
+      setStatus('uploading', heading);
+      const trackProgress = Boolean(progressUi && typeof XMLHttpRequest === 'function');
+      const send = (formData, index) => {
+        const headers = { 'X-CSRFToken': csrfToken };
+        if (!trackProgress) return fetch(uploadUrl, { method: 'POST', headers, body: formData });
+        const step = images.length > 1 ? `第 ${index + 1}/${images.length} 张` : '';
+        const show = (text, fraction) => progressUi.show([text, step].filter(Boolean).join(' '), fraction);
+        show(heading, 0);
+        return window.FlogUploadProgress.post(uploadUrl, formData, {
+          headers,
+          onProgress: (sent) => show(`${heading} ${Math.round(sent * 100)}%`, sent),
+          onSent: () => show('服务器处理中…', null),
+        });
+      };
       try {
         const snippets = [];
-        for (const file of images) {
+        for (const [index, file] of images.entries()) {
           const formData = new FormData();
           formData.append('post', file);
-          const response = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
-            body: formData,
-          });
+          const response = await send(formData, index);
           if (!response.ok) throw new Error('upload failed');
           const payload = await response.json();
           if (payload?.uploaded !== 1 || typeof payload.url !== 'string') {
@@ -92,6 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus('success', '图片已插入');
       } catch (_error) {
         setStatus('error', '上传失败：无法上传图片');
+      } finally {
+        uploading = false;
       }
       return null;
     };

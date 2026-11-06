@@ -79,6 +79,11 @@ def _search(query, text):
 @bp.route('/images', methods=['GET'])
 @login_required
 def images():
+    uploaded = request.args.get('uploaded', type=int)
+    if uploaded:
+        # Set by the library's script once it has uploaded a batch itself.
+        flash(f'已上传 {uploaded} 张。')
+        return redirect(url_for('admin.images'))
     sync_untracked_images()
     search = request.args.get('q', '').strip()
     rows = db.session.scalars(_search(visible_images(current_user), search)).all()
@@ -99,8 +104,11 @@ def images():
 def upload_images():
     if not ImageUploadForm().validate_on_submit():
         abort(400)
+    wants_json = request.accept_mimetypes.best == 'application/json'
     uploads = [f for f in request.files.getlist('images') if f.filename]
     if not uploads:
+        if wants_json:
+            abort(400)
         flash('请选择要上传的图片。')
         return redirect(url_for('admin.images'))
     saved, failed = 0, []
@@ -113,6 +121,8 @@ def upload_images():
             failed.append(f'{still.filename}：{UPLOAD_ERRORS.get(str(exc), str(exc))}')
         else:
             saved += 1
+    if wants_json:
+        return {'saved': saved, 'failed': failed}
     message = f'已上传 {saved} 张'
     if failed:
         message += f'，{len(failed)} 张失败（{"；".join(failed)}）'

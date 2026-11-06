@@ -35,6 +35,7 @@ function createHarness({
   canUpload = true,
   hasVditor = true,
   deferUploads = false,
+  progressHelper = false,
   libraryUrl = null,
   withPicker = true,
   theme = 'light',
@@ -46,6 +47,7 @@ function createHarness({
   const readyCallbacks = [];
   const requests = [];
   const pendingUploads = [];
+  const progressCalls = [];
   const createdElements = [];
   const submitListeners = [];
   const themeCalls = [];
@@ -118,7 +120,26 @@ function createHarness({
       if (!deferUploads) return Promise.resolve().then(resolveResponse);
       return new Promise((resolve) => pendingUploads.push(() => resolve(resolveResponse())));
     },
-    window: libraryUrl && withPicker ? { FlogImagePicker: { open: (options) => pickerCalls.push(options) } } : {},
+    ...(progressHelper ? { XMLHttpRequest: function XMLHttpRequest() {} } : {}),
+    window: {
+      ...(libraryUrl && withPicker ? { FlogImagePicker: { open: (options) => pickerCalls.push(options) } } : {}),
+      ...(progressHelper ? {
+        FlogUploadProgress: {
+          createProgress(host) {
+            return {
+              show(text, fraction) { host.hidden = false; host.textContent = text; progressCalls.push(['show', text, fraction]); },
+              message(text, state) { host.hidden = false; host.dataset.state = state; host.textContent = text; progressCalls.push(['message', text, state]); },
+            };
+          },
+          post(url, body, { headers, onProgress, onSent }) {
+            requests.push({ url, method: 'POST', headers, body });
+            onProgress(0.5);
+            onSent();
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({ uploaded: 1, url: '/files/abc.png' }) });
+          },
+        },
+      } : {}),
+    },
     document: {
       documentElement: root,
       addEventListener(eventName, listener) {
@@ -150,6 +171,7 @@ function createHarness({
     root,
     pickerCalls,
     requests,
+    progressCalls,
     insertCalls,
     themeCalls,
     wysiwygButton,
@@ -369,6 +391,59 @@ test('uploads a selected image and inserts it once when the upload finishes', as
   assert.equal(harness.status().textContent, '图片已插入');
   assert.equal(harness.status().dataset.state, 'success');
   assert.equal(harness.field.value, '# source![图片](/files/abc.png)');
+});
+
+test('a second drop while photos are still uploading is ignored', async () => {
+  const harness = createHarness({ deferUploads: true });
+  harness.execute();
+  harness.ready();
+
+  const first = harness.options().upload.handler([{ name: 'a.png', type: 'image/png' }]);
+  const second = await harness.options().upload.handler([{ name: 'b.png', type: 'image/png' }]);
+  assert.equal(second, null);
+  assert.equal(harness.requests.length, 1, 'no extra request is started');
+
+  harness.resolveNextUpload();
+  await first;
+  await harness.settle();
+  assert.equal(harness.status().textContent, '图片已插入');
+
+  const again = harness.options().upload.handler([{ name: 'c.png', type: 'image/png' }]);
+  harness.resolveNextUpload();
+  await again;
+  assert.equal(harness.requests.length, 2, 'uploads work again once the batch is done');
+});
+
+test('a failed batch releases the lock so the visitor can retry', async () => {
+  const harness = createHarness({ uploadResponses: [{ ok: false }, { ok: true, payload: { uploaded: 1, url: '/files/abc.png' } }] });
+  harness.execute();
+  harness.ready();
+
+  await harness.options().upload.handler([{ name: 'a.png', type: 'image/png' }]);
+  assert.equal(harness.status().dataset.state, 'error');
+  await harness.options().upload.handler([{ name: 'a.png', type: 'image/png' }]);
+  assert.equal(harness.status().dataset.state, 'success');
+});
+
+test('with the shared helper the upload shows byte progress, then the server phase', async () => {
+  const harness = createHarness({ progressHelper: true });
+  harness.execute();
+  harness.ready();
+
+  await harness.options().upload.handler([
+    { name: 'a.png', type: 'image/png' }, { name: 'b.png', type: 'image/png' }]);
+  await harness.settle();
+
+  assert.deepEqual(normalize(harness.progressCalls.slice(0, 4)), [
+    ['message', '正在上传 2 张图片…', 'uploading'],
+    ['show', '正在上传 2 张图片… 第 1/2 张', 0],
+    ['show', '正在上传 2 张图片… 50% 第 1/2 张', 0.5],
+    ['show', '服务器处理中… 第 1/2 张', null],
+  ]);
+  assert.deepEqual(normalize(harness.requests.map((request) => request.headers)), [
+    { 'X-CSRFToken': 'csrf-token' }, { 'X-CSRFToken': 'csrf-token' }]);
+  assert.deepEqual(normalize(harness.progressCalls.at(-1)), ['message', '图片已插入', 'success']);
+  assert.equal(harness.status().textContent, '图片已插入');
 });
 
 test('uploads only images, in order, and inserts the batch once', async () => {
