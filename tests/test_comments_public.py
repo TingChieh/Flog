@@ -195,3 +195,21 @@ def test_comment_on_a_page_end_to_end(client, application, users):
 
 def test_posting_to_an_unknown_slug_is_not_found(client, application, users):
     assert client.post('/no-such-page', data={}).status_code == 404
+
+
+def test_comment_form_has_an_emoji_button_and_loads_the_picker(client, users):
+    page = page_for(client, f'/post/{users["post"]}')
+    button = page.xpath('//form[contains(@class, "comment-form")]//button[@data-emoji-for]')
+    assert [b.get('data-emoji-for') for b in button] == ['#body']
+    assert page.xpath('//textarea[@id="body"]')
+    html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
+    assert 'emoji-data.js' in html and 'emoji-picker.js' in html
+
+
+def test_closed_comments_do_not_load_the_picker(client, application, users):
+    with application.app_context():
+        add_comment(post_id=users['post'])
+        db.session.get(Post, users['post']).comments_enabled = False
+        db.session.commit()
+    html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
+    assert 'emoji-picker.js' not in html

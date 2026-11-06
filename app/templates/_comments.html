@@ -49,6 +49,10 @@
         </div>
         <div>
             {{ form.body.label(class="form-label") }}
+            <button class="comment-form__emoji" type="button" data-emoji-for="#body" aria-haspopup="dialog">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.4 2.2 2 3.5 2s2.5-.6 3.5-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>
+                表情
+            </button>
             {{ form.body(class="form-control", rows="4", data_comment_body="") }}
             <p class="form-text">支持 Markdown：粗体、斜体、代码、引用、列表和链接。</p>
             {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
@@ -56,6 +60,8 @@
         {{ form.submit(class="btn btn-primary") }}
     </form>
     <script src="{{ url_for('static', filename='comment-reply.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='emoji-data.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='emoji-picker.js') }}" data-base="{{ url_for('static', filename='emoji/noto/') }}" defer></script>
     {% endif %}
 
     <div class="comment-list">

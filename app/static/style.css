@@ -3935,7 +3935,14 @@ img.emoji {
     box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
 }
 
+.emoji-picker__search {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 0.9rem;
+}
+
 .emoji-picker__tabs {
+    flex: 0 0 auto;
     display: flex;
     gap: 4px;
     overflow-x: auto;
@@ -3952,6 +3959,8 @@ img.emoji {
 }
 
 .emoji-picker__list {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -3993,3 +4002,17 @@ img.emoji {
     color: var(--text-secondary);
     text-align: center;
 }
+
+.comment-form__emoji {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 0.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.comment-form__emoji:hover { color: var(--text-primary); }
