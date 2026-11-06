@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError
 
 from app import db
 from app.models import Page, Post, PostComment
@@ -27,18 +27,19 @@ def test_comment_can_belong_to_a_page(application, users):
         assert page.comments == [comment]
 
 
+# MySQL reports a violated CHECK as an OperationalError, SQLite as an IntegrityError.
 def test_comment_needs_exactly_one_target(application, users):
     with application.app_context():
         page = make_page()
         db.session.add(PostComment(name='R', email='r@example.com', body='Hi'))
-        with pytest.raises(IntegrityError):
+        with pytest.raises(DBAPIError):
             db.session.commit()
         db.session.rollback()
 
         db.session.add(PostComment(
             post_id=users['post'], page_id=page.id,
             name='R', email='r@example.com', body='Hi'))
-        with pytest.raises(IntegrityError):
+        with pytest.raises(DBAPIError):
             db.session.commit()
 
 
@@ -47,7 +48,7 @@ def test_status_rejects_unknown_values(application, users):
         db.session.add(PostComment(
             post_id=users['post'], name='R', email='r@example.com',
             body='Hi', status='spam'))
-        with pytest.raises(IntegrityError):
+        with pytest.raises(DBAPIError):
             db.session.commit()
 
 

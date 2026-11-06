@@ -56,14 +56,15 @@ def downgrade():
     with op.batch_alter_table('post_comment') as batch:
         batch.drop_constraint('ck_post_comment_status', type_='check')
         batch.drop_constraint('ck_post_comment_target', type_='check')
-        batch.drop_index('ix_post_comment_ip_hash')
-        batch.drop_index('ix_post_comment_user_id')
-        batch.drop_index('ix_post_comment_parent_id')
-        batch.drop_index('ix_post_comment_page_id')
+        # MySQL will not drop an index a foreign key still relies on.
         batch.drop_constraint('fk_post_comment_user_id_user', type_='foreignkey')
         batch.drop_constraint(
             'fk_post_comment_parent_id_post_comment', type_='foreignkey')
         batch.drop_constraint('fk_post_comment_page_id_page', type_='foreignkey')
+        batch.drop_index('ix_post_comment_ip_hash')
+        batch.drop_index('ix_post_comment_user_id')
+        batch.drop_index('ix_post_comment_parent_id')
+        batch.drop_index('ix_post_comment_page_id')
         batch.drop_column('ip_hash')
         batch.drop_column('user_id')
         batch.drop_column('status')
