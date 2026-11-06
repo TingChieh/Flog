@@ -3878,3 +3878,35 @@ html[data-theme="dark"] body.public-site {
 }
 .search-trigger:hover kbd,
 .search-trigger:focus-visible kbd { background: var(--surface); }
+
+.admin-bulk {
+    margin: 0 0 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.admin-comment-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+}
+
+.admin-comment-row__select {
+    padding-top: 4px;
+}
+
+.admin-comment-row__body {
+    margin: 4px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.admin-comment-row__reply summary {
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.admin-comment-row__reply form {
+    margin-top: 8px;
+    display: grid;
+    gap: 8px;
+}

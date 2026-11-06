@@ -1,7 +1,70 @@
 {% extends "admin/base.html" %}
 {% block admin_title %}评论{% endblock %}
 {% block admin_content %}
-<section class="admin-section"><h2>文章评论</h2><div class="admin-list">
-  {% for comment in post_comments %}<article class="admin-list__row"><div class="admin-list__main"><strong>{{ comment.name }}</strong><span>{{ comment.email }} · {{ comment.body }}</span></div><form method="post" action="{{ url_for('admin.delete_article_comment', comment_id=comment.id) }}">{{ delete_form.hidden_tag() }}<input type="hidden" name="confirm" value="y"><button class="button button--quiet button--danger" type="submit">删除</button></form></article>{% endfor %}
-</div></section>
+<form class="admin-search" method="get" action="{{ url_for('admin.comments') }}" role="search">
+  <label class="visually-hidden" for="comment-search">搜索评论</label>
+  <input id="comment-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="搜索昵称、邮箱或内容">
+  {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  {% if target %}<input type="hidden" name="target" value="{{ target }}">{% endif %}
+  <button class="button button--quiet" type="submit">搜索</button>
+  {% if target %}<a href="{{ url_for('admin.comments', status=status if status != 'all' else None, q=search or None) }}">清除位置筛选</a>{% endif %}
+</form>
+<nav class="admin-filters" data-comment-tabs aria-label="评论状态">
+  {% for key, label in (('pending', '待审核'), ('approved', '已通过'), ('all', '全部')) %}
+  <a class="admin-filter{% if status == key %} admin-filter--active{% endif %}"
+     href="{{ url_for('admin.comments', status=key if key != 'all' else None, q=search or None, target=target or None) }}">{{ label }} ({{ tab_counts[key] }})</a>
+  {% endfor %}
+</nav>
+
+<form method="post" action="{{ url_for('admin.bulk_comments') }}" id="bulk-comments" class="admin-bulk">
+  {{ bulk_form.csrf_token }}
+  <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+  <button class="button button--quiet" type="submit" name="action" value="approve">批量通过</button>
+  <button class="button button--quiet button--danger" type="submit" name="action" value="delete" onclick="return confirm('确定删除所选评论？它们的回复也会一并删除。');">批量删除</button>
+</form>
+
+<div class="admin-list">
+  {% for comment in post_comments %}
+  {% set owner = comment.post or comment.page %}
+  <article class="admin-list__row admin-comment-row" data-comment-row>
+    <label class="admin-comment-row__select"><input type="checkbox" name="ids" value="{{ comment.id }}" form="bulk-comments" aria-label="选择这条评论"></label>
+    <div class="admin-list__main">
+      <strong class="comment-author">{{ comment.name }}</strong>
+      <span>{{ comment.email }} · {{ '待审核' if comment.status == 'pending' else '已通过' }}{% if comment.user_id %} · 站长{% endif %}{% if comment.parent_id %} · 回复 #{{ comment.parent_id }}{% endif %}</span>
+      <span>
+        <a data-comment-target href="{{ url_for('post', post_id=comment.post_id) if comment.post_id else url_for('public_page', slug=comment.page.slug) }}">{{ owner.title }}</a>
+        · <a href="{{ url_for('admin.comments', status=status if status != 'all' else None, target=('post:%d' % comment.post_id) if comment.post_id else ('page:%d' % comment.page_id)) }}">只看这里</a>
+      </span>
+      <p class="admin-comment-row__body">{{ comment.body }}</p>
+    </div>
+    <div class="admin-list__actions">
+      {% if comment.status == 'pending' %}
+      <form method="post" action="{{ url_for('admin.approve_comment', comment_id=comment.id) }}">
+        {{ bulk_form.csrf_token }}
+        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+        <button class="button button--quiet" type="submit">通过</button>
+      </form>
+      {% elif owner.comments_enabled %}
+      <details class="admin-comment-row__reply">
+        <summary>回复</summary>
+        <form method="post" action="{{ url_for('admin.reply_comment', comment_id=comment.id) }}">
+          {{ reply_form.csrf_token }}
+          <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <textarea class="form-control" name="body" rows="3" maxlength="1000" required></textarea>
+          <button class="button button--cta" type="submit">发布回复</button>
+        </form>
+      </details>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin.delete_article_comment', comment_id=comment.id) }}">
+        {{ delete_form.hidden_tag() }}
+        <input type="hidden" name="confirm" value="y">
+        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+        <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除这条评论？它的回复也会一并删除。');">删除</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>没有符合条件的评论。</p></div>
+  {% endfor %}
+</div>
 {% endblock %}

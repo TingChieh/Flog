@@ -49,6 +49,14 @@ class DeleteForm(FlaskForm):
     submit = SubmitField('删除')
 
 
+class BulkCommentForm(FlaskForm):
+    """CSRF-only; the action and ids are read from the request."""
+
+
+class CommentReplyForm(FlaskForm):
+    body = TextAreaField('回复', validators=[DataRequired(), Length(1, 1000)])
+
+
 class ToggleForm(FlaskForm):
     """CSRF-only form for one-click state toggles."""
 
