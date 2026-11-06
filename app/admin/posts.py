@@ -1,14 +1,18 @@
 import secrets
+from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import sqlalchemy as sa
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import (abort, flash, make_response, redirect, render_template,
+                   request, url_for)
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import db
 from app.admin import bp
 from app.authorization import owned_post_or_404
-from app.content import BODY_FORMAT_MARKDOWN, normalize_body_format
+from app.content import (BODY_FORMAT_MARKDOWN, normalize_body_format,
+                         render_article)
 from app.forms import PostDraftForm
 from app.models import Category, Post, PostRevision
 from app.post_drafts import (DraftValues, PostDraftError, discard_draft,
@@ -218,6 +222,35 @@ def edit_post(post_id):
         editor_session_key=None,
         editor_sequence=post.draft_sequence,
         draft_generation=post.draft_generation)
+
+
+@bp.route('/posts/preview', methods=['POST'])
+@login_required
+def preview_post():
+    """Render what the editor holds right now as a reader would see it.
+
+    Nothing is saved: the editor posts its current title and body, so a new
+    post, a draft and an unsaved edit all preview the same way.
+    """
+    post_id = request.form.get('post_id', type=int)
+    existing = owned_post_or_404(post_id, current_user) if post_id else None
+    title = request.form.get('title', '').strip()[:120]
+    body = request.form.get('body', '')
+    body_format = (normalize_body_format(existing.body_format) if existing
+                   else BODY_FORMAT_MARKDOWN)
+    article_html, article_toc = render_article(body, body_format)
+    preview = SimpleNamespace(
+        id=existing.id if existing else 'preview',
+        title=title or '无标题',
+        author=existing.author if existing else current_user,
+        timestamp=existing.timestamp if existing else datetime.now(timezone.utc),
+        view_count=existing.view_count if existing else 0)
+    response = make_response(render_template(
+        'post/preview.html', post=preview, article_html=article_html,
+        article_toc=article_toc, title=preview.title))
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
 
 
 @bp.route('/posts/<int:post_id>/publish', methods=['POST'])
