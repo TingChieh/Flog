@@ -322,7 +322,7 @@ test('a network error or a rejected request counts as a failure, not a hang', as
   await settle();
 
   assert.equal(button.disabled, false);
-  assert.match(status.calls.at(-1)[1], /^已上传 0 张，2 项失败：a\.png：上传失败.*b\.png：上传失败/);
+  assert.match(status.calls.at(-1)[1], /^已上传 0 张，2 项失败：a\.png：上传失败（连接中断或服务器处理超时）.*b\.png：上传失败（服务器返回 400）/);
 });
 
 test('submitting with nothing chosen does nothing', async () => {

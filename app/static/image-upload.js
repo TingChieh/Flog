@@ -73,12 +73,18 @@
               `${label('服务器处理中')}（视频转码可能需要几十秒，请不要关闭页面）`,
               jobs.length === 1 ? null : overall(0.95)),
           });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          if (!response.ok) {
+            const rejected = new Error(`HTTP ${response.status}`);
+            rejected.status = response.status;
+            throw rejected;
+          }
           const result = await response.json();
           saved += result.saved || 0;
           failed.push(...(result.failed || []));
         } catch (error) {
-          failed.push(`${name}：上传失败，请检查网络后重试`);
+          // No status means the connection dropped before any answer came back.
+          const reason = error.status ? `服务器返回 ${error.status}` : '连接中断或服务器处理超时';
+          failed.push(`${name}：上传失败（${reason}），请稍后重试`);
         }
       }
 
