@@ -100,6 +100,8 @@ def _wrap_live_photo(image, video_src):
     box = html.Element('span')
     box.set('class', 'live-photo')
     box.set('data-live-video', video_src)
+    if image.get('style'):
+        box.set('style', image.get('style'))
     badge = html.Element('button')
     badge.set('type', 'button')
     badge.set('class', 'live-photo__badge')
@@ -148,6 +150,8 @@ def optimize_images(rendered):
                 and 'height' not in image.attrib):
             image.set('width', str(row.width))
             image.set('height', str(row.height))
+            # Lets the stylesheet work out the final box before the file arrives.
+            image.set('style', f'--w:{row.width};--h:{row.height}')
             srcset = variant_srcset(row.filename, image.get('src'), row.width) if local else ''
             if srcset:
                 image.set('srcset', srcset)

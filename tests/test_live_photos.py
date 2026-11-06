@@ -312,8 +312,8 @@ def test_live_photo_is_wrapped_so_the_script_can_play_it(application):
     with application.test_request_context():
         rendered = render_content(f'![sea](/files/{stem}.jpg)', 'markdown')
 
-    assert (f'<span class="live-photo" data-live-video="/files/{stem}.mp4">'
-            f'<img') in rendered
+    assert (f'<span class="live-photo" data-live-video="/files/{stem}.mp4" '
+            f'style="--w:64;--h:48"><img') in rendered
     assert ('<button type="button" class="live-photo__badge" '
             'aria-label="播放 Live Photo">LIVE</button></span>') in rendered
     assert 'width="64"' in rendered and 'loading="lazy"' in rendered

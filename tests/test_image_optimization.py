@@ -228,6 +228,7 @@ def test_rendered_images_are_lazy_and_get_their_pixel_size(application):
         assert 'loading="lazy"' in rendered
         assert 'decoding="async"' in rendered
         assert 'width="640"' in rendered and 'height="480"' in rendered
+        assert 'style="--w:640;--h:480"' in rendered
 
 
 def test_unknown_and_external_images_are_lazy_without_a_size(application):
@@ -239,6 +240,7 @@ def test_unknown_and_external_images_are_lazy_without_a_size(application):
 
     assert rendered.count('loading="lazy"') == 2
     assert 'width=' not in rendered and 'height=' not in rendered
+    assert '--w' not in rendered
 
 
 def test_sizes_the_author_wrote_are_not_overridden(application):
@@ -250,6 +252,16 @@ def test_sizes_the_author_wrote_are_not_overridden(application):
             f'<img src="/files/{name}" width="100">', 'html')
 
     assert 'width="100"' in rendered and 'height=' not in rendered
+    assert '--w' not in rendered
+
+
+def test_stylesheet_reserves_the_final_box_and_fades_photos_in():
+    css = Path('app/static/style.css').read_text()
+
+    assert 'aspect-ratio: var(--w) / var(--h);' in css
+    assert 'calc(var(--max-h) * var(--w) / var(--h))' in css
+    assert '.live-photo[style*="--w"]' in css
+    assert 'img[data-loading]' in css and '@keyframes image-in' in css
 
 
 def test_search_and_feed_text_skip_the_image_pass(application):
