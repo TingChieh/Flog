@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from flask import abort
@@ -140,6 +141,13 @@ def publish_draft(actor, post_id):
             Category, draft.category_id) is None:
         raise PostDraftError('The selected category does not exist.')
 
+    now = datetime.now(timezone.utc)
+    if not post.is_published:
+        post.timestamp = now
+        post.updated_at = None
+    elif (post.title, post.body, post.category_id) != (
+            draft.title, draft.body, draft.category_id):
+        post.updated_at = now
     post.title = draft.title
     post.body = draft.body
     post.category_id = draft.category_id

@@ -119,8 +119,11 @@ class Post(db.Model):
     body_format: so.Mapped[str] = so.mapped_column(
         sa.String(20), nullable=False, default='html',
         server_default=sa.text("'html'"))
+    # When the post went public; set again if it is unpublished and republished.
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
+    # When a live post last had an update published; None until then.
+    updated_at: so.Mapped[Optional[datetime]] = so.mapped_column()
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id),
                                                index=True)
     editor_session_key: so.Mapped[Optional[str]] = so.mapped_column(
@@ -150,6 +153,11 @@ class Post(db.Model):
     def local_timestamp(self):
         from app.timezones import to_display
         return to_display(self.timestamp)
+
+    @property
+    def local_updated_at(self):
+        from app.timezones import later_update
+        return later_update(self.timestamp, self.updated_at)
 
     def likes_count(self):
         return db.session.scalar(sa.select(sa.func.count()).select_from(

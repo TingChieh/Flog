@@ -318,6 +318,16 @@ msgstr "已点赞"
 msgid "Generate QR Code"
 msgstr "生成二维码"
 
+#: app/templates/post/_article.html:6
+#, python-format
+msgid "Published on %(date)s"
+msgstr "发布于 %(date)s"
+
+#: app/templates/post/_article.html:7
+#, python-format
+msgid "Updated on %(date)s"
+msgstr "更新于 %(date)s"
+
 #: app/templates/post/post.html:64
 msgid "Article QR code"
 msgstr "文章二维码"

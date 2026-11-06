@@ -3,7 +3,8 @@
         <div>
             <span class="article-header__author">{{ post.author.username }}</span>
             <div class="article-header__meta">
-                <time class="article-header__time">{{ moment(post.timestamp).fromNow() }}</time>
+                <time class="article-header__time" datetime="{{ post.local_timestamp.isoformat() }}">{{ _('Published on %(date)s', date=post.timestamp|dateformat('long')) }}</time>
+                {% if post.local_updated_at %}<time class="article-header__time article-header__updated" datetime="{{ post.local_updated_at.isoformat() }}">{{ _('Updated on %(date)s', date=post.local_updated_at|dateformat('long')) }}</time>{% endif %}
                 <span class="post-view-count">{{ post.view_count }} {{ _('views') }}</span>
             </div>
         </div>

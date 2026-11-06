@@ -15,6 +15,7 @@ from app.content import (BODY_FORMAT_MARKDOWN, normalize_body_format,
                          render_article)
 from app.forms import PostDraftForm
 from app.models import Category, Post, PostRevision
+from app.timezones import later_update, to_display
 from app.post_drafts import (DraftValues, PostDraftError, discard_draft,
                              invalidate_editor_writes, publish_draft,
                              restore_revision, save_draft,
@@ -239,11 +240,17 @@ def preview_post():
     body_format = (normalize_body_format(existing.body_format) if existing
                    else BODY_FORMAT_MARKDOWN)
     article_html, article_toc = render_article(body, body_format)
+    now = datetime.now(timezone.utc)
+    # Dates as they will read once this is published (or its update is).
+    live = existing is not None and existing.is_published
+    timestamp = existing.timestamp if live else now
     preview = SimpleNamespace(
         id=existing.id if existing else 'preview',
         title=title or '无标题',
         author=existing.author if existing else current_user,
-        timestamp=existing.timestamp if existing else datetime.now(timezone.utc),
+        timestamp=timestamp,
+        local_timestamp=to_display(timestamp),
+        local_updated_at=later_update(timestamp, now) if live else None,
         view_count=existing.view_count if existing else 0)
     response = make_response(render_template(
         'post/preview.html', post=preview, article_html=article_html,

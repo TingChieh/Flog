@@ -446,7 +446,8 @@ def sitemap():
     add_url(request.url_root)
     add_url(url_for('archive', _external=True))
     for post in db.session.scalars(published_post_statement()):
-        add_url(url_for('post', post_id=post.id, _external=True), post.timestamp)
+        add_url(url_for('post', post_id=post.id, _external=True),
+                post.updated_at or post.timestamp)
     for page in db.session.scalars(sa.select(Page).where(Page.is_published.is_(True))):
         add_url(url_for('public_page', slug=page.slug, _external=True), page.updated_at)
     return app.response_class(ET.tostring(root, encoding='utf-8', xml_declaration=True),

@@ -16,3 +16,14 @@ def to_display(value):
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
     return value.astimezone(display_zone())
+
+
+def later_update(published, updated):
+    """The update time in the display zone, if it falls on a later day than the publish time.
+
+    An edit on the day of publishing is not worth announcing, so it gives None.
+    """
+    if updated is None:
+        return None
+    local = to_display(updated)
+    return local if local.date() > to_display(published).date() else None
