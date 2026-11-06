@@ -356,6 +356,10 @@ def toggle_post_like(post_id):
     else:
         db.session.add(PostLike(post=post, user=current_user))
     db.session.commit()
+    best = request.accept_mimetypes.best_match(['text/html', 'application/json'])
+    if best == 'application/json':
+        return jsonify(liked=post.is_liked_by(current_user),
+                       count=post.likes_count())
     return redirect(url_for('post', post_id=post.id, _anchor='post-actions'))
 
 

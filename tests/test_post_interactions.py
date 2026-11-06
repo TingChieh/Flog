@@ -81,3 +81,24 @@ def test_deleting_post_removes_comments_and_likes(
             db.select(db.func.count()).select_from(PostComment)) == 0
         assert db.session.scalar(
             db.select(db.func.count()).select_from(PostLike)) == 0
+
+
+def test_like_returns_json_for_fetch_requests(client, application, users):
+    login(client, 'other')
+    url = f'/post/{users["post"]}/like'
+
+    first = client.post(url, headers={'Accept': 'application/json'})
+    second = client.post(url, headers={'Accept': 'application/json'})
+
+    assert first.status_code == 200
+    assert first.get_json() == {'liked': True, 'count': 1}
+    assert second.get_json() == {'liked': False, 'count': 0}
+
+
+def test_article_like_form_is_enhanced_by_script(client, users):
+    login(client, 'other')
+    html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
+
+    assert 'data-like-form' in html
+    assert 'data-like-label' in html
+    assert 'static/like-button.js' in html

@@ -40,8 +40,8 @@ def test_sharing_controls_are_on_article_not_list(client, users):
     listing = html.fromstring(client.get('/').data)
     detail = html.fromstring(client.get(f'/post/{users["post"]}').data)
     assert not listing.xpath('//article[contains(@class,"editorial-post")]//button')
-    assert detail.xpath('//button[contains(@class,"qr-code-btn")]')
-    assert detail.xpath('//button[contains(@onclick,"copyToClipboard")]')
+    assert detail.xpath('//div[@data-qr-share]//button[contains(@class,"qr-share__toggle")]')
+    assert not detail.xpath('//button[contains(@onclick,"copyToClipboard")]')
 
 
 def test_navigation_search_and_theme_are_inside_collapsible_menu(client):
@@ -58,5 +58,7 @@ def test_chinese_menu_and_sharing_controls_are_translated(client, users):
     page = html.fromstring(client.get(
         f'/post/{users["post"]}', headers={'Accept-Language': 'zh'}).data)
     assert page.xpath('//button[@data-nav-toggle]')[0].text_content().strip() == '切换导航'
-    assert page.xpath('//button[contains(@class, "qr-code-btn")]')[0].text_content().strip() == '生成二维码'
-    assert page.xpath('//button[contains(@onclick, "copyToClipboard")]')[0].text_content().strip() == '复制链接'
+    assert page.xpath('//button[contains(@class, "qr-share__toggle")]')[0].text_content().strip() == '生成二维码'
+    assert page.xpath('//*[@data-qr-share]//*[@role="dialog"]')[0].get('aria-label') == '文章二维码'
+    assert page.xpath('//p[contains(@class, "qr-share__hint")]')[0].text_content().strip() == '扫码，在手机上阅读'
+    assert '复制链接' not in page.text_content()

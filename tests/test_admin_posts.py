@@ -429,7 +429,7 @@ def test_admin_post_list_labels_empty_draft_title(client, application, users):
     response = client.get('/admin/posts')
 
     assert response.status_code == 200
-    assert '<strong>Untitled draft</strong>' in response.get_data(as_text=True)
+    assert '<strong>无标题草稿</strong>' in response.get_data(as_text=True)
 
 
 def test_admin_post_edit_preserves_legacy_format_and_sanitizes_html(

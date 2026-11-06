@@ -11,8 +11,8 @@
   {% for post in posts %}
   <article class="admin-list__row">
     <div class="admin-list__main">
-      <a href="{{ url_for('admin.edit_post', post_id=post.id) }}"><strong>{{ (post.draft.title if post.draft else post.title) or 'Untitled draft' }}</strong></a>
-      <span>{{ post.author.username }} · {{ post.local_timestamp.strftime('%Y-%m-%d') }} · {% if post.draft and post.is_published %}Pending update{% elif post.draft %}Draft{% elif post.is_published %}Published{% else %}Unpublished{% endif %}</span>
+      <a href="{{ url_for('admin.edit_post', post_id=post.id) }}"><strong>{{ (post.draft.title if post.draft else post.title) or '无标题草稿' }}</strong></a>
+      <span>{{ post.author.username }} · {{ post.local_timestamp.strftime('%Y-%m-%d') }} · {% if post.draft and post.is_published %}有未发布修改{% elif post.draft %}草稿{% elif post.is_published %}已发布{% else %}未发布{% endif %}</span>
     </div>
     <div class="admin-list__actions">
       <a href="{{ url_for('admin.edit_post', post_id=post.id) }}">编辑</a>

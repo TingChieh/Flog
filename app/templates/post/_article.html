@@ -1,0 +1,24 @@
+    <header class="article-header">
+        <img src="{{ post.author.avatar(70) }}" class="article-header__avatar" width="70" height="70" alt="{{ post.author.username }}">
+        <div>
+            <span class="article-header__author">{{ post.author.username }}</span>
+            <div class="article-header__meta">
+                <time class="article-header__time">{{ moment(post.timestamp).fromNow() }}</time>
+                <span class="post-view-count">{{ post.view_count }} {{ _('views') }}</span>
+            </div>
+        </div>
+    </header>
+
+    {% if article_toc %}
+    {% macro toc_links() %}
+    <ol class="article-toc__list">
+        {% for item in article_toc %}<li class="article-toc__item article-toc__item--{{ item.level }}"><a href="{{ item.href }}">{{ item.title }}</a></li>{% endfor %}
+    </ol>
+    {% endmacro %}
+    <div class="article-toc-side"><nav class="article-toc" aria-label="{{ _('Table of contents') }}"><div class="article-toc__title">{{ _('Contents') }}</div>{{ toc_links() }}</nav></div>
+    <details class="article-toc-mobile"><summary>{{ _('Contents') }}</summary><nav class="article-toc" aria-label="{{ _('Table of contents') }}">{{ toc_links() }}</nav></details>
+    {% endif %}
+    <div id="post{{ post.id }}" class="article-body">
+        <h1>{{ post.title }}</h1>
+        {{ article_html }}
+    </div>

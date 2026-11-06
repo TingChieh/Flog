@@ -314,13 +314,17 @@ msgstr "点赞"
 msgid "Liked"
 msgstr "已点赞"
 
-#: app/templates/post/post.html:61
-msgid "Copy link"
-msgstr "复制链接"
-
 #: app/templates/post/post.html:67
 msgid "Generate QR Code"
 msgstr "生成二维码"
+
+#: app/templates/post/post.html:64
+msgid "Article QR code"
+msgstr "文章二维码"
+
+#: app/templates/post/post.html:67
+msgid "Scan to read on your phone"
+msgstr "扫码，在手机上阅读"
 
 #: app/templates/post/post.html:75
 msgid "Comments"

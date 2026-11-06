@@ -173,13 +173,16 @@ def test_article_page_uses_reading_layout_and_divided_comments(client, users):
     assert 'class="comment-list"' in html
 
 
-def test_article_copy_link_handles_clipboard_success_and_failure(client, users):
-    response = client.get(f'/post/{users["post"]}')
-    html = response.get_data(as_text=True)
+def test_article_has_no_copy_link_and_qr_code_uses_site_styles(client, users):
+    html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
 
-    assert 'navigator.clipboard.writeText(text).then(function()' in html
-    assert "alert('Link copied to clipboard!')" in html
-    assert "console.error('Could not copy text: ', err)" in html
+    assert 'copyToClipboard' not in html
+    assert 'bootstrap.Popover' not in html
+    assert 'qr-code-btn' not in html
+    assert 'static/qr-share.js' in html
+    css = Path('app/static/style.css').read_text()
+    for selector in ('.qr-share__toggle', '.qr-share__panel', '.qr-share__code'):
+        assert selector in css
 
 
 def test_homepage_editorial_styles_define_responsive_rail_and_utilities():
