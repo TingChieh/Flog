@@ -4,5 +4,5 @@
     <h3 class="editorial-post__title">{% if search_result %}{{ highlight(post.title or _('Untitled'), query) }}{% else %}{{ post.title or _('Untitled') }}{% endif %}</h3>
     {% if search_result %}<p>{{ search_result.snippet }}</p>{% else %}<p>{{ post.body|plain_text(post.body_format) }}</p>{% endif %}
   </a>
-  <div class="editorial-post__meta"><time datetime="{{ post.local_timestamp.isoformat() }}">{{ post.timestamp|dateformat('long') }}</time><span aria-hidden="true">·</span><span>{{ _('%(minutes)s min read', minutes=post.body|reading_minutes(post.body_format)) }}</span></div>
+  <div class="editorial-post__meta"><time datetime="{{ post.local_timestamp.isoformat() }}">{{ post.timestamp|dateformat('long') }}</time></div>
 </article>

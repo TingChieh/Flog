@@ -5,31 +5,15 @@ from app import db
 from app.models import Post
 
 
-@pytest.mark.parametrize(('body', 'body_format', 'minutes'), [
-    ('汉' * 400, 'html', 1),
-    ('汉' * 401, 'html', 2),
-    ('word ' * 200, 'html', 1),
-    ('汉' * 200 + ' ' + 'word ' * 100, 'html', 1),
-    ('<p>' + '汉' * 400 + '</p>', 'html', 1),
-    ('# Heading\n\n' + '汉' * 400, 'markdown', 2),
-    ('', 'html', 1),
-])
-def test_reading_time_counts_visible_cjk_and_latin_content(application, body, body_format, minutes):
-    from app.content import reading_minutes
-    with application.app_context():
-        assert reading_minutes(body, body_format) == minutes
-
-
-@pytest.mark.parametrize(('locale', 'label'), [('en', '阅读需 2 分钟'), ('zh', '阅读需 2 分钟')])
-def test_home_lists_category_excerpt_date_and_chinese_reading_time(client, application, users, locale, label):
+def test_home_lists_category_excerpt_and_date_without_reading_time(client, application, users):
     with application.app_context():
         post = db.session.get(Post, users['post'])
         post.body = '<p>' + '汉' * 401 + '</p>'
         db.session.commit()
-    page = html.fromstring(client.get('/', headers={'Accept-Language': locale}).data)
+    page = html.fromstring(client.get('/').data)
     item = page.xpath('//article[contains(@class, "editorial-post")]')[0]
     assert 'General' in item.text_content()
-    assert label in item.text_content()
+    assert '阅读需' not in item.text_content()
     assert item.xpath('.//time[@datetime]')
     assert not item.xpath('.//button')
     assert not page.xpath('//aside[contains(@class, "category-rail")]')

@@ -1,5 +1,4 @@
 import re
-import math
 import unicodedata
 from urllib.parse import quote, urlsplit
 
@@ -209,16 +208,3 @@ def render_article(value, body_format):
         html.tostring(child, encoding='unicode', method='html') for child in root)
     return (Markup(optimize_images(sanitize_html(result))),
             entries if len(entries) >= 3 else [])
-
-
-# Count CJK characters separately from whitespace-delimited words.
-_CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af\u3040-\u30ff\uac00-\ud7af]")
-_WORD = re.compile(r"[^\W_]+(?:['’][^\W_]+)*", re.UNICODE)
-
-def reading_minutes(value, body_format):
-    rendered = render_content(value, body_format)
-    root = html.fragment_fromstring(str(rendered), create_parent='div')
-    text = ' '.join(root.itertext())
-    cjk_count = len(_CJK.findall(text))
-    words = len(_WORD.findall(_CJK.sub(' ', text)))
-    return max(1, math.ceil(cjk_count / 400 + words / 200))

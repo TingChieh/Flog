@@ -32,10 +32,9 @@ def inject_current_year():
 
 
 from app.security import safe_html
-from app.content import render_content, reading_minutes
+from app.content import render_content
 app.jinja_env.filters['safe_html'] = safe_html
 app.jinja_env.filters['render_content'] = render_content
-app.jinja_env.filters['reading_minutes'] = reading_minutes
 from app.timezones import to_display
 app.jinja_env.filters['localtime'] = to_display
 db = SQLAlchemy(app)

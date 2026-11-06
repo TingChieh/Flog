@@ -3033,6 +3033,15 @@ html[data-theme="dark"] body.public-site {
     .public-site .category-sidebar ul { display: block; }
     .public-site .category-sidebar li { padding: 5px 0; justify-content: space-between; }
 }
+.public-site .pagination { margin: 8px 0 0; justify-content: space-between; gap: 24px; }
+.public-site .page-link {
+    min-width: 0; padding: 7px 0; background: transparent; border: 0; border-radius: 0;
+    color: var(--text-primary); font-size: 15px;
+}
+.public-site .page-link:hover, .public-site .page-link:focus-visible {
+    color: var(--text-primary); background: transparent; text-decoration: underline; text-underline-offset: 4px;
+}
+.public-site .page-item.disabled .page-link { background: transparent; color: var(--text-secondary); opacity: .4; text-decoration: none; pointer-events: none; }
 .public-site .editorial-post { padding: 0; margin: 0 0 60px; border: 0; }
 .public-site .editorial-post__category { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
 .public-site .editorial-post__category a { color: inherit; text-decoration: none; }
