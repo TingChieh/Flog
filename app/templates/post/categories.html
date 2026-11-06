@@ -2,11 +2,9 @@
 
 {% block page_hero %}{% endblock %}
 
-{% block title %}{{ _('Categories') }}{% endblock %}
-
 {% block content %}
   <section class="content-section public-page" aria-labelledby="page-title">
-    <header class="page-heading"><h1 id="page-title">{{ _('Categories') }}</h1></header>
+    <header class="page-heading"><h1 id="page-title">{{ title }}</h1></header>
     <ul class="data-list">
       {% for category in categories %}
       <li class="data-list__item functional-row">

@@ -5,15 +5,29 @@
 <div class="editorial-layout">
   <section aria-labelledby="latest-posts">
     <header class="section-heading">
-      <h1 id="latest-posts">{{ _('Stories') }}</h1>
+      <h1 id="latest-posts">{{ site_text.home_heading }}</h1>
     </header>
     {% if form %}
       {{ wtf.quick_form(form) }}
     {% endif %}
-    <div class="editorial-list">
-      {% for post in posts %}
-        {% include 'post/_post.html' %}
-      {% endfor %}
+    <div class="editorial-body">
+      {% if home_categories %}
+      <aside class="category-sidebar" aria-labelledby="category-sidebar-title">
+        <div class="category-sidebar__inner">
+          <h2 id="category-sidebar-title">{{ site_text.nav_categories }}</h2>
+          <ul>
+            {% for category, count in home_categories %}
+            <li><a href="{{ url_for('posts_by_category', category_id=category.id) }}">{{ category.name }}</a><span>{{ count }}</span></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </aside>
+      {% endif %}
+      <div class="editorial-list">
+        {% for post in posts %}
+          {% include 'post/_post.html' %}
+        {% endfor %}
+      </div>
     </div>
     <nav aria-label="{{ _('Post navigation') }}">
       <ul class="pagination">

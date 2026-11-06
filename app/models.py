@@ -94,6 +94,13 @@ class SiteSettings(db.Model):
         sa.Boolean, nullable=False, default=True, server_default=sa.true())
     post_revision_limit: so.Mapped[int] = so.mapped_column(
         sa.Integer, nullable=False, default=20, server_default=sa.text('20'))
+    # Wording shown across the public site; blank means "use the default".
+    site_name: so.Mapped[Optional[str]] = so.mapped_column(sa.String(60))
+    home_tab_title: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
+    home_heading: so.Mapped[Optional[str]] = so.mapped_column(sa.String(60))
+    nav_home_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
+    nav_archive_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
+    nav_categories_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
 
 
 def get_site_settings():

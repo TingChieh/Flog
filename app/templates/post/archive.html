@@ -2,7 +2,7 @@
 {% block page_hero %}{% endblock %}
 {% block content %}
 <section class="content-section archive" aria-labelledby="page-title">
-  <header class="page-heading"><h1 id="page-title">{{ _('Archive') }}</h1></header>
+  <header class="page-heading"><h1 id="page-title">{{ title }}</h1></header>
   {% for year, year_posts in posts|groupby('local_timestamp.year')|reverse %}
   <section class="archive-group">
     <h2 class="archive-year">{{ year }}</h2>

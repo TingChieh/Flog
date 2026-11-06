@@ -15,7 +15,21 @@
       <span>{{ post.author.username }} · {{ post.local_timestamp.strftime('%Y-%m-%d') }} · {% if post.draft and post.is_published %}有未发布修改{% elif post.draft %}草稿{% elif post.is_published %}已发布{% else %}未发布{% endif %}</span>
     </div>
     <div class="admin-list__actions">
+      <a href="{{ url_for('admin.preview_saved_post', post_id=post.id) }}" target="_blank" rel="noopener">预览</a>
       <a href="{{ url_for('admin.edit_post', post_id=post.id) }}">编辑</a>
+      {% if post.draft %}
+      <form method="post" action="{{ url_for('admin.publish_post', post_id=post.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="list">
+        <button class="button button--quiet" type="submit" data-publish>{{ '发布更新' if post.is_published else '公开' }}</button>
+      </form>
+      {% elif post.is_published %}
+      <form method="post" action="{{ url_for('admin.unpublish', post_id=post.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="list">
+        <button class="button button--quiet" type="submit" data-unpublish onclick="return confirm('取消公开后读者将看不到这篇文章，确定吗？');">取消公开</button>
+      </form>
+      {% endif %}
       <form method="post" action="{{ url_for('admin.delete_post', post_id=post.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除这篇文章？');">删除</button>

@@ -86,3 +86,67 @@ def test_editor_form_declares_the_upload_url_once(client, application, users):
     login(client, 'author')
     html = client.get(f'/admin/posts/{users["post"]}/edit').get_data(as_text=True)
     assert html.count('data-image-upload-url') == 1
+
+
+def list_rows(client):
+    document = lxml_html.fromstring(
+        client.get('/admin/posts').get_data(as_text=True))
+    return document.xpath('//article[contains(@class, "admin-list__row")]')
+
+
+def test_article_list_offers_publish_for_a_draft_and_returns_to_the_list(
+        client, application, users):
+    prepare(application, users, published=False, draft=True)
+    login(client, 'author')
+    row = list_rows(client)[0]
+
+    button = row.xpath('.//form[contains(@action, "/publish")]//button')[0]
+    assert button.text_content().strip() == '公开'
+    response = client.post(f'/admin/posts/{users["post"]}/publish',
+                           data={'next': 'list'})
+    assert response.status_code == 302
+    assert response.headers['Location'].endswith('/admin/posts')
+    with application.app_context():
+        assert db.session.get(Post, users['post']).is_published is True
+
+
+def test_article_list_offers_unpublish_for_a_live_article(
+        client, application, users):
+    prepare(application, users, published=True, draft=False)
+    login(client, 'author')
+    row = list_rows(client)[0]
+
+    assert row.xpath('.//form[contains(@action, "/unpublish")]//button')[0] \
+        .text_content().strip() == '取消公开'
+    response = client.post(f'/admin/posts/{users["post"]}/unpublish',
+                           data={'next': 'list'})
+    assert response.headers['Location'].endswith('/admin/posts')
+    with application.app_context():
+        assert db.session.get(Post, users['post']).is_published is False
+
+
+def test_publication_actions_still_return_to_the_editor_by_default(
+        client, application, users):
+    prepare(application, users, published=True, draft=False)
+    login(client, 'author')
+    response = client.post(f'/admin/posts/{users["post"]}/unpublish')
+    assert response.headers['Location'].endswith(
+        f'/admin/posts/{users["post"]}/edit')
+
+
+def test_article_list_preview_shows_the_pending_draft(client, application, users):
+    prepare(application, users, published=True, draft=True)
+    login(client, 'author')
+    row = list_rows(client)[0]
+    link = row.xpath('.//a[contains(@href, "/preview")]')[0]
+    assert link.get('target') == '_blank'
+
+    response = client.get(link.get('href'))
+    assert response.status_code == 200
+    assert 'Draft' in response.get_data(as_text=True)
+    assert response.headers['X-Robots-Tag'] == 'noindex, nofollow'
+
+
+def test_article_list_preview_is_limited_to_the_owner(client, users):
+    login(client, 'other')
+    assert client.get(f'/admin/posts/{users["post"]}/preview').status_code == 403

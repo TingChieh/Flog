@@ -13,6 +13,16 @@
     {{ form.post_revision_limit(class="form-control" + (' is-invalid' if form.post_revision_limit.errors else ''), min="1", max="100") }}
     {% for error in form.post_revision_limit.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
   </div>
+  <h2 class="admin-form__heading">页面文字</h2>
+  <p class="form-text">留空则使用默认文字；网站名称同时用于导航栏、页脚和标签页标题后缀。</p>
+  {% for name in ['site_name', 'home_tab_title', 'home_heading', 'nav_home_label', 'nav_archive_label', 'nav_categories_label'] %}
+  {% set field = form[name] %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else ''), placeholder=site_text_defaults[name]) }}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
   {{ form.submit(class="button button--cta") }}
 </form>
 {% endblock %}

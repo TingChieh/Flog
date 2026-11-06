@@ -2950,7 +2950,8 @@ body.public-site {
     --bs-body-font-family: var(--font-serif);
     font-family: var(--font-serif);
     background: var(--page-bg);
-    padding: clamp(20px, 9.4vh, 102px) clamp(16px, 5vw, 72px);
+    --page-gutter-y: clamp(12px, 3vh, 32px);
+    padding: var(--page-gutter-y) clamp(16px, 5vw, 72px);
 }
 html[data-theme="dark"] body.public-site {
     --page-bg: #141412;
@@ -2963,7 +2964,7 @@ html[data-theme="dark"] body.public-site {
 .public-site .site-shell {
     width: 100%;
     max-width: 1450px;
-    min-height: calc(100vh - 2 * clamp(20px, 9.4vh, 102px));
+    min-height: calc(100vh - 2 * var(--page-gutter-y));
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -3017,6 +3018,21 @@ html[data-theme="dark"] body.public-site {
 .public-site .editorial-layout { display: block; width: min(640px, 100%); margin: 0 auto; }
 .public-site .section-heading { margin: 0 0 60px; padding: 0; border: 0; }
 .public-site .section-heading h1 { font-size: 36px; font-weight: 700; letter-spacing: -.04em; }
+.public-site .editorial-body { position: relative; }
+.public-site .category-sidebar { margin: 0 0 40px; }
+.public-site .category-sidebar h2 { margin: 0 0 8px; color: var(--text-secondary); font-size: 12px; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; }
+.public-site .category-sidebar ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.public-site .category-sidebar li { display: flex; gap: 6px; align-items: baseline; }
+.public-site .category-sidebar a { color: var(--text-primary); font-size: 15px; text-decoration: none; }
+.public-site .category-sidebar a:hover, .public-site .category-sidebar a:focus-visible { text-decoration: underline; }
+.public-site .category-sidebar span { color: var(--text-secondary); font-size: 12px; }
+@media (min-width: 1200px) {
+    /* Sit in the empty margin beside the reading column and follow the scroll. */
+    .public-site .category-sidebar { position: absolute; top: 0; bottom: 0; left: calc(100% + 56px); width: 180px; margin: 0; }
+    .public-site .category-sidebar__inner { position: sticky; top: 24px; }
+    .public-site .category-sidebar ul { display: block; }
+    .public-site .category-sidebar li { padding: 5px 0; justify-content: space-between; }
+}
 .public-site .editorial-post { padding: 0; margin: 0 0 60px; border: 0; }
 .public-site .editorial-post__category { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
 .public-site .editorial-post__category a { color: inherit; text-decoration: none; }

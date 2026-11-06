@@ -60,6 +60,12 @@ def inject_navigation_pages():
         db.session.rollback()
         return {'navigation_pages': []}
 
+@app.context_processor
+def inject_site_text():
+    from app.site_text import site_text
+
+    return {'site_text': site_text()}
+
 if not app.debug:
     if app.config['MAIL_SERVER']:
         auth = None

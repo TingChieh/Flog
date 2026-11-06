@@ -144,4 +144,14 @@ class SiteSettingsForm(FlaskForm):
     post_revision_limit = IntegerField(
         '每篇文章可回滚版本数量',
         validators=[InputRequired(), NumberRange(min=1, max=100)])
+    site_name = StringField('网站名称', validators=[Optional(), Length(max=60)])
+    home_tab_title = StringField(
+        '首页标签页标题', validators=[Optional(), Length(max=120)])
+    home_heading = StringField('首页大标题', validators=[Optional(), Length(max=60)])
+    nav_home_label = StringField(
+        '导航栏：首页', validators=[Optional(), Length(max=20)])
+    nav_archive_label = StringField(
+        '导航栏：归档', validators=[Optional(), Length(max=20)])
+    nav_categories_label = StringField(
+        '导航栏：分类', validators=[Optional(), Length(max=20)])
     submit = SubmitField('保存设置')

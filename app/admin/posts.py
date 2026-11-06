@@ -235,8 +235,21 @@ def preview_post():
     """
     post_id = request.form.get('post_id', type=int)
     existing = owned_post_or_404(post_id, current_user) if post_id else None
-    title = request.form.get('title', '').strip()[:120]
-    body = request.form.get('body', '')
+    return _render_preview(
+        existing, request.form.get('title', ''), request.form.get('body', ''))
+
+
+@bp.route('/posts/<int:post_id>/preview', methods=['GET'])
+@login_required
+def preview_saved_post(post_id):
+    """Preview a post as saved: its pending draft if it has one, else the live text."""
+    post = owned_post_or_404(post_id, current_user)
+    saved = post.draft or post
+    return _render_preview(post, saved.title, saved.body)
+
+
+def _render_preview(existing, title, body):
+    title = title.strip()[:120]
     body_format = (normalize_body_format(existing.body_format) if existing
                    else BODY_FORMAT_MARKDOWN)
     article_html, article_toc = render_article(body, body_format)
@@ -260,6 +273,13 @@ def preview_post():
     return response
 
 
+def _after_publication_change(post_id):
+    """Return to the article list when the action came from it, else the editor."""
+    if request.form.get('next') == 'list':
+        return redirect(url_for('admin.posts'))
+    return redirect(url_for('admin.edit_post', post_id=post_id))
+
+
 @bp.route('/posts/<int:post_id>/publish', methods=['POST'])
 @login_required
 def publish_post(post_id):
@@ -267,10 +287,10 @@ def publish_post(post_id):
         publish_draft(current_user, post_id)
     except PostDraftError as exc:
         flash(str(exc))
-        return redirect(url_for('admin.edit_post', post_id=post_id))
+        return _after_publication_change(post_id)
     _commit_post_change('文章发布失败，请重试。')
     flash('文章已发布。')
-    return redirect(url_for('admin.edit_post', post_id=post_id))
+    return _after_publication_change(post_id)
 
 
 @bp.route('/posts/<int:post_id>/unpublish', methods=['POST'])
@@ -279,7 +299,7 @@ def unpublish(post_id):
     unpublish_post(current_user, post_id)
     _commit_post_change('文章取消发布失败，请重试。')
     flash('文章已取消发布。')
-    return redirect(url_for('admin.edit_post', post_id=post_id))
+    return _after_publication_change(post_id)
 
 
 @bp.route('/posts/<int:post_id>/discard-draft', methods=['POST'])

@@ -8,6 +8,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import SQLAlchemyError
 from langdetect import detect, LangDetectException
 from app import app, db
+from app.site_text import site_text
 from app.forms import LoginForm, RegistrationForm, \
     PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm
 from app.models import Category, User, Post, Page, PageRedirect, PostComment, PostLike, get_site_settings
@@ -58,7 +59,13 @@ def index():
         if posts.has_next else None
     prev_url = url_for('index', page=posts.prev_num) \
         if posts.has_prev else None
-    return render_template('index.html', title=_('index'),
+    home_categories = db.session.execute(
+        sa.select(Category, sa.func.count(Post.id))
+        .join(Post, Post.category_id == Category.id)
+        .where(Post.is_published.is_(True))
+        .group_by(Category.id).order_by(Category.name)
+    ).all()
+    return render_template('index.html', home_categories=home_categories,
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
 
@@ -244,7 +251,7 @@ def archive():
     posts = db.session.scalars(
         published_post_statement().order_by(Post.timestamp.desc(), Post.id.desc())
     ).all()
-    return render_template('post/archive.html', title=_('Archive'), posts=posts)
+    return render_template('post/archive.html', title=site_text()['nav_archive'], posts=posts)
 
 
 @app.route('/categories', methods=['GET'])
@@ -256,7 +263,7 @@ def categories():
         ).group_by(Post.category_id)
     ).all())
     return render_template(
-        'post/categories.html', title=_('Categories'), categories=categories,
+        'post/categories.html', title=site_text()['nav_categories'], categories=categories,
         category_post_counts=category_post_counts)
 
 # Route for deleting a category
@@ -300,7 +307,8 @@ def posts_by_category(category_id):
     )).all()
 
     # Render the posts in the category using a template
-    return render_template('post/posts_by_category.html', category=category, posts=posts)
+    return render_template(
+        'post/posts_by_category.html', title=category.name, category=category, posts=posts)
 
 @app.route('/archives/<int:legacy_id>/')
 def legacy_archive(legacy_id):
@@ -337,7 +345,7 @@ def post(post_id):
 
     article_html, article_toc = render_article(post.body, post.body_format)
     response = make_response(render_template(
-        'post/post.html', article_html=article_html, article_toc=article_toc, title=_('Post'), post=post, form=form,
+        'post/post.html', article_html=article_html, article_toc=article_toc, title=post.title or _('Untitled'), post=post, form=form,
         comments=post.comments, liked=is_liked(post, read_visitor_token()),
     ))
     if counted:

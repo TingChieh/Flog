@@ -6,9 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
     {% if title %}
-    <title>{{ title }} - Aisaka's blog</title>
+    <title>{{ title }} - {{ site_text.site_name }}</title>
+    {% elif request.endpoint == 'index' %}
+    <title>{{ site_text.home_tab_title }}</title>
     {% else %}
-    <title>{{ _('Welcome to Aisaka') }}</title>
+    <title>{{ site_text.site_name }}</title>
     {% endif %}
     {% if config.GTM_ID %}
     <!-- Google Tag Manager -->
@@ -47,7 +49,7 @@
     {% block site_navigation %}
     <nav class="site-nav" aria-label="{{ _('Primary navigation') }}">
       <div class="site-nav__inner">
-        <a class="site-brand" href="{{ url_for('index') }}">Aisaka's Blog</a>
+        <a class="site-brand" href="{{ url_for('index') }}">{{ site_text.site_name }}</a>
         <button class="nav-toggle" type="button" data-nav-toggle
                 aria-expanded="false" aria-controls="site-navigation">
           <span class="visually-hidden">{{ _('Toggle navigation') }}</span>
@@ -55,8 +57,9 @@
         </button>
         <div class="site-nav__menu" id="site-navigation" data-site-nav hidden>
           <ul class="site-nav__links">
-            <li><a href="{{ url_for('index') }}">{{ _('Home') }}</a></li>
-            <li><a href="{{ url_for('archive') }}">{{ _('Archive') }}</a></li>
+            <li><a href="{{ url_for('index') }}">{{ site_text.nav_home }}</a></li>
+            <li><a href="{{ url_for('archive') }}">{{ site_text.nav_archive }}</a></li>
+            <li><a href="{{ url_for('categories') }}">{{ site_text.nav_categories }}</a></li>
             {% for page in navigation_pages %}
             <li><a href="{{ url_for('public_page', slug=page.slug) }}">{{ page.title }}</a></li>
             {% endfor %}
@@ -102,7 +105,7 @@
             aria-label="Back to top" hidden>↑</button>
     <footer class="site-footer">
       <div class="site-footer__inner">
-        <p>Aisaka's Blog · 思考、记录，以及日常生活。</p>
+        <p>{{ site_text.site_name }} · 思考、记录，以及日常生活。</p>
         <div class="site-footer__meta">
           <span>Copyright &copy; {{ current_year }} Aisaka</span>
           <a href="{{ url_for('feed') }}">{{ _('Subscribe via RSS') }}</a>
