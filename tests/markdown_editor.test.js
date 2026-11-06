@@ -38,6 +38,7 @@ function createHarness({
   progressHelper = false,
   libraryUrl = null,
   withPicker = true,
+  emojiPicker = false,
   theme = 'light',
   uploadResponses = [{ ok: true, payload: { uploaded: 1, url: '/files/abc.png' } }],
 } = {}) {
@@ -56,6 +57,7 @@ function createHarness({
   let uploadResponseIndex = 0;
   const wysiwygButton = { removed: false, remove() { this.removed = true; } };
   const pickerCalls = [];
+  const emojiCalls = [];
 
   const form = {
     dataset: {
@@ -123,6 +125,7 @@ function createHarness({
     ...(progressHelper ? { XMLHttpRequest: function XMLHttpRequest() {} } : {}),
     window: {
       ...(libraryUrl && withPicker ? { FlogImagePicker: { open: (options) => pickerCalls.push(options) } } : {}),
+      ...(emojiPicker ? { FlogEmojiPicker: { open: (options) => emojiCalls.push(options) } } : {}),
       ...(progressHelper ? {
         FlogUploadProgress: {
           createProgress(host) {
@@ -170,6 +173,7 @@ function createHarness({
     form,
     root,
     pickerCalls,
+    emojiCalls,
     requests,
     progressCalls,
     insertCalls,
@@ -1064,4 +1068,37 @@ test('the library button is left out when the picker script did not load', () =>
   const harness = createHarness({ libraryUrl: '/admin/images/picker', withPicker: false });
   harness.execute();
   assert.equal(harness.options().toolbar.some((item) => item?.name === 'image-library'), false);
+});
+
+test('no emoji button without the picker script', () => {
+  const harness = createHarness();
+  harness.execute();
+  assert.equal(harness.options().toolbar.some((item) => item?.name === 'emoji-picker'), false);
+});
+
+test('the emoji button sits before upload and opens the picker at the button', () => {
+  const harness = createHarness({ emojiPicker: true });
+  harness.execute();
+  const toolbar = harness.options().toolbar;
+  const index = toolbar.findIndex((item) => item?.name === 'emoji-picker');
+  assert.ok(index > -1);
+  assert.equal(toolbar[index].tip, '表情');
+  assert.equal(toolbar[index + 1], 'upload');
+
+  const anchor = { tag: 'button' };
+  toolbar[index].click({ currentTarget: anchor });
+  assert.equal(harness.emojiCalls.length, 1);
+  assert.equal(harness.emojiCalls[0].anchor, anchor);
+});
+
+test('picking an emoji inserts it into the editor and syncs the textarea', () => {
+  const harness = createHarness({ emojiPicker: true });
+  harness.execute();
+  harness.ready();
+  const button = harness.options().toolbar.find((item) => item?.name === 'emoji-picker');
+  button.click({ currentTarget: {} });
+  harness.emojiCalls[0].onPick('😀');
+
+  assert.deepEqual(harness.insertCalls, ['😀']);
+  assert.equal(harness.field.value, '# source😀');
 });

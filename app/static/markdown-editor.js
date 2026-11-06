@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const TOOLBAR = [
     'headings', 'bold', 'italic', '|', 'quote', 'list', 'ordered-list', '|',
-    'code', 'inline-code', 'link', 'table', 'line', 'upload', 'image-library', '|',
+    'code', 'inline-code', 'link', 'table', 'line', 'emoji-picker', 'upload', 'image-library', '|',
     'undo', 'redo', '|', 'edit-mode', 'fullscreen',
   ];
   const IMAGE_TYPES = 'image/gif,image/jpeg,image/png';
@@ -134,6 +134,23 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     };
 
+    const emojiButton = () => {
+      if (!window.FlogEmojiPicker) return null;
+      return {
+        name: 'emoji-picker',
+        tip: '表情',
+        tipPosition: 's',
+        icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.4 2.2 2 3.5 2s2.5-.6 3.5-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>',
+        click: (event) => window.FlogEmojiPicker.open({
+          anchor: event?.currentTarget || host,
+          onPick: (chars) => {
+            vditor.insertValue(chars);
+            sync(vditor.getValue());
+          },
+        }),
+      };
+    };
+
     const applyTheme = () => {
       if (!ready) return;
       vditor.setTheme(isDark() ? 'dark' : 'classic', isDark() ? 'dark' : 'light');
@@ -149,9 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
       theme: isDark() ? 'dark' : 'classic',
       cache: { enable: false },
       counter: { enable: true, type: 'text' },
-      toolbar: TOOLBAR.map((item) => (
-        item === 'image-library' ? libraryButton() : item
-      )).filter((item) => item && (canUpload || item !== 'upload')),
+      toolbar: TOOLBAR.map((item) => {
+        if (item === 'image-library') return libraryButton();
+        if (item === 'emoji-picker') return emojiButton();
+        return item;
+      }).filter((item) => item && (canUpload || item !== 'upload')),
       preview: {
         actions: [],
         hljs: { enable: false },

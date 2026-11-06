@@ -31,3 +31,12 @@ def test_public_pages_load_the_emoji_script(client, users):
     assert 'emoji-keys.js' in body and 'emoji.js' in body
     assert 'data-base="/static/emoji/noto/"' in body
     assert body.index('emoji-keys.js') < body.index('/emoji.js')
+
+
+def test_editors_load_the_picker_before_the_markdown_editor(client, users):
+    from tests.conftest import login
+    login(client, 'admin')
+    for path in ('/admin/pages/new', '/admin/posts/new'):
+        body = client.get(path).get_data(as_text=True)
+        assert 'emoji-data.js' in body and 'emoji-picker.js' in body
+        assert body.index('emoji-picker.js') < body.index('markdown-editor.js')
