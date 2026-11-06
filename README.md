@@ -45,6 +45,7 @@ Flog/
 ├── migrations/             # Alembic 数据库迁移
 ├── scripts/
 │   ├── bootstrap.sh        # 一键搭建开发环境并启动
+│   ├── deploy.sh           # 部署公开仓库的 main 到生产服务器
 │   ├── e2e_live_photo.py   # 用真实浏览器验证 Live Photo 与图片交付
 │   └── generate_article_fonts.py  # 生成文章字体子集
 ├── tests/                  # Python 与 JavaScript 测试
@@ -172,6 +173,23 @@ node --test tests/*.test.js
 ```bash
 .venv/bin/python scripts/e2e_live_photo.py [--headed] [--keep]
 ```
+
+## 部署
+
+生产服务器（`hk_server` 上的 `/home/ubuntu/flog`，systemd 服务 `flog`）始终跟随公开仓库的
+`origin/main`。服务器访问不了 github.com，所以由本机推送：
+
+```bash
+git push origin main
+./scripts/deploy.sh --dry-run   # 先看会发布哪些提交
+./scripts/deploy.sh             # 备份 → 同步代码 → 依赖 → ffmpeg → 迁移 → 重启 → 回填 → 冒烟测试
+```
+
+提交以 git bundle 经 SSH 传到服务器，再作为 `origin/main` 快进合并，因此服务器版本严格等于公开仓库。
+脚本在改动任何东西之前，先把数据库、上传目录和 `.env` 备份到 `/root/flog-backups/`，
+失败时会打印回滚命令。选项：`--no-optimize` 跳过旧图回填，`--recompress` 同时就地压缩旧图。
+主机、目录等可用 `DEPLOY_HOST`、`DEPLOY_DIR` 等环境变量覆盖（见脚本头部）。Caddy 配置不由脚本修改，
+图片直出的可选配置见 `docs/caddy-uploads.md`。
 
 ## Markdown 编辑器
 
