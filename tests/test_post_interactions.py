@@ -4,6 +4,11 @@ from tests.conftest import login
 
 
 def test_guest_can_comment_without_exposing_email(client, application, users):
+    with application.app_context():
+        db.session.add(PostComment(
+            post_id=users['post'], name='Reader',
+            email='reader@example.com', body='Earlier'))
+        db.session.commit()
     response = client.post(f'/post/{users["post"]}', data={
         'name': 'Reader',
         'email': 'reader@example.com',
@@ -16,7 +21,8 @@ def test_guest_can_comment_without_exposing_email(client, application, users):
     assert b'reader@example.com' not in response.data
     assert b'&lt;script&gt;alert(1)&lt;/script&gt;Hello' in response.data
     with application.app_context():
-        comment = db.session.scalar(db.select(PostComment))
+        comment = db.session.scalars(
+            db.select(PostComment).order_by(PostComment.id.desc())).first()
         assert comment.post_id == users['post']
 
 

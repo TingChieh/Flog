@@ -22,6 +22,8 @@ from app.post_drafts import DraftValues, publish_draft, save_draft
 from app.likes import (LIKED, LIMITED, attach_visitor_cookie, is_liked,
                        new_visitor_token, read_visitor_token, toggle_like)
 from app.pages import PAGE_CONTENT, page_for_public_slug
+from app.comments import (APPROVED, CommentRejected, CommentsClosed,
+                          comment_context, submit_comment)
 from app.post_views import (
     attach_view_cookie, has_recent_view, record_view, view_cookie_name,
 )
@@ -318,6 +320,31 @@ def legacy_archive(legacy_id):
     return redirect(url_for('post', post_id=post.id), code=301)
 
 
+def _take_comment(target, form, destination):
+    """Handle a posted comment. Returns a redirect, or None to show the form again."""
+    if not target.comments_enabled:
+        abort(403)
+    if not form.validate_on_submit():
+        return None
+    try:
+        result = submit_comment(
+            target, name=form.name.data, email=form.email.data,
+            body=form.body.data, parent_id=form.parent_id.data,
+            honeypot=form.website.data, form_token=form.form_token.data,
+            author=current_user if current_user.is_authenticated else None)
+    except CommentsClosed:
+        abort(403)
+    except CommentRejected as exc:
+        form.body.errors.append(str(exc))
+        return None
+    db.session.commit()
+    if result.outcome == APPROVED:
+        flash('你的评论已发布。')
+        return redirect(destination(f'comment-{result.comment.id}'))
+    flash('评论已提交，审核通过后显示。')
+    return redirect(destination('comments'))
+
+
 @app.route('/post/<int:post_id>', methods=['GET', 'POST'])
 def post(post_id):
     post = public_post_or_404(post_id)
@@ -325,17 +352,12 @@ def post(post_id):
     if current_user.is_authenticated and request.method == 'GET':
         form.name.data = current_user.username
         form.email.data = current_user.email
-    if form.validate_on_submit():
-        comment = PostComment(
-            post=post,
-            name=form.name.data.strip(),
-            email=form.email.data.strip().lower(),
-            body=form.body.data.strip(),
-        )
-        db.session.add(comment)
-        db.session.commit()
-        flash(_('Your comment has been published.'))
-        return redirect(url_for('post', post_id=post.id, _anchor='comments'))
+    if request.method == 'POST':
+        taken = _take_comment(
+            post, form,
+            lambda anchor: url_for('post', post_id=post.id, _anchor=anchor))
+        if taken is not None:
+            return taken
 
     counted = False
     if request.method == 'GET':
@@ -346,7 +368,8 @@ def post(post_id):
     article_html, article_toc = render_article(post.body, post.body_format)
     response = make_response(render_template(
         'post/post.html', article_html=article_html, article_toc=article_toc, title=post.title or _('Untitled'), post=post, form=form,
-        comments=post.comments, liked=is_liked(post, read_visitor_token()),
+        liked=is_liked(post, read_visitor_token()),
+        **comment_context(post, form),
     ))
     if counted:
         attach_view_cookie(response, post.id)
@@ -478,14 +501,28 @@ def robots():
                               content_type='text/plain; charset=utf-8')
 
 
-@app.route('/<slug>')
+@app.route('/<slug>', methods=['GET', 'POST'])
 def public_page(slug):
     resolved = page_for_public_slug(slug)
     if resolved is None:
         abort(404)
     page, is_redirect = resolved
     if is_redirect:
+        if request.method == 'POST':
+            abort(404)
         return _redirect_to_public_page(page)
     if page.kind != PAGE_CONTENT:
         abort(404)
-    return render_template('page/content.html', title=page.title, page=page)
+    form = PostCommentForm()
+    if current_user.is_authenticated and request.method == 'GET':
+        form.name.data = current_user.username
+        form.email.data = current_user.email
+    if request.method == 'POST':
+        taken = _take_comment(
+            page, form,
+            lambda anchor: url_for('public_page', slug=page.slug, _anchor=anchor))
+        if taken is not None:
+            return taken
+    return render_template(
+        'page/content.html', title=page.title, page=page, form=form,
+        **comment_context(page, form))

@@ -1,0 +1,74 @@
+{% macro comment_item(comment, can_reply, is_reply=False) %}
+<article class="post-comment{% if is_reply %} post-comment--reply{% endif %}" id="comment-{{ comment.id }}">
+    <img src="{{ comment.avatar(36 if is_reply else 48) }}" width="{{ 36 if is_reply else 48 }}" height="{{ 36 if is_reply else 48 }}" alt="">
+    <div class="post-comment__body">
+        <header>
+            <span><strong>{{ comment.name }}</strong>{% if comment.user_id %}<span class="comment-badge">作者</span>{% endif %}</span>
+            <time>{{ moment(comment.timestamp).fromNow() }}</time>
+        </header>
+        <div class="post-comment__text">{{ comment.body|comment_markdown }}</div>
+        {% if can_reply %}
+        <a class="comment-reply" href="{{ request.path }}?reply={{ comment.id }}#comment-form"
+           data-reply-link data-reply-id="{{ comment.id }}" data-reply-name="{{ comment.name }}">回复</a>
+        {% endif %}
+    </div>
+</article>
+{% endmacro %}
+
+{% if comments_enabled or comment_count %}
+<section class="comments-section" id="comments" aria-labelledby="comments-title">
+    <header class="comments-section__heading">
+        <h2 id="comments-title">{{ _('Comments') }}</h2>
+        <span>{{ comment_count }}</span>
+        {% if not comments_enabled %}<span class="comments-closed">评论已关闭</span>{% endif %}
+    </header>
+
+    {% if comments_enabled %}
+    <form method="post" class="comment-form" id="comment-form" data-comment-form novalidate>
+        {{ form.csrf_token }}
+        <input type="hidden" name="parent_id" value="{{ comment_reply_to.id if comment_reply_to else '' }}" data-reply-parent>
+        <input type="hidden" name="form_token" value="{{ comment_form_token }}">
+        <p class="comment-reply-note" data-reply-note{% if not comment_reply_to %} hidden{% endif %}>
+            回复 <strong data-reply-name>{{ comment_reply_to.name if comment_reply_to else '' }}</strong>
+            <a href="{{ request.path }}#comment-form" data-reply-cancel>取消</a>
+        </p>
+        <div class="comment-form__identity">
+            <div>
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control", autocomplete="name") }}
+                {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div>
+                {{ form.email.label(class="form-label") }}
+                {{ form.email(class="form-control", autocomplete="email") }}
+                {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+        <div class="comment-form__trap" aria-hidden="true">
+            <label>网址 <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div>
+            {{ form.body.label(class="form-label") }}
+            {{ form.body(class="form-control", rows="4", data_comment_body="") }}
+            <p class="form-text">支持 Markdown：粗体、斜体、代码、引用、列表和链接。</p>
+            {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+    <script src="{{ url_for('static', filename='comment-reply.js') }}" defer></script>
+    {% endif %}
+
+    <div class="comment-list">
+        {% for thread in comment_threads %}
+        {{ comment_item(thread.comment, comments_enabled) }}
+        {% if thread.replies %}
+        <div class="post-comment__replies">
+            {% for reply in thread.replies %}{{ comment_item(reply, comments_enabled, True) }}{% endfor %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="comments-empty">{{ _('No comments yet.') }}</p>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

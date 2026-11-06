@@ -1,9 +1,10 @@
 from flask_wtf import FlaskForm
 from flask_babel import _, lazy_gettext as _l
-from wtforms import SelectField, StringField, PasswordField, BooleanField, SubmitField, \
-    TextAreaField
+from wtforms import HiddenField, IntegerField, SelectField, StringField, PasswordField, \
+    BooleanField, SubmitField, TextAreaField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, \
     Length, Optional
+from wtforms.widgets import HiddenInput
 import sqlalchemy as sa
 from app import db
 from app.models import Category, User
@@ -75,6 +76,11 @@ class PostCommentForm(FlaskForm):
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     body = TextAreaField(_l('Comment'), validators=[
         DataRequired(), Length(1, 1000)])
+    # The comment being answered; empty for a new top-level comment.
+    parent_id = IntegerField(widget=HiddenInput(), validators=[Optional()])
+    # Bait for bots: humans never see or fill it.
+    website = StringField()
+    form_token = HiddenField()
     submit = SubmitField(_l('Publish comment'))
     
     

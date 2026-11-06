@@ -38,49 +38,5 @@
     </div>
 </article>
 
-<section class="comments-section" id="comments" aria-labelledby="comments-title">
-    <header class="comments-section__heading">
-        <h2 id="comments-title">{{ _('Comments') }}</h2>
-        <span>{{ comments|length }}</span>
-    </header>
-
-    <form method="post" class="comment-form" novalidate>
-        {{ form.hidden_tag() }}
-        <div class="comment-form__identity">
-            <div>
-                {{ form.name.label(class="form-label") }}
-                {{ form.name(class="form-control", autocomplete="name") }}
-                {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div>
-                {{ form.email.label(class="form-label") }}
-                {{ form.email(class="form-control", autocomplete="email") }}
-                {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-        </div>
-        <div>
-            {{ form.body.label(class="form-label") }}
-            {{ form.body(class="form-control", rows="4") }}
-            {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-        </div>
-        {{ form.submit(class="btn btn-primary") }}
-    </form>
-
-    <div class="comment-list">
-        {% for comment in comments %}
-        <article class="post-comment">
-            <img src="{{ comment.avatar(48) }}" width="48" height="48" alt="">
-            <div class="post-comment__body">
-                <header>
-                    <strong>{{ comment.name }}</strong>
-                    <time>{{ moment(comment.timestamp).fromNow() }}</time>
-                </header>
-                <p>{{ comment.body }}</p>
-            </div>
-        </article>
-        {% else %}
-        <p class="comments-empty">{{ _('No comments yet.') }}</p>
-        {% endfor %}
-    </div>
-</section>
+{% include '_comments.html' %}
 {% endblock %}
