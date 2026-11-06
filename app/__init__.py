@@ -21,6 +21,9 @@ def get_locale():
 
 app = Flask(__name__)
 app.config.from_object(Config)
+if app.config['TRUSTED_PROXY_HOPS']:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=app.config['TRUSTED_PROXY_HOPS'])
 
 
 @app.context_processor

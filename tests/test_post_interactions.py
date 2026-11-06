@@ -55,13 +55,6 @@ def test_unpublished_post_rejects_comments_without_creating_them(
             db.select(db.func.count()).select_from(PostComment)) == 0
 
 
-def test_guest_like_redirects_to_login(client, users):
-    response = client.post(f'/post/{users["post"]}/like')
-
-    assert response.status_code == 302
-    assert '/login' in response.headers['Location']
-
-
 def test_deleting_post_removes_comments_and_likes(
         client, application, users):
     with application.app_context():

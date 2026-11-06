@@ -16,24 +16,17 @@
     {% include 'post/_article.html' %}
 
     <div class="article-actions" id="post-actions">
-        {% if current_user.is_authenticated %}
         <form method="post" action="{{ url_for('toggle_post_like', post_id=post.id) }}"
               data-like-form data-label-like="{{ _('Like') }}" data-label-liked="{{ _('Liked') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="like-button{% if post.is_liked_by(current_user) %} like-button--active{% endif %}"
-                    aria-pressed="{{ 'true' if post.is_liked_by(current_user) else 'false' }}">
+            {# The comment form already carries this page's token; reuse it. #}
+            <input type="hidden" name="csrf_token" value="{{ form.csrf_token.current_token if form.csrf_token else '' }}">
+            <button type="submit" class="like-button{% if liked %} like-button--active{% endif %}"
+                    aria-pressed="{{ 'true' if liked else 'false' }}">
                 <span aria-hidden="true">&#9829;</span>
-                <span data-like-label>{{ _('Like') if not post.is_liked_by(current_user) else _('Liked') }}</span>
+                <span data-like-label>{{ _('Liked') if liked else _('Like') }}</span>
                 <span class="like-count">{{ post.likes_count() }}</span>
             </button>
         </form>
-        {% else %}
-        <a class="like-button" href="{{ url_for('login', next=request.url) }}">
-            <span aria-hidden="true">&#9829;</span>
-            <span>{{ _('Like') }}</span>
-            <span class="like-count">{{ post.likes_count() }}</span>
-        </a>
-        {% endif %}
 
         <div class="qr-share" data-qr-share data-url="{{ url_for('post', post_id=post.id, _external=True) }}">
             <button class="qr-share__toggle" type="button" aria-expanded="false" aria-controls="qr-share-panel">

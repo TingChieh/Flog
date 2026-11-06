@@ -223,27 +223,25 @@ class PostComment(db.Model):
 
 
 class PostLike(db.Model):
+    """A like from a browser (``visitor_id``) and, if they were signed in, a user."""
     __table_args__ = (
         sa.UniqueConstraint('post_id', 'user_id', name='uq_post_like'),
+        sa.UniqueConstraint('post_id', 'visitor_id', name='uq_post_like_visitor'),
     )
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     post_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey(Post.id, ondelete='CASCADE'), index=True)
-    user_id: so.Mapped[int] = so.mapped_column(
+    user_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey(User.id, ondelete='CASCADE'), index=True)
+    # Hashes only: of the browser's random cookie, and of the network address.
+    visitor_id: so.Mapped[Optional[str]] = so.mapped_column(sa.String(64))
+    ip_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(64), index=True)
     timestamp: so.Mapped[datetime] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc))
 
     post: so.Mapped[Post] = so.relationship(back_populates='likes')
-    user: so.Mapped[User] = so.relationship(back_populates='post_likes')
-    
-    
-
-    
-    
-    
-    
+    user: so.Mapped[Optional[User]] = so.relationship(back_populates='post_likes')
 
 
 class Page(db.Model):

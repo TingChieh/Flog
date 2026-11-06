@@ -328,6 +328,10 @@ msgstr "发布于 %(date)s"
 msgid "Updated on %(date)s"
 msgstr "更新于 %(date)s"
 
+#: app/routes.py
+msgid "Too many likes have come from your network for this post."
+msgstr "你所在的网络对这篇文章的点赞已达上限。"
+
 #: app/templates/post/post.html:64
 msgid "Article QR code"
 msgstr "文章二维码"

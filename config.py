@@ -37,6 +37,16 @@ def display_timezone():
     return name
 
 
+def trusted_proxy_hops():
+    """How many reverse proxies sit in front of the app (Caddy: 1).
+
+    Only that many X-Forwarded-For entries, counted from the right, are trusted,
+    so a visitor cannot make up their own address. 0 means no proxy.
+    """
+    value = os.environ.get('TRUSTED_PROXY_HOPS', '').strip()
+    return int(value) if value.isdigit() and int(value) <= 5 else 1
+
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.environ.get(
@@ -60,6 +70,9 @@ class Config:
     POSTS_PER_PAGE = 10
     SEARCH_QUERY_MAX_LENGTH = 200
     POST_VIEW_WINDOW_SECONDS = 24 * 60 * 60
+    TRUSTED_PROXY_HOPS = trusted_proxy_hops()
+    # Likes one network address (hashed) may leave on a single post.
+    LIKES_PER_IP_PER_POST = 3
     DISPLAY_TIMEZONE = display_timezone()
     BABEL_DEFAULT_TIMEZONE = DISPLAY_TIMEZONE
     GTM_ID = analytics_id('GTM_ID', r'GTM-[A-Z0-9]{4,20}')

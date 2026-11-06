@@ -18,6 +18,8 @@ from app.security import admin_required
 from app.content import (normalize_body_format, prepare_content_source,
                          render_content, render_article)
 from app.post_drafts import DraftValues, publish_draft, save_draft
+from app.likes import (LIKED, LIMITED, attach_visitor_cookie, is_liked,
+                       new_visitor_token, read_visitor_token, toggle_like)
 from app.pages import PAGE_CONTENT, page_for_public_slug
 from app.post_views import (
     attach_view_cookie, has_recent_view, record_view, view_cookie_name,
@@ -336,7 +338,7 @@ def post(post_id):
     article_html, article_toc = render_article(post.body, post.body_format)
     response = make_response(render_template(
         'post/post.html', article_html=article_html, article_toc=article_toc, title=_('Post'), post=post, form=form,
-        comments=post.comments,
+        comments=post.comments, liked=is_liked(post, read_visitor_token()),
     ))
     if counted:
         attach_view_cookie(response, post.id)
@@ -344,23 +346,24 @@ def post(post_id):
 
 
 @app.route('/post/<int:post_id>/like', methods=['POST'])
-@login_required
 def toggle_post_like(post_id):
     post = public_post_or_404(post_id)
-    like = db.session.scalar(sa.select(PostLike).where(
-        PostLike.post_id == post.id,
-        PostLike.user_id == current_user.id,
-    ))
-    if like:
-        db.session.delete(like)
-    else:
-        db.session.add(PostLike(post=post, user=current_user))
+    token = read_visitor_token()
+    issued = None if token else new_visitor_token()
+    result = toggle_like(post, token or issued)
     db.session.commit()
     best = request.accept_mimetypes.best_match(['text/html', 'application/json'])
     if best == 'application/json':
-        return jsonify(liked=post.is_liked_by(current_user),
-                       count=post.likes_count())
-    return redirect(url_for('post', post_id=post.id, _anchor='post-actions'))
+        response = jsonify(liked=result == LIKED, count=post.likes_count())
+        if result == LIMITED:
+            response.status_code = 429
+    else:
+        if result == LIMITED:
+            flash(_('Too many likes have come from your network for this post.'))
+        response = redirect(url_for('post', post_id=post.id, _anchor='post-actions'))
+    if issued:
+        attach_visitor_cookie(response, issued)
+    return response
 
 
 @app.route('/post-comment/<int:comment_id>/delete', methods=['POST'])
