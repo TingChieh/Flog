@@ -1,14 +1,17 @@
 (() => {
-  const LONG_PRESS_MS = 350;
-  const CLICK_GUARD_MS = 600;
+  // A Live Photo plays once by itself the first time it scrolls into view;
+  // after that the LIVE button plays (or stops) it.
+  const VISIBLE_RATIO = 0.6;
 
-  // Hover (mouse) or long-press (touch) plays the clip over the still, the way
-  // the Photos app does; letting go returns to the still.
-  const attach = (box, { reducedMotion = false } = {}) => {
+  const attach = (box, { autoplay = true, observe } = {}) => {
+    const badge = box.querySelector('.live-photo__badge');
     let video = null;
     let wanted = false;
-    let pressTimer = null;
-    let guardUntil = 0;
+
+    const setPlaying = (playing) => {
+      box.classList.toggle('is-playing', playing);
+      if (badge) badge.setAttribute('aria-pressed', playing ? 'true' : 'false');
+    };
 
     const ensureVideo = () => {
       if (video) return video;
@@ -19,7 +22,7 @@
       video.preload = 'auto';
       video.setAttribute('aria-hidden', 'true');
       video.addEventListener('playing', () => {
-        if (wanted) box.classList.add('is-playing');
+        if (wanted) setPlaying(true);
         else video.pause();
       });
       video.addEventListener('ended', () => stop());
@@ -29,59 +32,51 @@
     };
 
     const start = () => {
-      if (reducedMotion) return;
       wanted = true;
       const clip = ensureVideo();
       try { clip.currentTime = 0; } catch (error) { /* not loaded yet */ }
       const playing = clip.play();
-      if (playing && playing.catch) playing.catch(() => {});
+      // Autoplay can be refused (e.g. low-power mode); the button still works.
+      if (playing && playing.catch) playing.catch(() => { wanted = false; });
     };
 
     const stop = () => {
       wanted = false;
-      box.classList.remove('is-playing');
+      setPlaying(false);
       if (video) video.pause();
     };
 
-    box.addEventListener('pointerenter', (event) => {
-      if (event.pointerType === 'mouse') start();
-    });
-    box.addEventListener('pointerleave', (event) => {
-      if (event.pointerType === 'mouse') stop();
-    });
-
-    box.addEventListener('touchstart', () => {
-      if (!reducedMotion) ensureVideo();
-      clearTimeout(pressTimer);
-      pressTimer = setTimeout(() => {
-        guardUntil = Date.now() + CLICK_GUARD_MS;
-        start();
-      }, LONG_PRESS_MS);
-    }, { passive: true });
-    ['touchend', 'touchcancel', 'touchmove'].forEach((name) => {
-      box.addEventListener(name, () => {
-        clearTimeout(pressTimer);
-        if (wanted) guardUntil = Date.now() + CLICK_GUARD_MS;
-        stop();
-      }, { passive: true });
-    });
-
-    // Releasing a long press must not also open the lightbox.
-    box.addEventListener('click', (event) => {
-      if (Date.now() < guardUntil) {
-        event.stopImmediatePropagation();
+    if (badge) {
+      badge.addEventListener('click', (event) => {
         event.preventDefault();
+        event.stopPropagation();
+        if (wanted) stop();
+        else start();
+      });
+    }
+
+    if (autoplay && observe) {
+      observe(box, () => start(), VISIBLE_RATIO);
+    }
+  };
+
+  // Calls ``callback`` once, the first time ``element`` is mostly on screen.
+  const observeOnce = (element, callback, ratio) => {
+    if (typeof IntersectionObserver !== 'function') return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        callback();
       }
-    }, true);
-    // Keep the browser's image menu from interrupting the long press.
-    box.addEventListener('contextmenu', (event) => event.preventDefault());
+    }, { threshold: ratio });
+    observer.observe(element);
   };
 
   const init = () => {
     const reducedMotion = window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('.live-photo[data-live-video]').forEach(
-      (box) => attach(box, { reducedMotion }));
+      (box) => attach(box, { autoplay: !reducedMotion, observe: observeOnce }));
   };
 
   window.FlogLivePhoto = { attach, init };

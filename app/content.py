@@ -100,9 +100,10 @@ def _wrap_live_photo(image, video_src):
     box = html.Element('span')
     box.set('class', 'live-photo')
     box.set('data-live-video', video_src)
-    badge = html.Element('span')
+    badge = html.Element('button')
+    badge.set('type', 'button')
     badge.set('class', 'live-photo__badge')
-    badge.set('aria-hidden', 'true')
+    badge.set('aria-label', '播放 Live Photo')
     badge.text = 'LIVE'
     box.tail, image.tail = image.tail, None
     image.getparent().replace(image, box)

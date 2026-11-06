@@ -166,7 +166,7 @@ pytest
 node --test tests/*.test.js
 ```
 
-浏览器端到端检查（Live Photo 悬停/长按播放、灯箱、后台成对上传，需要 Node.js 和 ffmpeg；
+浏览器端到端检查（Live Photo 首次自动播放与 LIVE 按钮、灯箱、后台成对上传，需要 Node.js 和 ffmpeg；
 首次运行时 `npx` 会下载 Playwright CLI，使用临时数据库和上传目录，不会改动 `instance/`）：
 
 ```bash

@@ -314,7 +314,8 @@ def test_live_photo_is_wrapped_so_the_script_can_play_it(application):
 
     assert (f'<span class="live-photo" data-live-video="/files/{stem}.mp4">'
             f'<img') in rendered
-    assert '<span class="live-photo__badge" aria-hidden="true">LIVE</span></span>' in rendered
+    assert ('<button type="button" class="live-photo__badge" '
+            'aria-label="播放 Live Photo">LIVE</button></span>') in rendered
     assert 'width="64"' in rendered and 'loading="lazy"' in rendered
 
 

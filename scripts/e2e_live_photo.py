@@ -3,7 +3,7 @@
 
 Seeds a throw-away database and upload folder, starts the app on a free port
 and checks, in Chromium via Playwright CLI: layout, responsive variants,
-hover / long-press playback, the lightbox and the admin upload form.
+automatic first play, the LIVE button, the lightbox and the admin upload form.
 
     .venv/bin/python scripts/e2e_live_photo.py [--keep] [--headed]
 
@@ -57,7 +57,7 @@ def seed(work):
         db.session.commit()
 
         clip = make_video(work, '.mov', size='1280x720', seconds=3)
-        live = upload(make_heic((2400, 1600), 'steelblue'), 'IMG_0001.HEIC', admin,
+        live = upload(make_heic((1600, 2400), 'steelblue'), 'IMG_0001.HEIC', admin,
                       video=FileStorage(io.BytesIO(clip), filename='IMG_0001.MOV'))
         plain = upload(make_image('JPEG', (2400, 1200), photo=True), 'plain.jpg', admin)
         body = (f'开头。\n\n![海边](/files/{live.filename})\n\n中间。\n\n'
@@ -134,72 +134,97 @@ def scenarios(t):
         const b = box.querySelector('.live-photo__badge').getBoundingClientRect();
         return {sameBox: [r.x, r.y, r.width, r.height].join() === [i.x, i.y, i.width, i.height].join(),
                 centred: Math.abs(r.x + r.width / 2 - innerWidth / 2) < 2,
-                badge: [Math.round(b.x - r.x), Math.round(b.y - r.y)],
+                badge: [Math.round(r.right - b.right), Math.round(b.y - r.y)],
+                badgeTag: box.querySelector('.live-photo__badge').tagName,
                 src: img.currentSrc, hasSize: !!(img.width && img.getAttribute('height')),
-                lazy: img.loading,
-                boxes: document.querySelectorAll('.live-photo').length};
+                lazy: img.loading, boxes: document.querySelectorAll('.live-photo').length,
+                height: i.height, width: i.width, vh: innerHeight};
       });
     }""")
     t.check('box is exactly the image and centred', layout['sameBox'] and layout['centred'], layout)
-    t.check('LIVE badge sits top-left', layout['badge'] == [10, 10], layout['badge'])
+    t.check('LIVE button sits top-right', layout['badge'] == [10, 10] and layout['badgeTag'] == 'BUTTON', layout)
+    t.check('tall photo is capped at 75% of the screen height', layout['height'] <= min(0.75 * layout['vh'], 640) + 1, layout)
+    t.check('capped photo keeps its proportions', abs(layout['width'] / layout['height'] - 1333 / 2000) < 0.01, layout)
     t.check('browser picked a WebP variant from srcset', '/files/_w/' in layout['src'] and layout['src'].endswith('.webp'), layout['src'])
     t.check('image is lazy with intrinsic size', layout['lazy'] == 'lazy' and layout['hasSize'])
     t.check('only the Live Photo is wrapped', layout['boxes'] == 1, layout['boxes'])
 
     print('playback')
-    hover = t.run(head + GOTO_POST + f"""
+    auto = t.run(head + GOTO_POST + f"""
+      const playing = () => page.evaluate(() => document.querySelector('.live-photo').classList.contains('is-playing'));
+      await page.locator('.live-photo').scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      const during = await page.evaluate(() => {{
+        const box = document.querySelector('.live-photo'), v = box.querySelector('video');
+        const r = box.getBoundingClientRect(), vr = v.getBoundingClientRect();
+        return {{muted: v.muted, w: v.videoWidth,
+                 covers: Math.abs(vr.width - r.width) < 1 && Math.abs(vr.height - r.height) < 1}};
+      }});
+      await page.waitForTimeout(400);
+      await page.locator('.live-photo').screenshot({{path: {json.dumps(str(shots / 'autoplay.png'))}}});
+      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      await page.waitForTimeout(1500);
+      return {{during, again: await playing()}};
+    }}""")
+    t.check('it plays by itself on arrival: muted, covering the still', auto['during']['muted'] and auto['during']['covers'], auto)
+    t.check('clip is the transcoded 960px one', auto['during']['w'] == 960, auto)
+    t.check('it plays only once on its own', not auto['again'], auto)
+
+    manual = t.run(head + GOTO_POST + f"""
       const box = page.locator('.live-photo');
       await box.scrollIntoViewIfNeeded();
-      await box.hover();
       await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
-      await page.waitForTimeout(400);   // let the 0.2 s fade finish
-      const playing = await page.evaluate(() => {{
-        const box = document.querySelector('.live-photo'), v = box.querySelector('video');
-        const badge = box.querySelector('.live-photo__badge');
-        const z = (el) => Number(getComputedStyle(el).zIndex) || 0;
-        const r = box.getBoundingClientRect(), vr = v.getBoundingClientRect();
-        return {{muted: v.muted, opacity: getComputedStyle(v).opacity, w: v.videoWidth,
-                 covers: Math.abs(vr.width - r.width) < 1 && Math.abs(vr.height - r.height) < 1,
-                 badgeOnTop: z(badge) > z(v) && Number(getComputedStyle(badge).opacity) > 0.3}};
+      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      const state = () => page.evaluate(() => document.querySelector('.live-photo').classList.contains('is-playing'));
+      const out = {{}};
+      await box.hover();
+      await page.waitForTimeout(700);
+      out.hoverPlays = await state();
+      await page.evaluate(async () => {{
+        const b = document.querySelector('.live-photo');
+        b.dispatchEvent(new Event('touchstart', {{bubbles: true}}));
+        await new Promise((r) => setTimeout(r, 700));
+        b.dispatchEvent(new Event('touchend', {{bubbles: true}}));
       }});
-      await box.screenshot({{path: {json.dumps(str(shots / 'playing.png'))}}});
-      await page.mouse.move(5, 5);
-      await page.waitForTimeout(500);
-      const after = await page.evaluate(() => {{
-        const box = document.querySelector('.live-photo'), v = box.querySelector('video');
-        return {{playing: box.classList.contains('is-playing'), paused: v.paused, opacity: getComputedStyle(v).opacity}};
+      out.longPressPlays = await state();
+      await page.click('.live-photo__badge');
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      out.buttonPlays = true;
+      await page.waitForTimeout(400);
+      out.badge = await page.evaluate(() => {{
+        const badge = document.querySelector('.live-photo__badge');
+        return {{pressed: badge.getAttribute('aria-pressed'), light: getComputedStyle(badge).backgroundColor}};
       }});
-      return {{playing, after}};
+      await page.click('.live-photo__badge');
+      await page.waitForTimeout(300);
+      out.secondClickStops = !(await state());
+      out.lightboxOpened = !!(await page.$('.pswp--open'));
+      await page.click('.live-photo__badge');
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      out.endsByItself = true;
+      return out;
     }}""")
-    t.check('hover plays a muted clip over the still', hover['playing']['muted'] and hover['playing']['opacity'] == '1' and hover['playing']['covers'], hover['playing'])
-    t.check('clip is the transcoded 960px one', hover['playing']['w'] == 960, hover['playing'])
-    t.check('LIVE badge stays visible while playing', hover['playing']['badgeOnTop'])
-    t.check('leaving stops and hides the clip', not hover['after']['playing'] and hover['after']['paused'] and hover['after']['opacity'] == '0', hover['after'])
+    t.check('hover does not play it', not manual['hoverPlays'], manual)
+    t.check('long press does not play it', not manual['longPressPlays'], manual)
+    t.check('the LIVE button plays it again', manual['buttonPlays'] and manual['badge']['pressed'] == 'true', manual)
+    t.check('the button turns light while playing', manual['badge']['light'].startswith('rgba(255, 255, 255'), manual['badge'])
+    t.check('a second click stops it', manual['secondClickStops'], manual)
+    t.check('using the button does not open the lightbox', not manual['lightboxOpened'], manual)
+    t.check('a clip that finishes goes back to the still', manual['endsByItself'])
 
-    touch = t.run(head + GOTO_POST + """
-      return await page.evaluate(async () => {
-        const box = document.querySelector('.live-photo'), img = box.querySelector('img');
-        const fire = (name) => box.dispatchEvent(new Event(name, {bubbles: true}));
-        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-        const click = () => { let hit = false; const f = () => { hit = true; };
-          img.addEventListener('click', f, {once: true});
-          img.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-          img.removeEventListener('click', f); return hit; };
-        const out = {};
-        fire('touchstart'); await wait(120); out.early = box.classList.contains('is-playing');
-        await wait(600); out.held = box.classList.contains('is-playing');
-        fire('touchend'); out.released = !box.classList.contains('is-playing');
-        out.clickSwallowed = !click();
-        await wait(800); out.laterClickPasses = click();
-        fire('touchstart'); fire('touchmove'); await wait(600);
-        out.scrollCancels = !box.classList.contains('is-playing'); fire('touchend');
-        return out;
-      });
-    }""")
-    t.check('long press plays after a delay, not at once', not touch['early'] and touch['held'], touch)
-    t.check('releasing stops it', touch['released'])
-    t.check('releasing does not open the lightbox, a later tap can', touch['clickSwallowed'] and touch['laterClickPasses'], touch)
-    t.check('scrolling cancels a press', touch['scrollCancels'])
+    reduced = t.run(head + """
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      """ + GOTO_POST + """
+      await page.locator('.live-photo').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(1500);
+      const auto = await page.evaluate(() => document.querySelector('.live-photo').classList.contains('is-playing'));
+      await page.click('.live-photo__badge');
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {timeout: 8000});
+      await page.emulateMedia({reducedMotion: 'no-preference'});
+      return {auto};
+    """ + "}")
+    t.check('reduced motion: no automatic play, the button still works', not reduced['auto'], reduced)
 
     print('lightbox')
     box = t.run(head + GOTO_POST + """
@@ -211,7 +236,7 @@ def scenarios(t):
         return {src: img.src, w: img.naturalWidth};
       });
     }""")
-    t.check('lightbox shows the full-size file, not a variant', '/_w/' not in box['src'] and box['src'].endswith('.jpg') and box['w'] == 2000, box)
+    t.check('lightbox shows the full-size file, not a variant', '/_w/' not in box['src'] and box['src'].endswith('.jpg') and box['w'] == 1333, box)
 
     print('admin library')
     admin = t.run(head + f"""

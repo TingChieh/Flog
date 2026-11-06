@@ -7,51 +7,60 @@ const vm = require('node:vm');
 const source = fs.readFileSync(
   path.join(__dirname, '..', 'app', 'static', 'live-photo.js'), 'utf8');
 
-function createHarness({ boxes = [], reducedMotion = false } = {}) {
-  const timers = [];
+function createHarness({ boxes = [], reducedMotion = false, playRejects = false } = {}) {
   const videos = [];
-  let now = 1000;
+
+  const createListeners = () => {
+    const listeners = {};
+    return {
+      listeners,
+      addEventListener(name, fn) { (listeners[name] ||= []).push(fn); },
+    };
+  };
 
   const createBox = () => {
-    const listeners = {};
     const classes = new Set();
-    return {
-      dataset: { liveVideo: '/files/a.mp4' },
-      children: [],
-      classList: {
-        add: (name) => classes.add(name),
-        remove: (name) => classes.delete(name),
-        contains: (name) => classes.has(name),
-      },
-      append(node) { this.children.push(node); },
-      addEventListener(name, fn, options) {
-        (listeners[name] ||= []).push({ fn, capture: options === true });
-      },
-      fire(name, props = {}) {
+    const badge = {
+      ...createListeners(), attributes: {},
+      setAttribute(name, value) { this.attributes[name] = value; },
+      click() {
         const event = {
-          defaultPrevented: false, stopped: false, ...props,
+          defaultPrevented: false, propagationStopped: false,
           preventDefault() { this.defaultPrevented = true; },
-          stopImmediatePropagation() { this.stopped = true; },
+          stopPropagation() { this.propagationStopped = true; },
         };
-        (listeners[name] || []).forEach(({ fn }) => fn(event));
+        (this.listeners.click || []).forEach((fn) => fn(event));
         return event;
       },
+    };
+    return {
+      ...createListeners(), badge, dataset: { liveVideo: '/files/a.mp4' }, children: [],
+      classList: {
+        toggle(name, on) { if (on) classes.add(name); else classes.delete(name); },
+        contains: (name) => classes.has(name),
+      },
+      querySelector: (selector) => (selector === '.live-photo__badge' ? badge : null),
+      append(node) { this.children.push(node); },
     };
   };
 
   const createVideo = () => {
-    const listeners = {};
     const video = {
-      attributes: {}, className: '', plays: 0, pauses: 0, currentTime: 5,
+      ...createListeners(), attributes: {}, plays: 0, pauses: 0, currentTime: 5,
       setAttribute(name, value) { this.attributes[name] = value; },
-      addEventListener(name, fn) { listeners[name] = fn; },
-      emit(name) { listeners[name](); },
-      play() { this.plays += 1; return Promise.resolve(); },
+      emit(name) { (this.listeners[name] || []).forEach((fn) => fn()); },
+      play() {
+        this.plays += 1;
+        return playRejects ? Promise.reject(new Error('NotAllowedError')) : Promise.resolve();
+      },
       pause() { this.pauses += 1; },
     };
     videos.push(video);
     return video;
   };
+
+  const observed = [];
+  const observe = (element, callback, ratio) => observed.push({ element, callback, ratio });
 
   const context = {
     window: { matchMedia: () => ({ matches: reducedMotion }) },
@@ -61,143 +70,126 @@ function createHarness({ boxes = [], reducedMotion = false } = {}) {
       querySelectorAll: () => boxes,
       addEventListener() {},
     },
-    setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
-    clearTimeout: (id) => { if (timers[id - 1]) timers[id - 1].cancelled = true; },
-    Date: { now: () => now },
   };
   vm.runInNewContext(source, context);
   return {
-    live: context.window.FlogLivePhoto, createBox, videos, timers,
-    advance(ms) { now += ms; },
-    runTimers() { timers.filter((t) => !t.cancelled && !t.done).forEach((t) => { t.done = true; t.fn(); }); },
+    live: context.window.FlogLivePhoto, createBox, videos, observed, observe,
+    settle: async () => { for (let i = 0; i < 6; i += 1) await Promise.resolve(); },
   };
 }
 
-test('init fetches no clip before the visitor interacts', () => {
-  const box = createHarness().createBox();
-  const harness = createHarness({ boxes: [box] });
-  assert.ok(harness.live);
-  assert.equal(harness.videos.length, 0);
-});
-
-test('hovering with a mouse plays the clip and leaving stops it', () => {
+test('nothing is fetched until the photo scrolls into view', () => {
   const harness = createHarness();
   const box = harness.createBox();
-  harness.live.attach(box);
+  harness.live.attach(box, { observe: harness.observe });
 
-  box.fire('pointerenter', { pointerType: 'mouse' });
+  assert.equal(harness.videos.length, 0);
+  assert.equal(harness.observed.length, 1);
+  assert.equal(harness.observed[0].element, box);
+  assert.ok(harness.observed[0].ratio > 0.3, 'waits until it is mostly visible');
+});
+
+test('it plays by itself once when it comes into view', () => {
+  const harness = createHarness();
+  const box = harness.createBox();
+  harness.live.attach(box, { observe: harness.observe });
+
+  harness.observed[0].callback();
   const [video] = harness.videos;
   assert.equal(video.src, '/files/a.mp4');
   assert.equal(video.muted, true);
   assert.equal(video.playsInline, true);
   assert.equal(video.plays, 1);
-  assert.equal(box.classList.contains('is-playing'), false, 'only shows once it is really playing');
+  assert.equal(box.classList.contains('is-playing'), false, 'shows only once it is really playing');
 
   video.emit('playing');
   assert.equal(box.classList.contains('is-playing'), true);
+  assert.equal(box.badge.attributes['aria-pressed'], 'true');
 
-  box.fire('pointerleave', { pointerType: 'mouse' });
+  video.emit('ended');
   assert.equal(box.classList.contains('is-playing'), false);
-  assert.equal(video.pauses, 1);
+  assert.equal(box.badge.attributes['aria-pressed'], 'false');
+  assert.equal(harness.observed.length, 1, 'no second automatic play is scheduled');
 });
 
-test('touch and pen pointers do not trigger hover playback', () => {
+test('after that the LIVE button plays it again', () => {
   const harness = createHarness();
   const box = harness.createBox();
-  harness.live.attach(box);
+  harness.live.attach(box, { observe: harness.observe });
+  harness.observed[0].callback();
+  harness.videos[0].emit('playing');
+  harness.videos[0].emit('ended');
 
-  box.fire('pointerenter', { pointerType: 'touch' });
-  box.fire('pointerenter', { pointerType: 'pen' });
-  assert.equal(harness.videos.length, 0);
-});
-
-test('a long press plays after a delay and releasing stops it', () => {
-  const harness = createHarness();
-  const box = harness.createBox();
-  harness.live.attach(box);
-
-  box.fire('touchstart');
-  assert.equal(harness.videos.length, 1, 'the clip starts loading right away');
-  assert.equal(harness.videos[0].plays, 0);
-  harness.runTimers();
-  assert.equal(harness.videos[0].plays, 1);
+  const event = box.badge.click();
+  assert.equal(harness.videos.length, 1, 'reuses the same video');
+  assert.equal(harness.videos[0].plays, 2);
+  assert.equal(harness.videos[0].currentTime, 0, 'restarts from the beginning');
+  assert.equal(event.defaultPrevented, true);
+  assert.equal(event.propagationStopped, true);
   harness.videos[0].emit('playing');
   assert.equal(box.classList.contains('is-playing'), true);
-
-  box.fire('touchend');
-  assert.equal(box.classList.contains('is-playing'), false);
 });
 
-test('a quick tap or a scroll never starts the clip', () => {
+test('clicking LIVE while it plays stops it', () => {
   const harness = createHarness();
   const box = harness.createBox();
-  harness.live.attach(box);
-
-  box.fire('touchstart');
-  box.fire('touchend');
-  harness.runTimers();
-  assert.equal(harness.videos[0].plays, 0);
-
-  box.fire('touchstart');
-  box.fire('touchmove');
-  harness.runTimers();
-  assert.equal(harness.videos[0].plays, 0);
-});
-
-test('releasing a long press does not open the lightbox, a later tap does', () => {
-  const harness = createHarness();
-  const box = harness.createBox();
-  harness.live.attach(box);
-
-  box.fire('touchstart');
-  harness.runTimers();
-  box.fire('touchend');
-  const swallowed = box.fire('click');
-  assert.equal(swallowed.stopped, true);
-  assert.equal(swallowed.defaultPrevented, true);
-
-  harness.advance(1000);
-  assert.equal(box.fire('click').stopped, false);
-});
-
-test('a clip that finishes returns to the still', () => {
-  const harness = createHarness();
-  const box = harness.createBox();
-  harness.live.attach(box);
-  box.fire('pointerenter', { pointerType: 'mouse' });
+  harness.live.attach(box, { observe: harness.observe });
+  box.badge.click();
   harness.videos[0].emit('playing');
 
-  harness.videos[0].emit('ended');
+  box.badge.click();
   assert.equal(box.classList.contains('is-playing'), false);
+  assert.equal(harness.videos[0].pauses, 1);
 });
 
-test('a clip that starts after the pointer left is stopped, not shown', () => {
+test('a clip that starts after it was stopped is paused, not shown', () => {
   const harness = createHarness();
   const box = harness.createBox();
-  harness.live.attach(box);
-  box.fire('pointerenter', { pointerType: 'mouse' });
-  box.fire('pointerleave', { pointerType: 'mouse' });
+  harness.live.attach(box, { observe: harness.observe });
+  box.badge.click();
+  box.badge.click();
 
   harness.videos[0].emit('playing');
   assert.equal(box.classList.contains('is-playing'), false);
   assert.ok(harness.videos[0].pauses >= 2);
 });
 
-test('the image context menu is suppressed so a long press can play', () => {
+test('hovering or touching the photo no longer plays it', () => {
   const harness = createHarness();
   const box = harness.createBox();
-  harness.live.attach(box);
+  harness.live.attach(box, { observe: harness.observe });
 
-  assert.equal(box.fire('contextmenu').defaultPrevented, true);
+  assert.deepEqual(Object.keys(box.listeners), []);
+  assert.equal(harness.videos.length, 0);
 });
 
-test('reduced motion keeps the still and never plays', () => {
+test('refused autoplay leaves the still and the button still works', async () => {
+  const harness = createHarness({ playRejects: true });
+  const box = harness.createBox();
+  harness.live.attach(box, { observe: harness.observe });
+
+  harness.observed[0].callback();
+  await harness.settle();
+  assert.equal(box.classList.contains('is-playing'), false);
+
+  box.badge.click();
+  assert.equal(harness.videos[0].plays, 2, 'a click is a fresh attempt');
+});
+
+test('without autoplay (reduced motion) only the button plays', () => {
   const harness = createHarness();
   const box = harness.createBox();
-  harness.live.attach(box, { reducedMotion: true });
+  harness.live.attach(box, { autoplay: false, observe: harness.observe });
 
-  box.fire('pointerenter', { pointerType: 'mouse' });
-  box.fire('touchstart');
-  harness.runTimers();
+  assert.equal(harness.observed.length, 0);
+  box.badge.click();
+  assert.equal(harness.videos[0].plays, 1);
+});
+
+test('init skips automatic playback when the visitor prefers reduced motion', () => {
+  const box = createHarness().createBox();
+  const harness = createHarness({ boxes: [box], reducedMotion: true });
+  assert.ok(harness.live);
   assert.equal(harness.videos.length, 0);
+  assert.equal(box.badge.listeners.click.length, 1, 'the button is still wired up');
 });
