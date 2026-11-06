@@ -86,7 +86,7 @@ from app.admin import bp as admin_bp
 
 app.register_blueprint(admin_bp)
 
-from app import routes, models, errors, cli
+from app import routes, models, errors, cli, static_cache
 
 from app.search import plain_text
 app.jinja_env.filters['plain_text'] = plain_text
