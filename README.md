@@ -45,6 +45,7 @@ Flog/
 ├── migrations/             # Alembic 数据库迁移
 ├── scripts/
 │   ├── bootstrap.sh        # 一键搭建开发环境并启动
+│   ├── e2e_live_photo.py   # 用真实浏览器验证 Live Photo 与图片交付
 │   └── generate_article_fonts.py  # 生成文章字体子集
 ├── tests/                  # Python 与 JavaScript 测试
 ├── config.py               # 环境变量与应用配置
@@ -163,6 +164,13 @@ pytest
 
 ```bash
 node --test tests/*.test.js
+```
+
+浏览器端到端检查（Live Photo 悬停/长按播放、灯箱、后台成对上传，需要 Node.js 和 ffmpeg；
+首次运行时 `npx` 会下载 Playwright CLI，使用临时数据库和上传目录，不会改动 `instance/`）：
+
+```bash
+.venv/bin/python scripts/e2e_live_photo.py [--headed] [--keep]
 ```
 
 ## Markdown 编辑器

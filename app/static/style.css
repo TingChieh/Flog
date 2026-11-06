@@ -3461,6 +3461,7 @@ html[data-theme="dark"] body.public-site {
     letter-spacing: .06em;
     pointer-events: none;
     transition: opacity .2s;
+    z-index: 1;
 }
 .live-photo__badge::before {
     content: '';
