@@ -66,6 +66,8 @@ class Config:
     GA_MEASUREMENT_ID = analytics_id('GA_MEASUREMENT_ID', r'G-[A-Z0-9]{4,20}')
     UPLOAD_FOLDER = resolve_project_path(os.environ.get(
         'UPLOAD_FOLDER', str(basedir / 'instance' / 'uploads')))
+    # Live Photo clips are transcoded with ffmpeg; empty means look on PATH.
+    FFMPEG = os.environ.get('FFMPEG_PATH')
     # Keep the request guard high enough for camera exports and article
     # screenshots while still bounding multipart requests.
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024

@@ -301,6 +301,8 @@ class Image(db.Model):
     # Pixel size of the stored file; None for images that predate the columns.
     width: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)
     height: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)
+    # The Live Photo clip stored next to the file, or None for an ordinary image.
+    video_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(80))
     user_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey(User.id, ondelete='SET NULL'), index=True)
     created_at: so.Mapped[datetime] = so.mapped_column(

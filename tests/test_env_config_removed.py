@@ -13,7 +13,7 @@ UNUSED_SETTINGS = ('REDIS_URL', 'APPID', 'BD_TRANSLATOR_KEY',
                    'MS_TRANSLATOR_KEY', 'ELASTICSEARCH_URL', 'ENV_FILE_PATH')
 KEPT_SETTINGS = ('SECRET_KEY', 'DATABASE_URL', 'ADMIN_EMAILS', 'MAIL_SERVER',
                  'MAIL_PORT', 'MAIL_USE_SSL', 'MAIL_USERNAME', 'MAIL_PASSWORD',
-                 'UPLOAD_FOLDER')
+                 'UPLOAD_FOLDER', 'FFMPEG_PATH')
 
 
 def test_environment_settings_page_is_gone(client, users):

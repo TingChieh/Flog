@@ -1,5 +1,7 @@
 import io
 import os
+import shutil
+import subprocess
 
 import pytest
 from PIL import Image as PILImage, ImageChops
@@ -102,6 +104,28 @@ def make_image(fmt='PNG', size=(8, 8), mode='RGB', noise=False, photo=False,
     buffer = io.BytesIO()
     image.save(buffer, fmt, **save_kwargs)
     return buffer.getvalue()
+
+
+def make_heic(size=(64, 32), color='red'):
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    buffer = io.BytesIO()
+    PILImage.new('RGB', size, color).save(buffer, 'HEIF')
+    return buffer.getvalue()
+
+
+needs_ffmpeg = pytest.mark.skipif(
+    shutil.which('ffmpeg') is None, reason='ffmpeg is not installed')
+
+
+def make_video(tmp_path, extension='.mov', size='320x240', seconds=1):
+    """A real H.264 clip (as bytes) made with ffmpeg."""
+    path = tmp_path / f'clip{extension}'
+    subprocess.run(
+        [shutil.which('ffmpeg'), '-v', 'error', '-f', 'lavfi', '-i',
+         f'testsrc=duration={seconds}:size={size}:rate=15', '-pix_fmt',
+         'yuv420p', '-c:v', 'libx264', str(path)], check=True)
+    return path.read_bytes()
 
 
 def login(client, username):

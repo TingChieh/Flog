@@ -272,7 +272,7 @@ def test_follow_removal_upgrade_refuses_missing_followers_table():
                 revision.upgrade()
 
 
-def test_image_dimensions_revision_is_the_only_head():
+def test_image_video_revision_is_the_only_head():
     from alembic.config import Config
     from alembic.script import ScriptDirectory
 
@@ -281,7 +281,7 @@ def test_image_dimensions_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'a9b1c3d5e7f2']
+        'b2c4d6e8f013']
 
 
 def test_draft_generation_migration_preserves_existing_sequence():

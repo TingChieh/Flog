@@ -13,6 +13,9 @@
     <div class="image-card__thumb image-card__missing">文件缺失</div>
     {% else %}
     <img src="{{ url_for('uploaded_files', filename=image.filename) }}" alt="{{ image.title }}">
+    {% if image.video_filename %}
+    <video src="{{ url_for('uploaded_files', filename=image.video_filename) }}" controls muted loop playsinline preload="metadata"></video>
+    {% endif %}
     {% endif %}
   </div>
   <div class="image-detail__side">

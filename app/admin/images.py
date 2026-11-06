@@ -8,14 +8,45 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.admin import bp
 from app.admin.forms import ImageDeleteForm, ImageEditForm, ImageUploadForm
-from app.images import (ImageUploadError, image_usage, remove_variants,
+from app.images import (BAD_VIDEO, NO_FFMPEG, ImageUploadError, image_usage, remove_files,
                         save_uploaded_image, sync_untracked_images,
                         thumbnail_url, upload_folder, visible_images)
+from app.live_photos import VIDEO_EXTENSIONS
 from app.models import Image
 
 
 PICKER_LIMIT = 60
-UPLOAD_ERRORS = {'Image only!': '不是有效的 gif/jpg/png 图片'}
+UPLOAD_ERRORS = {
+    'Image only!': '不是有效的 gif/jpg/png/heic 图片',
+    BAD_VIDEO: 'Live Photo 的视频无法识别',
+    NO_FFMPEG: '服务器未安装 ffmpeg，无法处理 Live Photo 视频',
+}
+NO_STILL = '缺少同名的图片，Live Photo 需要图片和视频一起上传'
+
+
+def _is_video(file):
+    return Path(file.filename).suffix.lower() in VIDEO_EXTENSIONS
+
+
+def pair_uploads(uploads):
+    """Match each video with the still of the same base name.
+
+    Returns ``(still, video)`` pairs (``video`` may be None) and the videos
+    left without a still.
+    """
+    groups = {}
+    for file in uploads:
+        groups.setdefault(Path(file.filename).stem.lower(), []).append(file)
+    pairs, orphans = [], []
+    for files in groups.values():
+        videos = [f for f in files if _is_video(f)]
+        stills = [f for f in files if not _is_video(f)]
+        if len(videos) == 1 and len(stills) == 1:
+            pairs.append((stills[0], videos[0]))
+            continue
+        pairs.extend((still, None) for still in stills)
+        orphans.extend(videos)
+    return pairs, orphans
 
 
 @bp.app_template_filter('filesize')
@@ -73,11 +104,13 @@ def upload_images():
         flash('请选择要上传的图片。')
         return redirect(url_for('admin.images'))
     saved, failed = 0, []
-    for file in uploads:
+    pairs, orphans = pair_uploads(uploads)
+    failed.extend(f'{file.filename}：{NO_STILL}' for file in orphans)
+    for still, video in pairs:
         try:
-            save_uploaded_image(file, current_user)
+            save_uploaded_image(still, current_user, video=video)
         except ImageUploadError as exc:
-            failed.append(f'{file.filename}：{UPLOAD_ERRORS.get(str(exc), str(exc))}')
+            failed.append(f'{still.filename}：{UPLOAD_ERRORS.get(str(exc), str(exc))}')
         else:
             saved += 1
     message = f'已上传 {saved} 张'
@@ -137,7 +170,7 @@ def delete_image(image_id):
     usages = image_usage([image.filename])[image.filename]
     form = ImageDeleteForm()
     if form.validate_on_submit() and (not usages or form.force.data):
-        filename = image.filename
+        filename, clip = image.filename, image.video_filename
         db.session.delete(image)
         try:
             db.session.commit()
@@ -145,8 +178,7 @@ def delete_image(image_id):
             db.session.rollback()
             flash('图片删除失败，请重试。')
         else:
-            (upload_folder() / filename).unlink(missing_ok=True)
-            remove_variants(filename)
+            remove_files(filename, clip)
             flash('图片已删除。')
             return redirect(url_for('admin.images'))
     elif form.is_submitted() and usages:

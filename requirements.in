@@ -18,6 +18,7 @@ langdetect
 lxml
 Markdown
 Pillow
+pillow-heif
 Pygments
 PyJWT
 PyMySQL

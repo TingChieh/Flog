@@ -10,10 +10,17 @@ from uuid import uuid4
 import sqlalchemy as sa
 from flask import current_app, url_for
 from PIL import Image as PILImage, ImageOps
+from pillow_heif import register_heif_opener
 from werkzeug.utils import secure_filename
 
 from app import db
+from app.live_photos import (
+    VIDEO_EXTENSIONS, FfmpegMissing, VideoError, extract_embedded_video,
+    has_heif_signature, has_video_signature, transcode_video, video_filename)
 from app.models import Image, Page, Post, PostDraft
+
+# iPhone photos are HEIC; Pillow can read them once this is registered.
+register_heif_opener()
 
 
 IMAGE_NAME_RE = re.compile(r'^[0-9a-f]{32}\.(?:png|jpe?g|gif)$')
@@ -47,6 +54,12 @@ STEM_RE = re.compile(r'^[0-9a-f]{32}$')
 # Layout width of the article column; tells the browser which candidate to fetch.
 VARIANT_SIZES = '(max-width: 760px) 100vw, 760px'
 DECODE_ERRORS = (OSError, ValueError, PILImage.DecompressionBombError)
+
+
+# Library uploads also take HEIC stills (stored as JPEG); avatars do not.
+HEIF_EXTENSIONS = ('.heic', '.heif')
+NO_FFMPEG = 'ffmpeg missing'
+BAD_VIDEO = 'Video only!'
 
 
 class ImageUploadError(ValueError):
@@ -85,6 +98,8 @@ def _reencode(source, raw, extension, max_edge, convert):
     image.thumbnail((max_edge, max_edge), PILImage.Resampling.LANCZOS)
     icc_profile = source.info.get('icc_profile')
 
+    if source.format == 'HEIF':
+        return Processed(_encode_jpeg(image, icc_profile), '.jpg', *image.size)
     if source.format == 'JPEG':
         return Processed(_encode_jpeg(image, icc_profile), extension, *image.size)
 
@@ -119,11 +134,15 @@ def process_image(raw, extension, max_edge=MAX_EDGE, convert=True):
     except DECODE_ERRORS as exc:
         raise ImageUploadError('Image only!') from exc
 
-    if source.format == 'GIF' or getattr(source, 'is_animated', False):
+    is_heif = source.format == 'HEIF'
+    if not is_heif and (source.format == 'GIF'
+                        or getattr(source, 'is_animated', False)):
         return Processed(raw, extension, width, height)
     try:
         return _reencode(source, raw, extension, max_edge, convert)
-    except DECODE_ERRORS:
+    except DECODE_ERRORS as exc:
+        if is_heif:     # browsers cannot show the original, so there is no fallback
+            raise ImageUploadError('Image only!') from exc
         return Processed(raw, extension, width, height)
 
 
@@ -136,8 +155,41 @@ def read_dimensions(path):
         return None, None
 
 
-def save_uploaded_image(file, user):
-    """Validate ``file``, compress it, store it under a random name and record it."""
+def _has_image_signature(extension, header):
+    if extension in HEIF_EXTENSIONS:
+        return has_heif_signature(header)
+    return extension in ALLOWED_SIGNATURES and any(
+        header.startswith(signature) for signature in ALLOWED_SIGNATURES[extension])
+
+
+def _live_clip(video, raw, extension):
+    """Web-ready Live Photo clip: from ``video``, or one embedded in the still."""
+    if video is not None:
+        clip = video.stream.read()
+        suffix = Path(secure_filename(video.filename or '')).suffix.lower()
+        if suffix not in VIDEO_EXTENSIONS or not has_video_signature(clip[:12]):
+            raise ImageUploadError(BAD_VIDEO)
+        try:
+            return transcode_video(clip)
+        except FfmpegMissing as exc:
+            raise ImageUploadError(NO_FFMPEG) from exc
+        except VideoError as exc:
+            raise ImageUploadError(BAD_VIDEO) from exc
+    embedded = extract_embedded_video(raw) if extension in ('.jpg', '.jpeg') else None
+    if embedded:
+        try:
+            return transcode_video(embedded)
+        except VideoError:
+            pass        # no ffmpeg or a broken clip: keep the still on its own
+    return None
+
+
+def save_uploaded_image(file, user, video=None):
+    """Validate ``file``, compress it, store it under a random name and record it.
+
+    ``video`` is the clip of a Live Photo whose still is ``file``; an Android
+    motion photo carries its clip inside the JPEG instead.
+    """
     if file is None or not file.filename:
         raise ImageUploadError('No file selected.')
 
@@ -145,23 +197,28 @@ def save_uploaded_image(file, user):
     extension = Path(original_name).suffix.lower()
     header = file.stream.read(16)
     file.stream.seek(0)
-    if extension not in ALLOWED_SIGNATURES or not any(
-            header.startswith(signature)
-            for signature in ALLOWED_SIGNATURES[extension]):
+    if not _has_image_signature(extension, header):
         raise ImageUploadError('Image only!')
 
-    processed = process_image(file.stream.read(), extension)
+    raw = file.stream.read()
+    processed = process_image(raw, extension)
+    clip = _live_clip(video, raw, extension)
 
     folder = upload_folder()
     folder.mkdir(parents=True, exist_ok=True)
     filename = f'{uuid4().hex}{processed.extension}'
     (folder / filename).write_bytes(processed.data)
+    clip_name = None
+    if clip:
+        clip_name = video_filename(Path(filename).stem)
+        (folder / clip_name).write_bytes(clip)
 
     image = Image(
         filename=filename, original_name=original_name or filename,
         title=(Path(original_name).stem or filename)[:120],
         size=len(processed.data), width=processed.width,
-        height=processed.height, user_id=user.id if user else None)
+        height=processed.height, video_filename=clip_name,
+        user_id=user.id if user else None)
     db.session.add(image)
     db.session.commit()
     return image
@@ -236,6 +293,15 @@ def make_variant(stem, width):
     except DECODE_ERRORS:
         return None
     return target
+
+
+def remove_files(filename, clip=None):
+    """Delete an upload's file, its Live Photo clip and its cached variants."""
+    folder = upload_folder()
+    for name in (filename, clip):
+        if name:
+            (folder / name).unlink(missing_ok=True)
+    remove_variants(filename)
 
 
 def remove_variants(filename):

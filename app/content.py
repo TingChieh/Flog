@@ -95,12 +95,27 @@ def split_hard_breaks(source):
 UPLOADED_PATH_RE = re.compile(r'^/files/([0-9a-f]{32}\.(?:png|jpe?g|gif))$')
 
 
+def _wrap_live_photo(image, video_src):
+    """Put ``image`` in a ``.live-photo`` box that live-photo.js brings to life."""
+    box = html.Element('span')
+    box.set('class', 'live-photo')
+    box.set('data-live-video', video_src)
+    badge = html.Element('span')
+    badge.set('class', 'live-photo__badge')
+    badge.set('aria-hidden', 'true')
+    badge.text = 'LIVE'
+    box.tail, image.tail = image.tail, None
+    image.getparent().replace(image, box)
+    box.extend([image, badge])
+
+
 def optimize_images(rendered):
     """Let the browser defer and reserve space for sanitized HTML's images.
 
     Every ``<img>`` becomes lazy and async-decoded; uploaded ones whose pixel
     size is known also get ``width``/``height`` so the page does not jump when
     they arrive, and a ``srcset`` of smaller WebP copies when there are any.
+    A Live Photo's still is wrapped so its clip can play over it.
     """
     if '<img' not in rendered:
         return rendered
@@ -111,29 +126,33 @@ def optimize_images(rendered):
         match = UPLOADED_PATH_RE.match(urlsplit(image.get('src', '')).path)
         if match:
             names[image] = match.group(1)
-    sizes = {}
+    rows = {}
     if names:
         # app.content loads before the database exists, so import it late.
         from app import db
         from app.models import Image
         from app.images import VARIANT_SIZES, variant_srcset
-        sizes = {row.filename: (row.width, row.height) for row in db.session.execute(
-            sa.select(Image.filename, Image.width, Image.height)
-            .where(Image.filename.in_(set(names.values())),
-                   Image.width.is_not(None), Image.height.is_not(None)))}
+        rows = {row.filename: row for row in db.session.execute(
+            sa.select(Image.filename, Image.width, Image.height,
+                      Image.video_filename)
+            .where(Image.filename.in_(set(names.values()))))}
     for image in images:
         image.set('loading', 'lazy')
         image.set('decoding', 'async')
-        size = sizes.get(names.get(image))
-        if size and 'width' not in image.attrib and 'height' not in image.attrib:
-            image.set('width', str(size[0]))
-            image.set('height', str(size[1]))
-            src = image.get('src')
-            srcset = '' if urlsplit(src).netloc else variant_srcset(
-                names[image], src, size[0])
+        row = rows.get(names.get(image))
+        if row is None:
+            continue
+        local = not urlsplit(image.get('src')).netloc
+        if (row.width and row.height and 'width' not in image.attrib
+                and 'height' not in image.attrib):
+            image.set('width', str(row.width))
+            image.set('height', str(row.height))
+            srcset = variant_srcset(row.filename, image.get('src'), row.width) if local else ''
             if srcset:
                 image.set('srcset', srcset)
                 image.set('sizes', VARIANT_SIZES)
+        if row.video_filename and local:
+            _wrap_live_photo(image, f'/files/{row.video_filename}')
     return str(escape(root.text or '')) + ''.join(
         html.tostring(child, encoding='unicode', method='html') for child in root)
 

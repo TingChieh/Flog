@@ -3403,8 +3403,10 @@ html[data-theme="dark"] body.public-site {
     text-indent: 2em;
 }
 .article-body > p:has(> img:only-child),
+.article-body > p:has(> .live-photo:only-child),
 .article-body > p.math-block,
 .page-body > p:has(> img:only-child),
+.page-body > p:has(> .live-photo:only-child),
 .page-body > p.math-block {
     text-indent: 0;
 }
@@ -3415,6 +3417,77 @@ html[data-theme="dark"] body.public-site {
     height: auto;
     margin: 1.5rem auto;
 }
+/* Live Photo: the still with a clip that plays over it on hover / long press */
+.live-photo {
+    position: relative;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 1.5rem auto;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.live-photo img,
+.article-body .live-photo img,
+.page-body .live-photo img {
+    margin: 0;
+}
+.article-body figure .live-photo,
+.page-body figure .live-photo {
+    margin: 0 auto;
+}
+.live-photo__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+    border-radius: inherit;
+}
+.live-photo.is-playing .live-photo__video { opacity: 1; }
+.live-photo__badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 2px 8px 2px 18px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .55);
+    color: #fff;
+    font: 600 11px/1.6 var(--system-font);
+    letter-spacing: .06em;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+.live-photo__badge::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px #fff;
+    background: radial-gradient(circle, #fff 35%, transparent 40%);
+}
+.live-photo.is-playing .live-photo__badge { opacity: .45; }
+.image-card__live {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .55);
+    color: #fff;
+    font: 600 11px/1.6 var(--system-font);
+    letter-spacing: .06em;
+}
+.image-card { position: relative; }
+.image-detail__preview video { width: 100%; height: auto; margin-top: .75rem; border-radius: 8px; display: block; }
 .article-body figure,
 .page-body figure {
     margin: 1.5rem auto;
