@@ -16,13 +16,15 @@
 # test. Nothing is changed before the backup. Caddy is not touched.
 #
 # Settings (environment): DEPLOY_HOST, DEPLOY_DIR, DEPLOY_USER, DEPLOY_SERVICE,
-# DEPLOY_BACKUPS, DEPLOY_LOCAL_URL (checked on the server), DEPLOY_SITE.
+# DEPLOY_UPLOADS (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_LOCAL_URL
+# (checked on the server), DEPLOY_SITE.
 set -euo pipefail
 
 HOST=${DEPLOY_HOST:-hk_server}
 DIR=${DEPLOY_DIR:-/home/ubuntu/flog}
 APP_USER=${DEPLOY_USER:-ubuntu}
 SERVICE=${DEPLOY_SERVICE:-flog}
+UPLOADS=${DEPLOY_UPLOADS:-/var/www/flog-uploads}
 BACKUPS=${DEPLOY_BACKUPS:-/root/flog-backups}
 LOCAL_URL=${DEPLOY_LOCAL_URL:-http://127.0.0.1:8001}
 SITE=${DEPLOY_SITE:-https://blog.aisaka.cc}
@@ -98,7 +100,7 @@ log "Backing up to $backup"
 remote "set -euo pipefail
 mkdir -p '$backup' && chmod 700 '$backup'
 mysqldump --single-transaction --routines flog | gzip > '$backup/flog_full.sql.gz'
-tar -C '$DIR/instance' -czf '$backup/uploads.tar.gz' uploads
+tar -C '$(dirname "$UPLOADS")' -czf '$backup/uploads.tar.gz' '$(basename "$UPLOADS")'
 cp -p '$DIR/.env' '$backup/env'
 ls -la '$backup'"
 
@@ -164,7 +166,7 @@ check() { # description, expected, actual
     if [[ "$3" == *"$2"* ]]; then echo "   ok    $1"; else echo "   FAIL  $1 (got: $3)"; fail=1; fi
 }
 check "home page via $SITE" 200 "$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$SITE/")"
-sample=$(remote "ls '$DIR/instance/uploads' | grep -E '^[0-9a-f]{32}\\.(jpg|png)\$' | head -1" || true)
+sample=$(remote "ls '$UPLOADS' | grep -E '^[0-9a-f]{32}\\.(jpg|png)\$' | head -1" || true)
 if [[ -n "$sample" ]]; then
     headers=$(curl -sI -m 20 "$SITE/files/$sample")
     check "uploaded image is served" "200" "$(head -1 <<<"$headers")"

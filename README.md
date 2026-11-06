@@ -189,7 +189,8 @@ git push origin main
 脚本在改动任何东西之前，先把数据库、上传目录和 `.env` 备份到 `/root/flog-backups/`，
 失败时会打印回滚命令。选项：`--no-optimize` 跳过旧图回填，`--recompress` 同时就地压缩旧图。
 主机、目录等可用 `DEPLOY_HOST`、`DEPLOY_DIR` 等环境变量覆盖（见脚本头部）。Caddy 配置不由脚本修改，
-图片直出的可选配置见 `docs/caddy-uploads.md`。
+上传的图片放在服务器的 `/var/www/flog-uploads`（`.env` 里的 `UPLOAD_FOLDER`），
+Caddy 直接发图的配置见 `docs/caddy-uploads.md`。
 
 ## Markdown 编辑器
 
