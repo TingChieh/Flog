@@ -130,6 +130,8 @@
     <script src="{{ url_for('static', filename='search.js') }}" defer></script>
     <script src="{{ url_for('static', filename='lazy-images.js') }}" defer></script>
     <script src="{{ url_for('static', filename='shortcut-hint.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='emoji-keys.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='emoji.js') }}" data-base="{{ url_for('static', filename='emoji/noto/') }}" defer></script>
     {% block page_scripts %}{% endblock %}
   </body>
 </html>
