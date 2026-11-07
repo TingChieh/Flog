@@ -336,6 +336,7 @@ def _take_comment(target, form, destination):
             target, name=form.name.data, email=form.email.data,
             body=form.body.data, parent_id=form.parent_id.data,
             honeypot=form.website.data, form_token=form.form_token.data,
+            notify_replies=form.notify.data,
             author=current_user if current_user.is_authenticated else None)
     except CommentsClosed:
         abort(403)

@@ -256,6 +256,13 @@ class PostComment(db.Model):
     # Set only when the site owner wrote it while signed in.
     user_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey(User.id, ondelete='SET NULL'), index=True)
+    # Set when the commenter ticked "email me"; unsubscribing clears it.
+    notify_replies: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=False, server_default=sa.false())
+    # The comment this one answers: its top-level comment, or the reply it
+    # was written to. parent_id alone cannot say which reply was meant.
+    answered_id: so.Mapped[Optional[int]] = so.mapped_column(
+        sa.ForeignKey('post_comment.id', ondelete='SET NULL'), index=True)
     # A keyed hash of the network address, for rate limits; never the address.
     ip_hash: so.Mapped[Optional[str]] = so.mapped_column(
         sa.String(64), index=True)
@@ -266,10 +273,14 @@ class PostComment(db.Model):
     page: so.Mapped[Optional['Page']] = so.relationship(
         back_populates='comments')
     parent: so.Mapped[Optional['PostComment']] = so.relationship(
-        back_populates='replies', remote_side='PostComment.id')
+        back_populates='replies', remote_side='PostComment.id',
+        foreign_keys='PostComment.parent_id')
     replies: so.Mapped[list['PostComment']] = so.relationship(
         back_populates='parent', cascade='all, delete',
-        order_by='PostComment.timestamp')
+        order_by='PostComment.timestamp',
+        foreign_keys='PostComment.parent_id')
+    answered: so.Mapped[Optional['PostComment']] = so.relationship(
+        remote_side='PostComment.id', foreign_keys='PostComment.answered_id')
     user: so.Mapped[Optional[User]] = so.relationship()
 
     def avatar(self, size):

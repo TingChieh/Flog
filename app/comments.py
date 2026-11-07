@@ -130,7 +130,7 @@ def _resolve_parent(target, parent_id):
 
 
 def submit_comment(target, *, name, email, body, parent_id=None, honeypot='',
-                   form_token='', author=None):
+                   form_token='', author=None, notify_replies=False):
     if not target.comments_enabled:
         raise CommentsClosed()
     is_admin = author is not None and author.is_admin
@@ -144,14 +144,17 @@ def submit_comment(target, *, name, email, body, parent_id=None, honeypot='',
         _check_rate(ip_hash)
         _check_duplicate(ip_hash, body)
 
-    parent = None
+    parent = answered = None
     if parent_id:
-        parent, answered = _resolve_parent(target, parent_id)
-        if answered is not None and not body.startswith(f'@{answered.name} '):
-            body = f'@{answered.name} {body}'
+        parent, reply_answered = _resolve_parent(target, parent_id)
+        answered = reply_answered or parent
+        if reply_answered is not None and not body.startswith(
+                f'@{reply_answered.name} '):
+            body = f'@{reply_answered.name} {body}'
 
     comment = PostComment(
         name=name.strip(), email=email, body=body, parent=parent,
+        answered=answered, notify_replies=notify_replies,
         status=_decide_status(body, email, is_admin), ip_hash=ip_hash,
         user_id=author.id if is_admin else None)
     if isinstance(target, Post):

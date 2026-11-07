@@ -57,6 +57,10 @@
             <p class="form-text">支持 Markdown：粗体、斜体、代码、引用、列表和链接。</p>
             {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
+        <div class="form-check comment-form__notify">
+            {{ form.notify(class="form-check-input") }}
+            {{ form.notify.label(class="form-check-label") }}
+        </div>
         {{ form.submit(class="btn btn-primary") }}
     </form>
     <script src="{{ url_for('static', filename='comment-reply.js') }}" defer></script>

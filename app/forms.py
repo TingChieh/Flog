@@ -76,6 +76,7 @@ class PostCommentForm(FlaskForm):
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     body = TextAreaField(_l('Comment'), validators=[
         DataRequired(), Length(1, 1000)])
+    notify = BooleanField('有回复或审核结果时，用邮件通知我')
     # The comment being answered; empty for a new top-level comment.
     parent_id = IntegerField(widget=HiddenInput(), validators=[Optional()])
     # Bait for bots: humans never see or fill it.

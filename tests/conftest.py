@@ -26,6 +26,7 @@ from app.models import Category, Post, SiteSettings, User  # noqa: E402
 
 @pytest.fixture()
 def application(tmp_path):
+    original_config = dict(app.config)
     app.config.update(
         TESTING=True,
         WTF_CSRF_ENABLED=False,
@@ -39,6 +40,9 @@ def application(tmp_path):
         yield app
         db.session.remove()
         db.drop_all()
+    # Tests change settings freely; none of it may reach the next test.
+    app.config.clear()
+    app.config.update(original_config)
 
 
 @pytest.fixture()

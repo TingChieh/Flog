@@ -281,7 +281,7 @@ def test_site_text_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'a1d9c3e5f7b2']
+        'd7b3a9e41c58']
 
 
 def test_draft_generation_migration_preserves_existing_sequence():
@@ -986,3 +986,43 @@ def test_comment_migration_downgrade_drops_what_old_schema_cannot_hold():
             assert 'comments_enabled' not in {c['name'] for c in inspector.get_columns('page')}
             assert connection.execute(sa.text(
                 'SELECT id FROM post_comment')).scalars().all() == [1]
+
+
+NOTIFY_REVISION_PATH = Path(__file__).parents[1] / 'migrations' / 'versions' / (
+    'd7b3a9e41c58_add_comment_notifications.py')
+
+
+def load_notify_revision():
+    spec = importlib.util.spec_from_file_location(
+        'comment_notifications', NOTIFY_REVISION_PATH)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_comment_notification_migration_adds_and_removes_columns():
+    revision = load_notify_revision()
+    engine = sa.create_engine('sqlite://')
+
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            'CREATE TABLE post_comment '
+            '(id INTEGER PRIMARY KEY, name VARCHAR(64) NOT NULL)'))
+        connection.execute(sa.text(
+            "INSERT INTO post_comment (id, name) VALUES (1, 'A')"))
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            revision.upgrade()
+
+            columns = {c['name'] for c in
+                       sa.inspect(connection).get_columns('post_comment')}
+            assert {'notify_replies', 'answered_id'} <= columns
+            assert tuple(connection.execute(sa.text(
+                'SELECT notify_replies, answered_id FROM post_comment'
+            )).one()) == (0, None)
+
+            revision.downgrade()
+
+            columns = {c['name'] for c in
+                       sa.inspect(connection).get_columns('post_comment')}
+            assert columns == {'id', 'name'}

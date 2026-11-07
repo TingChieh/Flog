@@ -256,3 +256,30 @@ def test_find_reply_target_only_returns_approved_comments_of_the_target(
         assert find_reply_target(post, ok.id) == ok
         assert find_reply_target(post, waiting.id) is None
         assert find_reply_target(post, 9999) is None
+
+
+def test_reply_records_who_was_answered(application, users):
+    with application.app_context(), request_context(application):
+        post = db.session.get(Post, users['post'])
+        top = make_comment(post.id, name='Top', email='top@example.com')
+        first = make_comment(post.id, name='First', email='first@example.com',
+                             parent_id=top.id)
+
+        to_top = send(post, parent_id=top.id, body='to the top one')
+        assert to_top.comment.parent_id == top.id
+        assert to_top.comment.answered_id == top.id
+
+        to_reply = send(post, parent_id=first.id, body='to the reply')
+        assert to_reply.comment.parent_id == top.id
+        assert to_reply.comment.answered_id == first.id
+
+        plain = send(post, body='not a reply')
+        assert plain.comment.answered_id is None
+
+
+def test_notify_replies_is_stored_and_defaults_off(application, users):
+    with application.app_context(), request_context(application):
+        post = db.session.get(Post, users['post'])
+        assert send(post, body='one').comment.notify_replies is False
+        assert send(post, body='two', notify_replies=True
+                    ).comment.notify_replies is True

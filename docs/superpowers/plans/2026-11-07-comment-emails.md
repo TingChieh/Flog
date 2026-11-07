@@ -26,7 +26,6 @@
 The working tree must be clean so each task's commit contains only that task's files. The password-reset fixes and the two docs are still uncommitted from earlier work. If `git status --short` is not empty, commit them first:
 
 ```bash
-cd /Users/tingchieh/cs-learning/flog
 git status --short
 git add app/email.py app/models.py app/routes.py app/templates/email app/translations README.md tests/test_password_reset_email.py
 git commit -m "fix(email): single-use reset links, site-styled reset email, clear mail-not-configured message"

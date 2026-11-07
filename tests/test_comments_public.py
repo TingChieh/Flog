@@ -213,3 +213,22 @@ def test_closed_comments_do_not_load_the_picker(client, application, users):
         db.session.commit()
     html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
     assert 'emoji-picker.js' not in html
+
+
+def test_comment_form_has_an_unchecked_notify_box(client, users):
+    page = page_for(client, f'/post/{users["post"]}')
+    boxes = page.xpath('//form[@data-comment-form]//input[@type="checkbox"][@name="notify"]')
+    assert len(boxes) == 1
+    assert boxes[0].get('checked') is None
+
+
+def test_notify_box_is_remembered(client, application, users):
+    post_comment(client, users['post'], notify='y')
+    with application.app_context():
+        assert db.session.scalar(db.select(PostComment)).notify_replies is True
+
+
+def test_comment_without_notify_box_stays_silent(client, application, users):
+    post_comment(client, users['post'])
+    with application.app_context():
+        assert db.session.scalar(db.select(PostComment)).notify_replies is False
