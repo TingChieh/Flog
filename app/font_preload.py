@@ -6,6 +6,11 @@ the text out. Until a piece arrives the Chinese text is set in a fallback face,
 then swaps and reflows. Naming the needed pieces in ``<link rel="preload">``
 tags lets them download alongside the stylesheet, so they are usually there
 before the first paint and nothing visibly jumps.
+
+A page's pieces are fetched whether or not they are preloaded, so the cap only
+guards against a pathological page, not bandwidth. The faces use
+``font-display: block``: text a piece has not yet delivered stays invisible
+for a moment instead of showing in a fallback face and then changing shape.
 """
 import html
 import re
@@ -18,7 +23,7 @@ from flask import url_for
 from app import app
 
 FONTS = Path(app.static_folder) / 'fonts'
-MAX_PRELOADED = 8
+MAX_PRELOADED = 32
 FACE_RE = re.compile(r'@font-face\s*\{([^}]+)\}')
 INVISIBLE_RE = re.compile(r'<(script|style)\b.*?</\1\s*>|<[^>]+>', re.DOTALL | re.IGNORECASE)
 HEAD_END = '</head>'

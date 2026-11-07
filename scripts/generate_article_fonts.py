@@ -87,7 +87,7 @@ def main():
 
 def face(family, style, filename, ranges):
     return (f"@font-face {{\n  font-family: '{family}';\n  font-style: {style};\n"
-            f"  font-weight: 400 700;\n  font-display: swap;\n  src: url('{filename}') format('woff2');\n"
+            f"  font-weight: 400 700;\n  font-display: block;\n  src: url('{filename}') format('woff2');\n"
             f"  unicode-range: {ranges};\n}}\n")
 
 

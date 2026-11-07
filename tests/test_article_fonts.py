@@ -15,7 +15,7 @@ def test_article_fonts_are_self_hosted():
     css = (ROOT / 'app' / 'static' / 'fonts' / 'article-fonts.css').read_text()
     assert 'fonts.googleapis.com' not in css.lower()
     assert 'fonts.gstatic.com' not in css.lower()
-    assert 'font-display: swap' in css
+    assert 'font-display: block' in css
     assert "font-family: 'Noto Serif SC'" in css
     assert "font-family: 'Source Serif 4'" in css
     urls = re.findall(r'url\(["\']?([^"\')]+)', css)
