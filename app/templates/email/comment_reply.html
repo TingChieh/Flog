@@ -1,0 +1,12 @@
+{% extends "email/base.html" %}
+{% import "email/_parts.html" as parts %}
+{% block title %}有人回复了你的评论{% endblock %}
+{% block label %}评论{% endblock %}
+{% block heading %}有人回复了你的评论{% endblock %}
+{% block content %}
+  {% call parts.paragraph() %}<strong>{{ comment.name }}</strong> 在《{{ target_title }}》下回复了你：{% endcall %}
+  {{ parts.quote(excerpt) }}
+  {{ parts.button(comment_url, '查看回复') }}
+  {{ parts.fallback_link(comment_url) }}
+{% endblock %}
+{% block unsubscribe %}{{ parts.unsubscribe_note(unsubscribe_url) }}{% endblock %}

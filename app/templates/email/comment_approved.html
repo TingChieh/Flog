@@ -1,0 +1,12 @@
+{% extends "email/base.html" %}
+{% import "email/_parts.html" as parts %}
+{% block title %}你的评论已通过审核{% endblock %}
+{% block label %}评论{% endblock %}
+{% block heading %}你的评论已通过审核{% endblock %}
+{% block content %}
+  {% call parts.paragraph() %}你在《{{ target_title }}》下的评论已通过审核，现在大家都能看到了：{% endcall %}
+  {{ parts.quote(excerpt) }}
+  {{ parts.button(comment_url, '查看评论') }}
+  {{ parts.fallback_link(comment_url) }}
+{% endblock %}
+{% block unsubscribe %}{{ parts.unsubscribe_note(unsubscribe_url) }}{% endblock %}

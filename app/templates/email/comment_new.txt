@@ -1,0 +1,10 @@
+{% if pending %}有一条评论等待审核{% else %}收到一条新评论{% endif %}
+
+{{ comment.name }}（{{ comment.email }}）在《{{ target_title }}》下评论：
+
+{{ excerpt }}
+
+{% if pending %}前往审核{% else %}查看评论{% endif %}：
+{{ action_url }}
+
+{{ site_name }}

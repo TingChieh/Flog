@@ -1,0 +1,11 @@
+{% extends "email/base.html" %}
+{% import "email/_parts.html" as parts %}
+{% block title %}{% if pending %}新评论待审核{% else %}新评论{% endif %}{% endblock %}
+{% block label %}评论{% endblock %}
+{% block heading %}{% if pending %}有一条评论等待审核{% else %}收到一条新评论{% endif %}{% endblock %}
+{% block content %}
+  {% call parts.paragraph() %}<strong>{{ comment.name }}</strong>（{{ comment.email }}）在《{{ target_title }}》下评论：{% endcall %}
+  {{ parts.quote(excerpt) }}
+  {{ parts.button(action_url, '前往审核' if pending else '查看评论') }}
+  {{ parts.fallback_link(action_url) }}
+{% endblock %}

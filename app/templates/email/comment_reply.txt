@@ -1,0 +1,13 @@
+有人回复了你的评论
+
+{{ comment.name }} 在《{{ target_title }}》下回复了你：
+
+{{ excerpt }}
+
+查看回复：
+{{ comment_url }}
+
+{{ site_name }}
+
+你收到这封邮件，是因为发表评论时勾选了邮件通知。不想再收到？退订：
+{{ unsubscribe_url }}
