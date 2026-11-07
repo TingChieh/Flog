@@ -16,15 +16,17 @@
 #                            destroyed; those folders are purged after the same
 #                            BACKUP_KEEP_DAYS.
 #
-# Settings: kept outside the repository, in ${FLOG_BACKUP_ENV:-~/.config/flog/backup.env}
-# (a shell file of KEY=value lines; environment variables win over it). Required:
+# Settings: in .env.backup at the repository root (git-ignored, like .env; override
+# the path with FLOG_BACKUP_ENV): a shell file of KEY=value lines; environment
+# variables win over it. Required:
 # R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, BACKUP_UPLOADS
 # (the app's UPLOAD_FOLDER), BACKUP_ENV_FILE (the app's .env). Optional:
 # BACKUP_PREFIX (default flog), BACKUP_KEEP_DAYS (default 30), BACKUP_DB_NAME
 # (default flog). Use an R2 API token limited to this one bucket.
 set -euo pipefail
 
-settings=${FLOG_BACKUP_ENV:-$HOME/.config/flog/backup.env}
+root=$(cd "$(dirname "$0")/.." && pwd)
+settings=${FLOG_BACKUP_ENV:-$root/.env.backup}
 if [[ -f "$settings" ]]; then
     # Keep variables that are already set: the environment overrides the file.
     while IFS='=' read -r key value; do
@@ -36,7 +38,7 @@ dry_run=()
 for arg in "$@"; do
     case "$arg" in
         --dry-run) dry_run=(--dry-run) ;;
-        -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; exit 2 ;;
     esac
 done

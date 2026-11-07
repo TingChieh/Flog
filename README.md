@@ -192,7 +192,7 @@ Caddy 配置不由脚本修改；让 Caddy 直接发图的配置见 [docs/caddy-
 
 1. 在 Cloudflare 里建一个私有存储桶，再创建只限该桶读写的 API 令牌，记下账户 ID、Access Key ID 和 Secret Access Key。
 2. 服务器上安装 [rclone](https://rclone.org/)（脚本通过环境变量配置 R2，不需要 `rclone config`）。
-3. 在服务器上写 `~/.config/flog/backup.env`（路径可用 `FLOG_BACKUP_ENV` 改，环境变量优先），不要提交，权限设为 `600`：
+3. 在服务器的项目根目录写 `.env.backup`（和 `.env` 并排，已被 `.gitignore` 忽略；路径可用 `FLOG_BACKUP_ENV` 改，环境变量优先），权限设为 `600`：
 
 ```bash
 R2_ACCOUNT_ID=...
