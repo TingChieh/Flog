@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
+    <style>
+      /* Same palette as the site's dark theme; clients without support keep the inline light colours. */
+      @media (prefers-color-scheme: dark) {
+        .mail-page { background-color: #141412 !important; }
+        .mail-card { background-color: #232320 !important; }
+        .mail-text { color: #f0eee8 !important; }
+        .mail-muted { color: #bfb998 !important; }
+        .mail-rule { border-color: #514f46 !important; }
+        .mail-quote { border-color: #bfb998 !important; }
+        .mail-button { background-color: #f0eee8 !important; color: #141412 !important; }
+        .mail-link { color: #2997ff !important; }
+      }
+      @media (max-width: 480px) {
+        .mail-card { padding: 28px 20px !important; }
+      }
+    </style>
+  </head>
+  <body class="mail-page" style="margin:0;padding:0;background-color:#f2f1ef;">
+    <table role="presentation" class="mail-page" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f1ef;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" class="mail-card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#fbfaf8;border-radius:16px;">
+            <tr>
+              <td class="mail-card" style="padding:40px 40px 36px;font-family:'Source Serif 4','Noto Serif SC','Songti SC',Georgia,serif;font-size:16px;line-height:1.7;color:#1c1915;">
+                <div class="mail-text" style="font-size:20px;font-weight:700;line-height:1;color:#1c1915;">{{ site_name }}</div>
+
+                <div class="mail-rule" style="margin-top:28px;padding-bottom:18px;border-bottom:1px solid #d2d2d7;">
+                  <div class="mail-muted" style="font-size:12px;font-weight:500;letter-spacing:.05em;color:#746d48;">{% block label %}{% endblock %}</div>
+                  <h1 class="mail-text" style="margin:10px 0 0;font-size:28px;font-weight:700;line-height:1.2;color:#1c1915;">{% block heading %}{% endblock %}</h1>
+                </div>
+
+                <div style="margin-top:28px;">
+                  {% block content %}{% endblock %}
+                </div>
+                {% block note %}{% endblock %}
+                {% block unsubscribe %}{% endblock %}
+              </td>
+            </tr>
+          </table>
+          <p class="mail-muted" style="margin:20px 0 0;font-family:'Source Serif 4','Noto Serif SC','Songti SC',Georgia,serif;font-size:12px;color:#746d48;">© {{ current_year }} {{ site_name }}</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

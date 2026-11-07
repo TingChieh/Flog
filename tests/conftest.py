@@ -2,8 +2,10 @@ import io
 import os
 import shutil
 import subprocess
+import threading
 
 import pytest
+from flask_mail import email_dispatched
 from PIL import Image as PILImage, ImageChops
 from sqlalchemy.engine import make_url
 
@@ -20,7 +22,7 @@ os.environ['DATABASE_URL'] = test_url
 os.environ['ADMIN_EMAILS'] = 'admin@example.com'
 os.environ['MAIL_SERVER'] = ''
 
-from app import app, db  # noqa: E402
+from app import app, db, mail  # noqa: E402
 from app.models import Category, Post, SiteSettings, User  # noqa: E402
 
 
@@ -138,3 +140,31 @@ def login(client, username):
         'username': username,
         'password': 'password',
     })
+
+
+@pytest.fixture()
+def outbox(application, users, monkeypatch):
+    """Mail is configured, nothing is really sent, and sending happens inline.
+
+    The returned list collects every message Flask-Mail dispatches. Config is
+    changed with monkeypatch so it never leaks into other tests.
+    """
+    for key, value in (('MAIL_SERVER', 'smtp.test'),
+                       ('MAIL_USERNAME', 'noreply@example.com'),
+                       ('ADMINS', ['admin@example.com'])):
+        monkeypatch.setitem(application.config, key, value)
+    monkeypatch.setattr(mail.state, 'suppress', True)
+
+    class InlineThread(threading.Thread):
+        def start(self):
+            self.run()
+
+    monkeypatch.setattr('app.email.Thread', InlineThread)
+    sent = []
+
+    def collect(sender, message, **extra):
+        sent.append(message)
+
+    email_dispatched.connect(collect)
+    yield sent
+    email_dispatched.disconnect(collect)

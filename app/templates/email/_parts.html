@@ -1,0 +1,24 @@
+{% macro paragraph() %}<p class="mail-text" style="margin:0 0 16px;color:#1c1915;">{{ caller() }}</p>{% endmacro %}
+
+{% macro button(url, label) %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 28px;">
+  <tr>
+    <td class="mail-button" style="background-color:#1c1915;border-radius:8px;">
+      <a href="{{ url }}" class="mail-button" style="display:inline-block;padding:12px 22px;font-family:'Source Serif 4','Noto Serif SC','Songti SC',Georgia,serif;font-size:14px;font-weight:600;line-height:1.2;color:#f2f1ef;text-decoration:none;">{{ label }}</a>
+    </td>
+  </tr>
+</table>
+{% endmacro %}
+
+{% macro quote(text) %}
+<div class="mail-quote mail-muted" style="margin:0 0 24px;padding:2px 0 2px 16px;border-left:2px solid #746d48;color:#746d48;white-space:pre-wrap;word-break:break-word;">{{ text }}</div>
+{% endmacro %}
+
+{% macro fallback_link(url) %}
+<p class="mail-muted" style="margin:0 0 8px;font-size:14px;color:#746d48;">如果按钮无法点击，请把下面的链接复制到浏览器地址栏：</p>
+<p style="margin:0 0 28px;font-size:14px;word-break:break-all;"><a href="{{ url }}" class="mail-link" style="color:#0066cc;">{{ url }}</a></p>
+{% endmacro %}
+
+{% macro note() %}<p class="mail-muted mail-rule" style="margin:0;padding-top:18px;border-top:1px solid #d2d2d7;font-size:14px;color:#746d48;">{{ caller() }}</p>{% endmacro %}
+
+{% macro unsubscribe_note(url) %}<p class="mail-muted" style="margin:14px 0 0;font-size:13px;color:#746d48;">你收到这封邮件，是因为发表评论时勾选了邮件通知。不想再收到？<a href="{{ url }}" class="mail-link" style="color:#0066cc;">退订</a></p>{% endmacro %}

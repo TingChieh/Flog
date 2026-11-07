@@ -1,34 +1,8 @@
-import threading
-
 import jwt
 import pytest
-from flask_mail import email_dispatched
 
 from app import app, db, mail
 from app.models import User
-
-
-@pytest.fixture()
-def outbox(application, users, monkeypatch):
-    """Mail configured, nothing really sent, background sending made inline."""
-    application.config.update(
-        MAIL_SERVER='smtp.test', MAIL_USERNAME='noreply@example.com',
-        ADMINS=['admin@example.com'])
-    monkeypatch.setattr(mail.state, 'suppress', True)
-
-    class InlineThread(threading.Thread):
-        def start(self):
-            self.run()
-
-    monkeypatch.setattr('app.email.Thread', InlineThread)
-    sent = []
-
-    def collect(sender, message, **extra):
-        sent.append(message)
-
-    email_dispatched.connect(collect)
-    yield sent
-    email_dispatched.disconnect(collect)
 
 
 def request_reset(client, email):
@@ -60,8 +34,9 @@ def test_unknown_address_gets_the_same_answer_and_no_mail(client, outbox):
     assert unknown.headers['Location'] == known.headers['Location']
 
 
-def test_sender_falls_back_to_first_admin(client, application, outbox):
-    application.config['MAIL_USERNAME'] = 'smtp-api-key'
+def test_sender_falls_back_to_first_admin(client, application, outbox,
+                                          monkeypatch):
+    monkeypatch.setitem(application.config, 'MAIL_USERNAME', 'smtp-api-key')
     request_reset(client, 'author@example.com')
     assert outbox[0].sender.endswith('<admin@example.com>')
 
@@ -71,8 +46,9 @@ def test_sender_falls_back_to_first_admin(client, application, outbox):
     {'MAIL_USERNAME': 'smtp-api-key', 'ADMINS': []},
 ])
 def test_unconfigured_mail_is_reported_not_sent(client, application, outbox,
-                                                overrides):
-    application.config.update(overrides)
+                                                monkeypatch, overrides):
+    for key, value in overrides.items():
+        monkeypatch.setitem(application.config, key, value)
     response = request_reset(client, 'author@example.com')
     assert outbox == []
     assert response.headers['Location'].endswith('/login')
