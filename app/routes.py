@@ -12,7 +12,9 @@ from app.site_text import site_text
 from app.forms import LoginForm, RegistrationForm, \
     PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, \
     CommentUnsubscribeForm
-from app.comment_mail import email_from_unsubscribe_token, stop_notifications
+from app.comment_mail import (email_from_unsubscribe_token,
+                              notify_comment_pending,
+                              notify_comment_published, stop_notifications)
 from app.models import Category, User, Post, Page, PageRedirect, PostComment, PostLike, get_site_settings
 from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
@@ -24,7 +26,7 @@ from app.post_drafts import DraftValues, publish_draft, save_draft
 from app.likes import (LIKED, LIMITED, attach_visitor_cookie, is_liked,
                        new_visitor_token, read_visitor_token, toggle_like)
 from app.pages import PAGE_CONTENT, page_for_public_slug
-from app.comments import (APPROVED, CommentRejected, CommentsClosed,
+from app.comments import (APPROVED, PENDING, CommentRejected, CommentsClosed,
                           comment_context, submit_comment)
 from app.post_views import (
     attach_view_cookie, has_recent_view, record_view, view_cookie_name,
@@ -362,8 +364,11 @@ def _take_comment(target, form, destination):
         return None
     db.session.commit()
     if result.outcome == APPROVED:
+        notify_comment_published(result.comment)
         flash('你的评论已发布。')
         return redirect(destination(f'comment-{result.comment.id}'))
+    if result.outcome == PENDING:
+        notify_comment_pending(result.comment)
     flash('评论已提交，审核通过后显示。')
     return redirect(destination('comments'))
 

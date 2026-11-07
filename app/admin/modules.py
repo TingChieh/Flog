@@ -8,6 +8,7 @@ from app.admin import bp
 from app.admin.forms import (BulkCommentForm, CategoryAdminForm,
                              CommentReplyForm, DeleteForm)
 from app.admin.pages import _like_pattern
+from app.comment_mail import notify_comment_published, notify_comments_approved
 from app.comments import CommentRejected, CommentsClosed, submit_comment
 from app.models import Category, Post, PostComment
 from app.security import admin_required
@@ -137,9 +138,13 @@ def comments():
 def approve_comment(comment_id):
     if not BulkCommentForm().validate_on_submit():
         abort(400)
-    db.get_or_404(PostComment, comment_id).status = 'approved'
+    comment = db.get_or_404(PostComment, comment_id)
+    newly_approved = comment.status != 'approved'
+    comment.status = 'approved'
     if not _commit_or_flash('评论保存失败，请重试。'):
         abort(500)
+    if newly_approved:
+        notify_comments_approved([comment])
     return _comments_back()
 
 
@@ -167,13 +172,17 @@ def bulk_comments():
         abort(400)
     selected = db.session.scalars(sa.select(PostComment).where(
         PostComment.id.in_([int(i) for i in raw_ids]))).all()
+    newly_approved = []
     for comment in selected:
         if action == 'approve':
+            if comment.status != 'approved':
+                newly_approved.append(comment)
             comment.status = 'approved'
         else:
             db.session.delete(comment)
     if not _commit_or_flash('批量操作失败，请重试。'):
         abort(500)
+    notify_comments_approved(newly_approved)
     flash(f'已处理 {len(selected)} 条评论。')
     return _comments_back()
 
@@ -188,7 +197,7 @@ def reply_comment(comment_id):
         flash('回复内容不能为空，且不超过 1000 字。')
         return _comments_back()
     try:
-        submit_comment(
+        result = submit_comment(
             comment.post or comment.page, name=current_user.username,
             email=current_user.email, body=form.body.data,
             parent_id=comment.id, author=current_user)
@@ -200,5 +209,6 @@ def reply_comment(comment_id):
         return _comments_back()
     if not _commit_or_flash('回复保存失败，请重试。'):
         abort(500)
+    notify_comment_published(result.comment)
     flash('回复已发布。')
     return _comments_back()
