@@ -128,12 +128,13 @@ flask run
 | --- | --- | --- |
 | `SECRET_KEY` | 是 | Session、CSRF 与令牌签名密钥 |
 | `DATABASE_URL` | 否 | 数据库连接；未设置时使用 SQLite |
-| `ADMIN_EMAILS` | 建议 | 出错通知和新评论通知的收件人，多个地址用逗号分隔；`MAIL_USERNAME` 不是邮箱地址时，其中第一个也作为重置密码邮件的发件人 |
+| `ADMIN_EMAILS` | 建议 | 出错通知和新评论通知的收件人，多个地址用逗号分隔；没设 `MAIL_FROM` 且 `MAIL_USERNAME` 不是邮箱地址时，其中第一个也作为邮件的发件人 |
 | `MAIL_SERVER` | 邮件功能需要 | SMTP 服务器 |
 | `MAIL_PORT` | 否 | SMTP 端口，默认 `465` |
 | `MAIL_USE_SSL` | 否 | 是否使用 SSL，默认 `true` |
-| `MAIL_USERNAME` | 邮件功能需要 | SMTP 用户名，同时是邮件的发件地址 |
+| `MAIL_USERNAME` | 邮件功能需要 | SMTP 用户名；它是邮箱地址时同时作为发件地址 |
 | `MAIL_PASSWORD` | 邮件功能需要 | SMTP 密码或授权码 |
+| `MAIL_FROM` | 否 | 发件地址。SMTP 用户名不是邮箱地址时必须设置（例如 Resend：用户名 `resend`，密码是 API Key，发件地址用已验证域名下的地址） |
 | `UPLOAD_FOLDER` | 否 | 上传目录，默认 `instance/uploads` |
 | `DISPLAY_TIMEZONE` | 否 | 页面上日期的显示时区，默认 `Asia/Shanghai`；数据库里统一存 UTC |
 | `GTM_ID` | 否 | Google Tag Manager 容器 ID（形如 `GTM-XXXXXXX`），不设置则不加载 |

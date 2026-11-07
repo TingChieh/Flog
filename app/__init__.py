@@ -74,7 +74,7 @@ if not app.debug:
             auth = (app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
         mail_handler = SMTP_SSLHandler(
             mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
-            fromaddr=app.config['MAIL_USERNAME'],
+            fromaddr=app.config['MAIL_FROM'] or app.config['MAIL_USERNAME'],
             toaddrs=app.config['ADMINS'], subject='Flog Failure',
             credentials=auth, secure=())
         mail_handler.setLevel(logging.ERROR)

@@ -64,6 +64,7 @@ class Config:
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'true').lower() == 'true'
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_FROM = os.environ.get('MAIL_FROM', '').strip()
     ADMINS = env_list('ADMIN_EMAILS')
     ADMIN_EMAILS = ADMINS
     LANGUAGES = ['zh']

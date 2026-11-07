@@ -9,11 +9,13 @@ from app.site_text import site_text
 def mail_sender():
     """The address mail is sent from, or None when none is configured.
 
-    MAIL_USERNAME is the SMTP login and usually the from address too; a login
-    that is not an address (an API key, say) falls back to the first admin.
+    MAIL_FROM wins: providers such as Resend log in with a name that is not an
+    address and send from a verified one. Otherwise MAIL_USERNAME (the SMTP
+    login, usually the from address too), then the first admin.
     """
-    candidates = [current_app.config['MAIL_USERNAME'] or '',
-                  *current_app.config['ADMINS']]
+    config = current_app.config
+    candidates = [config['MAIL_FROM'] or '', config['MAIL_USERNAME'] or '',
+                  *config['ADMINS']]
     return next((value for value in candidates if '@' in value), None)
 
 
