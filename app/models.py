@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from hashlib import md5
 from typing import Optional
+import hmac
 import logging
 import sqlalchemy as sa
 import sqlalchemy.orm as so
@@ -11,6 +12,9 @@ from app import db, login
 from time import time
 import jwt
 from app import app
+
+# Seconds a password reset link stays valid.
+RESET_TOKEN_LIFETIME = 600
 
 
 class User(UserMixin, db.Model):
@@ -60,21 +64,32 @@ class User(UserMixin, db.Model):
 
         
         
-    def get_reset_password_token(self, expires_in=600):
+    def _password_fingerprint(self):
+        """Changes whenever the password does, so a used token stops working."""
+        return hmac.new(app.config['SECRET_KEY'].encode(),
+                        (self.password_hash or '').encode(),
+                        'sha256').hexdigest()[:32]
+
+    def get_reset_password_token(self, expires_in=RESET_TOKEN_LIFETIME):
         return jwt.encode(
-            {'reset_password': self.id, 'exp': time() + expires_in},
+            {'reset_password': self.id, 'pw': self._password_fingerprint(),
+             'exp': time() + expires_in},
             app.config['SECRET_KEY'],algorithm='HS256')
-        
+
     @staticmethod
     def verify_reset_password_token(token):
         try:
-            id = jwt.decode(token, app.config['SECRET_KEY'],
-                            algorithms=['HS256'])['reset_password']
-            return db.session.get(User, id)
-        except jwt.PyJWTError:
-            logging.getLogger(__name__).warning(
-                'Password reset token validation failed')
-            return None
+            claims = jwt.decode(token, app.config['SECRET_KEY'],
+                                algorithms=['HS256'])
+            user = db.session.get(User, claims['reset_password'])
+            if user and hmac.compare_digest(
+                    claims['pw'], user._password_fingerprint()):
+                return user
+        except (jwt.PyJWTError, KeyError, TypeError):
+            pass
+        logging.getLogger(__name__).warning(
+            'Password reset token validation failed')
+        return None
 
 
 @login.user_loader

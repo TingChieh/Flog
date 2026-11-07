@@ -111,6 +111,16 @@ msgstr "恭喜你，已注册成功！"
 msgid "Check your email for the instructions to reset your password"
 msgstr "检查你的电子邮箱来帮助你重置密码"
 
+#: app/routes.py
+msgid ""
+"Password reset by email is not available right now. Please contact the site "
+"administrator."
+msgstr "暂时无法通过邮件重置密码，请联系网站管理员。"
+
+#: app/routes.py
+msgid "This password reset link is invalid or has expired."
+msgstr "这个重置密码链接无效或已过期。"
+
 #: app/routes.py:124 app/templates/user/reset_password.html:10
 msgid "Reset Password"
 msgstr "重置密码"

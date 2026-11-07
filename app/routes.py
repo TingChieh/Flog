@@ -12,7 +12,7 @@ from app.site_text import site_text
 from app.forms import LoginForm, RegistrationForm, \
     PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm
 from app.models import Category, User, Post, Page, PageRedirect, PostComment, PostLike, get_site_settings
-from app.email import send_password_reset_email
+from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
 
 from app.security import admin_required
@@ -123,6 +123,10 @@ def reset_password_request():
         return redirect(url_for('index'))
     form = ResetPasswordRequestForm()
     if form.validate_on_submit():
+        if not mail_configured():
+            flash(_('Password reset by email is not available right now. '
+                    'Please contact the site administrator.'))
+            return redirect(url_for('login'))
         user = db.session.scalar(
             sa.select(User).where(User.email == form.email.data))
         if user:
@@ -140,6 +144,7 @@ def reset_password(token):
         return redirect(url_for('index'))
     user = User.verify_reset_password_token(token)
     if not user:
+        flash(_('This password reset link is invalid or has expired.'))
         return redirect(url_for('index'))
     form = ResetPasswordForm()
     if form.validate_on_submit():
