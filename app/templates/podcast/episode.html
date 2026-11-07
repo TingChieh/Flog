@@ -5,7 +5,7 @@
 {% block page_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='podcast.css') }}">
 <link rel="alternate" type="application/rss+xml" title="{{ show.title }}" href="{{ url_for('podcast_feed') }}">{% endblock %}
 
-{% block page_scripts %}<script src="{{ url_for('static', filename='podcast-player.js') }}" defer></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
+{% block page_scripts %}<script src="{{ url_for('static', filename='podcast-controls.js') }}" defer></script><script src="{{ url_for('static', filename='podcast-player.js') }}" defer></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
 
 {% block content %}
 <article class="reading-layout podcast-episode">
@@ -18,9 +18,25 @@
     </div>
   </header>
 
-  <div class="podcast-player">
-    {% if cover %}<img class="podcast-player__cover" src="{{ cover }}" width="96" height="96" alt="">{% endif %}
-    <audio controls preload="none" data-episode-audio src="{{ audio_src }}"></audio>
+  <div class="podcast-player" data-podcast-player data-duration="{{ episode.audio_duration }}">
+    {% if cover %}<img class="podcast-player__cover" src="{{ cover }}" width="72" height="72" alt="">{% endif %}
+    {# The browser's own controls stay until the script swaps in these. #}
+    <audio class="podcast-player__audio" controls preload="none" data-episode-audio src="{{ audio_src }}"></audio>
+    <div class="podcast-player__controls" data-player-controls hidden>
+      <button class="player-play" type="button" data-player-play data-state="paused" aria-label="播放">
+        <svg class="player-play__play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l11-6.5z"/></svg>
+        <svg class="player-play__pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+      </button>
+      <div class="player-track">
+        <input class="player-seek" type="range" min="0" max="{{ episode.audio_duration }}" step="1" value="0" data-player-seek aria-label="播放进度">
+        <div class="player-times"><span data-player-current>0:00</span><span data-player-total>{{ episode.audio_duration|duration }}</span></div>
+      </div>
+      <div class="player-extras">
+        <button class="player-text" type="button" data-player-skip="-15" aria-label="后退 15 秒">&minus;15</button>
+        <button class="player-text" type="button" data-player-skip="30" aria-label="快进 30 秒">+30</button>
+        <button class="player-text" type="button" data-player-rate aria-label="播放速度">1&times;</button>
+      </div>
+    </div>
     <a class="podcast-player__download" href="{{ audio_src }}" download>下载音频</a>
   </div>
 

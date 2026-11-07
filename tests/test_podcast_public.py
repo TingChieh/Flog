@@ -5,7 +5,7 @@ import pytest
 from lxml import html as lxml_html
 
 from app import db
-from app.models import PostComment
+from app.models import PostComment, SiteSettings
 from tests.conftest import login
 from tests.podcast_helpers import add_episode, set_show
 
@@ -45,19 +45,51 @@ def test_index_lists_published_episodes_newest_first(client, application):
     assert titles == ['第二集', '第一集']
 
 
-def test_index_shows_the_default_show_text_and_subscribe_links(client, application):
+def test_index_shows_the_show_text_and_subscribe_links(client, application):
     with application.app_context():
-        set_show(apple_url='https://podcasts.apple.com/x',
+        set_show(title='示例节目', apple_url='https://podcasts.apple.com/x',
                  xiaoyuzhou_url='https://www.xiaoyuzhoufm.com/x')
 
     tree = page(client, '/podcast/')
 
-    assert "坡道闲聊 Aisaka's Chat" in tree.xpath('//h1')[0].text_content()
+    assert tree.xpath('//h1')[0].text_content() == '示例节目'
     links = {a.text_content().strip(): a.get('href')
              for a in tree.xpath('//div[@id="subscribe"]/a')}
     assert links == {'Apple Podcasts': 'https://podcasts.apple.com/x',
                      '小宇宙': 'https://www.xiaoyuzhoufm.com/x',
                      'RSS': '/podcast/feed.xml'}
+
+
+def test_a_fresh_install_carries_no_ones_show(client, application):
+    with application.app_context():
+        db.session.get(SiteSettings, 1).site_name = 'Some Blog'
+        db.session.commit()
+
+    tree = page(client, '/podcast/')
+
+    # Until the owner writes it, the name comes from the site, and there is no
+    # made-up description or author.
+    assert tree.xpath('//h1')[0].text_content() == 'Some Blog 播客'
+    assert not tree.xpath('//p[@class="podcast-show__description"]')
+    assert not tree.xpath('//p[@class="podcast-show__author"]')
+    main = tree.xpath('//main')[0].text_content()
+    assert '坡道' not in main and 'Aisaka' not in main
+    channel = feed(client)
+    assert '坡道' not in ET.tostring(channel, encoding='unicode')
+    assert channel.findtext('title') == 'Some Blog 播客'
+    assert channel.findtext('description') == 'Some Blog 播客'
+    assert channel.find(f'{ITUNES}author').text == 'Some Blog'
+
+
+def test_the_written_description_and_author_are_shown(client, application):
+    with application.app_context():
+        set_show(title='示例节目', description='一段简介', author='某某')
+
+    tree = page(client, '/podcast/')
+
+    assert tree.xpath('//p[@class="podcast-show__description"]')[0].text_content() == '一段简介'
+    assert '某某' in tree.xpath('//p[@class="podcast-show__author"]')[0].text_content()
+    assert feed(client).find(f'{ITUNES}author').text == '某某'
 
 
 def test_subscribe_links_that_are_not_set_are_left_out(client, application):
@@ -81,6 +113,27 @@ def test_the_episode_page_has_a_player_notes_and_neighbours(client, application)
     assert '时间轴' in tree.xpath('//div[@data-episode-notes]')[0].text_content()
     nav = [a.get('href') for a in tree.xpath('//nav[@class="podcast-episode__nav"]/a')]
     assert nav == ['/podcast/1', '/podcast/3']
+
+
+def test_the_player_has_site_controls_and_keeps_the_browser_ones_as_a_fallback(
+        client, application):
+    with application.app_context():
+        add_episode(uploads(application), 1)
+
+    tree = page(client, '/podcast/1')
+
+    player = tree.xpath('//div[@data-podcast-player]')[0]
+    assert player.get('data-duration') == '3'
+    assert player.xpath('.//audio[@data-episode-audio][@controls]')
+    controls = player.xpath('.//div[@data-player-controls][@hidden]')[0]
+    assert controls.xpath('.//button[@data-player-play]')
+    assert controls.xpath('.//input[@type="range"][@data-player-seek]/@max') == ['3']
+    assert controls.xpath('.//*[@data-player-total]')[0].text == '0:03'
+    assert [b.get('data-player-skip') for b in controls.xpath('.//button[@data-player-skip]')] == ['-15', '30']
+    assert controls.xpath('.//button[@data-player-rate]')
+    scripts = tree.xpath('//script/@src')
+    assert '/static/podcast-controls.js' in scripts and '/static/podcast-player.js' in scripts
+    assert player.xpath('.//a[@download]')
 
 
 def test_an_unpublished_or_missing_episode_is_a_404(client, application):
@@ -127,7 +180,7 @@ def test_podcast_pages_keep_the_blogs_menu_name_title_and_footer(client, applica
     assert index.xpath('//a[@class="site-brand"]/@href') == ['/index']
     assert index.xpath('//a[@class="site-brand"]')[0].text_content() == "Aisaka's Blog"
     assert index.xpath('//a[@data-search-open]')
-    assert index.xpath('//title')[0].text == "坡道闲聊 Aisaka's Chat - Aisaka's Blog"
+    assert index.xpath('//title')[0].text == "Aisaka's Blog 播客 - Aisaka's Blog"
     assert episode.xpath('//title')[0].text == "第一集 - Aisaka's Blog"
     current = index.xpath('//ul[@class="site-nav__links"]//a[@aria-current="page"]')
     assert [a.get('href') for a in current] == ['/podcast/']
@@ -147,12 +200,12 @@ def test_the_feed_describes_the_show_and_published_episodes(client, application)
     with application.app_context():
         set_show(owner_email='me@example.com', cover_filename='c' * 32 + '.png',
                  author='Aisaka')
-        add_episode(uploads(application), 1, '第一集', feed_guid='https://podcast.aisaka.cc/?p=36')
+        add_episode(uploads(application), 1, '第一集', feed_guid='https://old.example.com/?p=36')
         add_episode(uploads(application), 2, '草稿', published=False)
 
     channel = feed(client)
 
-    assert channel.findtext('title') == "坡道闲聊 Aisaka's Chat"
+    assert channel.findtext('title') == "Aisaka's Blog 播客"
     assert channel.findtext('language') == 'zh-cn'
     assert channel.find(f'{ITUNES}owner/{ITUNES}email').text == 'me@example.com'
     assert channel.find(f'{ITUNES}image').get('href').endswith('/files/' + 'c' * 32 + '.png')
@@ -170,13 +223,13 @@ def test_the_feed_describes_the_show_and_published_episodes(client, application)
 
 def test_an_episode_keeps_the_id_it_had_in_the_old_feed(client, application):
     with application.app_context():
-        add_episode(uploads(application), 1, '旧', feed_guid='https://podcast.aisaka.cc/?p=36')
+        add_episode(uploads(application), 1, '旧', feed_guid='https://old.example.com/?p=36')
         add_episode(uploads(application), 2, '新')
 
     guids = {item.findtext('title'): item.find('guid')
              for item in feed(client).findall('item')}
 
-    assert guids['旧'].text == 'https://podcast.aisaka.cc/?p=36'
+    assert guids['旧'].text == 'https://old.example.com/?p=36'
     assert guids['旧'].get('isPermaLink') == 'false'
     assert guids['新'].text == 'http://localhost/podcast/2'
 

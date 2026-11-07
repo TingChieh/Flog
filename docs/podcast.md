@@ -15,6 +15,14 @@ again any time. Episodes can still be managed while it is off.
 
 ## Admin
 
+Nothing about the show is preset: until you write them, the name is the site
+name plus `播客`, the author is the site name, and the description is empty (the
+feed then uses the name). The checklist on the admin page lists what is still
+unwritten.
+
+The episode page has its own player (play, progress, skip, speed) that matches the
+site; without JavaScript the browser's own audio controls are shown instead.
+
 `/admin/podcast` lists episodes, and `节目设置` holds the show's title,
 description, author, **contact email** (Apple and 小宇宙 mail it a code to prove
 you own the feed), category, cover and store links. The list warns about what the
@@ -72,10 +80,10 @@ Large files are easier to put on the server and import there than to upload in a
 browser:
 
 ```bash
-flask podcast add --number 4 --title "三个大学新生的悲惨人生" \
+flask podcast add --number 4 --title "Episode title" \
   --audio EP004.mp3 --published "2022-11-19 23:49" \
   --notes EP-004.md --cover cover.png \
-  --legacy-path "/2022/11/19/ep-004-三个大学新生的悲惨人生/" \
+  --legacy-path "/2022/11/19/ep-004-episode-title/" \
   --feed-guid "https://podcast.example.com/?p=98"
 ```
 

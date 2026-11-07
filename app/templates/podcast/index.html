@@ -11,8 +11,8 @@
     {% if show_cover %}<img class="podcast-show__cover" src="{{ show_cover }}" width="160" height="160" alt="">{% endif %}
     <div>
       <h1>{{ show.title }}</h1>
-      <p class="podcast-show__description">{{ show.description }}</p>
-      <p class="podcast-show__author">主播：{{ show.author }}</p>
+      {% if show.description %}<p class="podcast-show__description">{{ show.description }}</p>{% endif %}
+      {% if show.author_set %}<p class="podcast-show__author">主播：{{ show.author }}</p>{% endif %}
       <div class="podcast-subscribe" id="subscribe">
         {% if show.apple_url %}<a class="button button--quiet" href="{{ show.apple_url }}" rel="noopener">Apple Podcasts</a>{% endif %}
         {% if show.xiaoyuzhou_url %}<a class="button button--quiet" href="{{ show.xiaoyuzhou_url }}" rel="noopener">小宇宙</a>{% endif %}

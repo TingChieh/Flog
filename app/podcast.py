@@ -22,11 +22,14 @@ from werkzeug.utils import secure_filename
 from app import db
 from app.content import render_content
 from app.models import Episode, PodcastShow
+from app.site_text import site_text
 
-DEFAULT_TITLE = "坡道闲聊 Aisaka's Chat"
-DEFAULT_DESCRIPTION = '一档十分不专业的播客节目？偶尔邀请朋友录制，聊聊生活、大学和电影。'
-DEFAULT_AUTHOR = 'Aisaka'
+# The only wording the code supplies itself: everything else about the show
+# (its name, description, author) is the owner's to write, so a fresh install
+# carries nobody's show. Until it is written, the name and author come from
+# the site's own name, and the description stays empty.
 DEFAULT_CATEGORY = 'Society & Culture'
+TITLE_SUFFIX = ' 播客'
 
 # Audio lives next to the uploaded images, in its own folder.
 AUDIO_FOLDER = 'audio'
@@ -81,10 +84,13 @@ def show_text():
     def custom(name):
         return ((getattr(show, name, None) or '').strip()) or None
 
+    site_name = site_text()['site_name']
     return {
-        'title': custom('title') or DEFAULT_TITLE,
-        'description': custom('description') or DEFAULT_DESCRIPTION,
-        'author': custom('author') or DEFAULT_AUTHOR,
+        'title': custom('title') or f'{site_name}{TITLE_SUFFIX}',
+        'title_set': custom('title') is not None,
+        'description': custom('description') or '',
+        'author': custom('author') or site_name,
+        'author_set': custom('author') is not None,
         'owner_email': custom('owner_email'),
         'category': custom('category') or DEFAULT_CATEGORY,
         'cover_filename': custom('cover_filename'),
@@ -224,6 +230,14 @@ def feed_problems():
     """What would make Apple or 小宇宙 reject the feed, in plain words."""
     show = show_text()
     problems = []
+    if not show['title_set']:
+        problems.append(FeedProblem(
+            '还没有给节目起名：现在用的是网站名加“播客”。',
+            'admin.podcast_show', '去节目设置起名'))
+    if not show['description']:
+        problems.append(FeedProblem(
+            '还没有节目简介：订阅 App 里会显示它。',
+            'admin.podcast_show', '去节目设置写简介'))
     if not show['owner_email']:
         problems.append(FeedProblem(
             '还没有填联系邮箱：Apple 和小宇宙需要它来验证你是节目的主人。',
@@ -309,10 +323,11 @@ def build_feed():
     fg.link(href=feed_url, rel='self')
     # feedgen uses the last registered link for the RSS channel link.
     fg.link(href=home_url, rel='alternate')
-    fg.description(show['description'])
+    description = show['description'] or show['title']
+    fg.description(description)
     fg.language('zh-cn')
     fg.podcast.itunes_author(show['author'])
-    fg.podcast.itunes_summary(show['description'])
+    fg.podcast.itunes_summary(description)
     fg.podcast.itunes_explicit('no')
     fg.podcast.itunes_category(show['category'])
     if show['owner_email']:

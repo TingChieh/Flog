@@ -49,18 +49,22 @@ def test_only_admins_reach_the_podcast_pages(client, users):
 def test_the_list_says_what_the_feed_still_needs(admin):
     text = admin.get('/admin/podcast').get_data(as_text=True)
 
-    assert '联系邮箱' in text and '节目封面' in text and '已发布的单集' in text
+    assert all(word in text for word in (
+        '给节目起名', '节目简介', '联系邮箱', '节目封面', '已发布的单集'))
     tree = lxml_html.fromstring(text)
     links = {a.text_content().strip(): a.get('href')
              for a in tree.xpath('//div[@class="admin-notice"]//a')}
-    assert links == {'去节目设置填写': '/admin/podcast/show',
+    assert links == {'去节目设置起名': '/admin/podcast/show',
+                     '去节目设置写简介': '/admin/podcast/show',
+                     '去节目设置填写': '/admin/podcast/show',
                      '去节目设置上传': '/admin/podcast/show',
                      '新建单集': '/admin/podcast/new'}
 
 
 def test_a_complete_show_has_nothing_left_to_fix(admin, application):
     with application.app_context():
-        set_show(owner_email='me@example.com', cover_filename='c' * 32 + '.png')
+        set_show(title='示例', description='简介', owner_email='me@example.com',
+                 cover_filename='c' * 32 + '.png')
         add_episode(uploads(application), 1)
 
     assert 'RSS 还差几项' not in admin.get('/admin/podcast').get_data(as_text=True)
