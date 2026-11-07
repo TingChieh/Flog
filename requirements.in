@@ -17,6 +17,7 @@ gunicorn
 langdetect
 lxml
 Markdown
+mutagen
 Pillow
 pillow-heif
 Pygments

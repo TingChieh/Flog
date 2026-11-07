@@ -60,7 +60,7 @@ def _excerpt(body):
 
 
 def _target(comment):
-    return comment.post or comment.page
+    return comment.post or comment.page or comment.episode
 
 
 def _target_title(comment):
@@ -72,6 +72,9 @@ def _comment_url(comment):
     if comment.post is not None:
         return url_for('post', post_id=comment.post.id, _anchor=anchor,
                        _external=True)
+    if comment.episode is not None:
+        return url_for('podcast_episode', number=comment.episode.number,
+                       _anchor=anchor, _external=True)
     return url_for('public_page', slug=comment.page.slug, _anchor=anchor,
                    _external=True)
 

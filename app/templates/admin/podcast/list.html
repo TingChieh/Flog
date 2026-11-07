@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}播客{% endblock %}
+
+{% block admin_actions %}
+<a class="button button--quiet" href="{{ url_for('admin.podcast_show') }}">节目设置</a>
+<a class="button button--quiet" href="{{ url_for('podcast_index') }}">查看播客</a>
+<a class="button button--cta" href="{{ url_for('admin.new_episode') }}">新建单集</a>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-list__row" aria-label="播客开关">
+  <div class="admin-list__main">
+    <strong>播客{{ '已开启' if podcast.enabled else '已关闭' }}</strong>
+    <span>{% if podcast.enabled %}访客可以看到播客页面和订阅源{% else %}关闭时，播客页面、订阅源和导航链接都不存在；单集和音频会保留{% endif %}</span>
+  </div>
+  <div class="admin-list__actions">
+    <form method="post" action="{{ url_for('admin.toggle_podcast') }}">
+      {{ toggle_form.hidden_tag() }}
+      <button class="button {{ 'button--quiet' if podcast.enabled else 'button--cta' }}" type="submit">{{ '关闭播客' if podcast.enabled else '开启播客' }}</button>
+    </form>
+    {% if podcast.enabled %}
+    <form method="post" action="{{ url_for('admin.toggle_podcast_navigation') }}">
+      {{ toggle_form.hidden_tag() }}
+      <button class="button button--quiet" type="submit">{{ '从导航隐藏' if podcast.show_in_nav else '显示在导航' }}</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% if problems %}
+<div class="admin-notice">
+  <strong>RSS 还差几项：</strong>
+  <ul>{% for problem in problems %}<li>{{ problem.text }} <a href="{{ url_for(problem.endpoint) }}">{{ problem.action }}</a></li>{% endfor %}</ul>
+</div>
+{% endif %}
+<p class="form-text">订阅地址：<a href="{{ url_for('podcast_feed') }}">{{ url_for('podcast_feed', _external=True) }}</a></p>
+<div class="admin-list">
+  {% for episode in episodes %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <a href="{{ url_for('admin.edit_episode', episode_id=episode.id) }}"><strong>EP-{{ '%03d' % episode.number }} {{ episode.title }}</strong></a>
+      <span>{{ episode.published_at|dateformat('medium') }} · {{ episode.audio_duration|duration }} · {{ '%.1f' % (episode.audio_size / 1048576) }} MB</span>
+    </div>
+    <div class="admin-list__meta">
+      <span>{{ '已发布' if episode.is_published else '未发布' }}</span>
+      <span>{{ episode.comments|length }} 条评论</span>
+    </div>
+    <div class="admin-list__actions">
+      <form method="post" action="{{ url_for('admin.toggle_episode_publication', episode_id=episode.id) }}">
+        {{ toggle_form.hidden_tag() }}
+        <button class="button button--quiet" type="submit">{{ '取消发布' if episode.is_published else '发布' }}</button>
+      </form>
+      {% if episode.is_published %}<a href="{{ url_for('podcast_episode', number=episode.number) }}">查看</a>{% endif %}
+      <a href="{{ url_for('admin.edit_episode', episode_id=episode.id) }}">编辑</a>
+      <form method="post" action="{{ url_for('admin.delete_episode_view', episode_id=episode.id) }}">
+        {{ delete_form.hidden_tag() }}
+        <input type="hidden" name="confirm" value="y">
+        <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除这一集？音频文件和评论都会一起删除。');">删除</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>还没有单集。</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

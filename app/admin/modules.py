@@ -76,14 +76,15 @@ COMMENT_STATUSES = ('all', 'pending', 'approved')
 
 
 def _comment_target(raw):
-    """Parse 'post:12' / 'page:3' into a SQL condition; None when absent."""
+    """Parse 'post:12' / 'page:3' / 'episode:4' into a SQL condition; None when absent."""
     if not raw:
         return None
     kind, _, value = raw.partition(':')
-    if kind not in ('post', 'page') or not value.isdigit():
+    columns = {'post': PostComment.post_id, 'page': PostComment.page_id,
+               'episode': PostComment.episode_id}
+    if kind not in columns or not value.isdigit():
         abort(400)
-    column = PostComment.post_id if kind == 'post' else PostComment.page_id
-    return column == int(value)
+    return columns[kind] == int(value)
 
 
 def _comments_back():
@@ -198,7 +199,8 @@ def reply_comment(comment_id):
         return _comments_back()
     try:
         result = submit_comment(
-            comment.post or comment.page, name=current_user.username,
+            comment.post or comment.page or comment.episode,
+            name=current_user.username,
             email=current_user.email, body=form.body.data,
             parent_id=comment.id, author=current_user)
     except CommentsClosed:

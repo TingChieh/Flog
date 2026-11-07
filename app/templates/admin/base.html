@@ -17,6 +17,7 @@
   <p class="admin-nav__group admin-nav__group--spaced">网站管理</p>
   {{ nav_link('admin.posts', '全部文章', ('admin.posts',), scope='all') }}
   {{ nav_link('admin.pages', '页面管理', ('admin.pages', 'admin.new_page', 'admin.edit_page', 'admin.preview_page')) }}
+  {{ nav_link('admin.podcast', '播客', ('admin.podcast', 'admin.podcast_show', 'admin.new_episode', 'admin.edit_episode')) }}
   {{ nav_link('admin.categories', '分类', ('admin.categories',)) }}
   {{ nav_link('admin.comments', '评论', ('admin.comments',)) }}
   {{ nav_link('admin.mail', '邮件', ('admin.mail', 'admin.mail_detail', 'admin.mail_compose')) }}

@@ -89,6 +89,15 @@ class Config:
     GA_MEASUREMENT_ID = analytics_id('GA_MEASUREMENT_ID', r'G-[A-Z0-9]{4,20}')
     UPLOAD_FOLDER = resolve_project_path(os.environ.get(
         'UPLOAD_FOLDER', str(basedir / 'instance' / 'uploads')))
+    # The public address of this site, used where a link must leave the
+    # current host (the redirect from the old podcast domain).
+    SITE_URL = os.environ.get('SITE_URL', '').strip().rstrip('/')
+    # Hostnames that used to be the podcast's own site; requests to them are
+    # redirected to the podcast pages under SITE_URL.
+    PODCAST_REDIRECT_HOSTS = frozenset(
+        host.lower() for host in env_list('PODCAST_REDIRECT_HOSTS'))
+    # Largest episode audio file the admin may upload, in megabytes.
+    PODCAST_AUDIO_MAX_MB = int(os.environ.get('PODCAST_AUDIO_MAX_MB', '300'))
     # Live Photo clips are transcoded with ffmpeg; empty means look on PATH.
     FFMPEG = os.environ.get('FFMPEG_PATH')
     # Keep the request guard high enough for camera exports and article

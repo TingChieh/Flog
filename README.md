@@ -13,6 +13,7 @@
 - 管理后台：集中管理文章、页面、分类、评论、用户（新建、编辑、删除并转交文章）及站点设置；“关于”只是一个普通的页面
 - 文章渲染：Markdown 支持表格（保留列对齐）、任务列表 `- [ ]`、行内公式 `$…$`、块级公式 `$$…$$` 和 ` ```mermaid ` 流程图；编辑器里仍显示源码，发布后的页面才会渲染公式和图表
 - 图片库：记录每张上传图片的名称、备注、大小和上传者，可搜索，显示被哪些文章和页面引用，编辑器中可直接从图片库选图
+- 播客：可开关的功能（后台“网站管理 → 播客”里开启），开启后菜单出现“播客”，有节目页、单集页（播放器、点时间轴跳转）、评论和 RSS 订阅源；外观、导航和页脚都沿用博客；后台管理单集与音频，旧的播客域名可重定向过来，见 [docs/podcast.md](docs/podcast.md)
 - 界面：仅提供简体中文，文案由 Flask-Babel 管理
 - 部署：Gunicorn 与数据库迁移支持
 
@@ -26,6 +27,7 @@
 - KaTeX 0.19.0 与 Mermaid 12.2.0（文章里的公式和图表，位于 `app/static/vendor/`，自托管，仅在页面真的含有公式或图表时才加载）
 - Pytest、Node.js Test Runner
 - Gunicorn
+- mutagen（读取 MP3 / M4A 的时长）
 
 ## 项目结构
 
@@ -40,6 +42,7 @@ Flog/
 │   ├── models.py           # 数据模型
 │   ├── routes.py           # 公共路由
 │   ├── pages.py            # CMS 页面逻辑
+│   ├── podcast.py          # 播客：音频、单集与 RSS
 │   └── post_drafts.py      # 草稿与修订逻辑
 ├── docs/                   # 迁移和设计文档
 ├── migrations/             # Alembic 数据库迁移
@@ -138,6 +141,9 @@ flask run
 | `MAIL_SENDERS` | 否 | 后台“邮件”页写信时可选的发件地址，逗号分隔，须是 Resend 已验证域名下的地址；`MAIL_FROM` 始终可选 |
 | `RESEND_API_KEY` | 否 | Resend 的 Full access 密钥，供后台“邮件”页只读查看收发的邮件；不设置则该页只显示配置说明 |
 | `UPLOAD_FOLDER` | 否 | 上传目录，默认 `instance/uploads` |
+| `SITE_URL` | 否 | 本站的公开网址（不带结尾斜杠），旧播客域名重定向时用它拼出目标地址 |
+| `PODCAST_REDIRECT_HOSTS` | 否 | 以前是播客独立站的域名，逗号分隔；访问它们会 301 到 `SITE_URL` 下的 `/podcast/`，旧单集地址和旧 RSS 地址也会对应跳转 |
+| `PODCAST_AUDIO_MAX_MB` | 否 | 后台上传单集音频的大小上限（MB），默认 `300` |
 | `DISPLAY_TIMEZONE` | 否 | 页面上日期的显示时区，默认 `Asia/Shanghai`；数据库里统一存 UTC |
 | `GTM_ID` | 否 | Google Tag Manager 容器 ID（形如 `GTM-XXXXXXX`），不设置则不加载 |
 | `GA_MEASUREMENT_ID` | 否 | Google Analytics 测量 ID（形如 `G-XXXXXXXXXX`），不设置则不加载 |

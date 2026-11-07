@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}{{ '编辑单集' if episode else '新建单集' }}{% endblock %}
+
+{% block admin_actions %}<a class="button button--quiet" href="{{ url_for('admin.podcast') }}">返回单集列表</a>{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" enctype="multipart/form-data" novalidate
+      data-image-upload-url="{{ url_for('upload') }}"
+      data-image-library-url="{{ url_for('admin.image_picker') }}">
+  {{ form.hidden_tag() }}
+  {% for field in [form.number, form.title, form.summary] %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else '')) }}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-field">
+    {{ form.audio.label(class="form-label") }}
+    {% if episode %}
+    <p class="form-text">当前：{{ episode.audio_duration|duration }} · {{ '%.1f' % (episode.audio_size / 1048576) }} MB。不选文件则保持不变；换文件会改变订阅源里的音频地址。</p>
+    <audio controls preload="none" src="{{ url_for('uploaded_files', filename='audio/' ~ episode.audio_filename) }}"></audio>
+    {% endif %}
+    {{ form.audio(class="form-control" + (' is-invalid' if form.audio.errors else ''), accept=".mp3,.m4a,audio/mpeg,audio/mp4") }}
+    {% for error in form.audio.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="form-field">
+    {{ form.cover.label(class="form-label") }}
+    {% if episode and episode.cover_filename %}<p><img src="{{ url_for('uploaded_files', filename=episode.cover_filename) }}" width="96" height="96" alt="当前封面"></p>{% endif %}
+    {{ form.cover(class="form-control", accept="image/png,image/jpeg,image/gif") }}
+    {% for error in form.cover.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="form-field">
+    {{ form.body.label(class="form-label") }}
+    {{ form.body(class="form-control" + (' is-invalid' if form.body.errors else ''), rows="18", data_markdown_editor="", data_vditor_cdn=url_for('static', filename='vendor/vditor/4.0.1')) }}
+    <p class="form-text">以 [01:35] 开头的行，会变成点一下就跳到该时间的按钮。</p>
+    {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="form-field">
+    {{ form.published_at.label(class="form-label") }}
+    {{ form.published_at(class="form-control" + (' is-invalid' if form.published_at.errors else '')) }}
+    {% for error in form.published_at.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  <div class="admin-form__checks">
+    <label>{{ form.is_published() }} {{ form.is_published.label.text }}</label>
+    <label>{{ form.comments_enabled() }} {{ form.comments_enabled.label.text }}</label>
+  </div>
+  {{ form.submit(class="button button--cta") }}
+</form>
+{% endblock %}
+
+{% block page_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='emoji-editor.css') }}">
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.min.js') }}"></script>
+<script src="{{ url_for('static', filename='image-picker.js') }}"></script>
+<script src="{{ url_for('static', filename='upload-progress.js') }}"></script>
+<script src="{{ url_for('static', filename='emoji-data.js') }}"></script>
+<script src="{{ url_for('static', filename='emoji-picker.js') }}" data-base="{{ url_for('static', filename='emoji/noto/') }}"></script>
+<script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
+{% endblock %}

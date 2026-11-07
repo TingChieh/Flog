@@ -18,6 +18,14 @@ def to_display(value):
     return value.astimezone(display_zone())
 
 
+def from_display(value):
+    """The inverse of ``to_display`` for a naive local time: naive UTC, as stored."""
+    if value is None:
+        return None
+    return value.replace(tzinfo=display_zone()).astimezone(
+        timezone.utc).replace(tzinfo=None)
+
+
 def later_update(published, updated):
     """The update time in the display zone, if it falls on a later day than the publish time.
 

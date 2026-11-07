@@ -13,6 +13,7 @@ RESERVED_SLUGS = frozenset({
     'admin', 'login', 'logout', 'register', 'reset-password', 'post', 'user',
     'static', 'files', 'upload', 'rss', 'index', 'search',
     'messages', 'notifications', 'categories', 'category', 'archive',
+    'podcast',
 })
 
 

@@ -232,18 +232,21 @@ class PostRevision(db.Model):
 class PostComment(db.Model):
     __table_args__ = (
         sa.CheckConstraint(
-            '(post_id IS NOT NULL) <> (page_id IS NOT NULL)',
+            '(post_id IS NOT NULL) + (page_id IS NOT NULL) '
+            '+ (episode_id IS NOT NULL) = 1',
             name='ck_post_comment_target'),
         sa.CheckConstraint(
             "status IN ('pending', 'approved')", name='ck_post_comment_status'),
     )
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    # Exactly one of post_id and page_id is set.
+    # Exactly one of post_id, page_id and episode_id is set.
     post_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey(Post.id, ondelete='CASCADE'), index=True)
     page_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey('page.id', ondelete='CASCADE'), index=True)
+    episode_id: so.Mapped[Optional[int]] = so.mapped_column(
+        sa.ForeignKey('episode.id', ondelete='CASCADE'), index=True)
     # A reply points at its top-level comment; replies never nest deeper.
     parent_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey('post_comment.id', ondelete='CASCADE'), index=True)
@@ -271,6 +274,8 @@ class PostComment(db.Model):
 
     post: so.Mapped[Optional[Post]] = so.relationship(back_populates='comments')
     page: so.Mapped[Optional['Page']] = so.relationship(
+        back_populates='comments')
+    episode: so.Mapped[Optional['Episode']] = so.relationship(
         back_populates='comments')
     parent: so.Mapped[Optional['PostComment']] = so.relationship(
         back_populates='replies', remote_side='PostComment.id',
@@ -386,3 +391,75 @@ class Image(db.Model):
         default=lambda: datetime.now(timezone.utc))
 
     uploader: so.Mapped[Optional[User]] = so.relationship()
+
+
+class PodcastShow(db.Model):
+    """The podcast's own wording and artwork; blank fields use the defaults."""
+    id: so.Mapped[int] = so.mapped_column(primary_key=True, default=1)
+    # The podcast is off until an admin switches it on; while off its pages,
+    # feed and menu link do not exist.
+    enabled: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=False, server_default=sa.false())
+    show_in_nav: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=True, server_default=sa.true())
+    title: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
+    description: so.Mapped[Optional[str]] = so.mapped_column(sa.Text)
+    author: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
+    # Apple and 小宇宙 mail this address to prove who owns the feed.
+    owner_email: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
+    category: so.Mapped[Optional[str]] = so.mapped_column(sa.String(60))
+    # Name of an uploaded image (served from /files/); square, 1400-3000 px.
+    cover_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(80))
+    apple_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(300))
+    xiaoyuzhou_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(300))
+
+
+def get_podcast_show():
+    show = db.session.get(PodcastShow, 1)
+    if show is None:
+        show = PodcastShow(id=1)
+        db.session.add(show)
+    return show
+
+
+class Episode(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    # The public address is /podcast/<number>, so it is unique and never reused.
+    number: so.Mapped[int] = so.mapped_column(
+        sa.Integer, nullable=False, unique=True)
+    title: so.Mapped[str] = so.mapped_column(sa.String(120), nullable=False)
+    # Plain-text blurb for the feed and the list page.
+    summary: so.Mapped[Optional[str]] = so.mapped_column(sa.String(500))
+    # Show notes, written in Markdown.
+    body: so.Mapped[Optional[str]] = so.mapped_column(sa.Text)
+    # File under <uploads>/audio/; it is the feed's enclosure, so it is only
+    # replaced on purpose.
+    audio_filename: so.Mapped[str] = so.mapped_column(
+        sa.String(80), nullable=False)
+    audio_size: so.Mapped[int] = so.mapped_column(
+        sa.BigInteger, nullable=False, default=0)
+    audio_duration: so.Mapped[int] = so.mapped_column(
+        sa.Integer, nullable=False, default=0)
+    audio_mime: so.Mapped[str] = so.mapped_column(
+        sa.String(40), nullable=False, default='audio/mpeg')
+    # Name of an uploaded image; blank uses the show's cover.
+    cover_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(80))
+    is_published: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=False, server_default=sa.false())
+    comments_enabled: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, default=True, server_default=sa.true())
+    # When it went (or goes) public.
+    published_at: so.Mapped[datetime] = so.mapped_column(
+        index=True, default=lambda: datetime.now(timezone.utc))
+    # Path of the episode on the old WordPress site, kept for redirects.
+    legacy_path: so.Mapped[Optional[str]] = so.mapped_column(
+        sa.String(255), unique=True)
+    # The id this episode had in the old feed. Apple and 小宇宙 tell episodes
+    # apart by it, so a different one would list the episode twice.
+    feed_guid: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
+    created_at: so.Mapped[datetime] = so.mapped_column(
+        default=lambda: datetime.now(timezone.utc))
+
+    comments: so.Mapped[list['PostComment']] = so.relationship(
+        back_populates='episode', cascade='all, delete',
+        order_by='PostComment.timestamp')

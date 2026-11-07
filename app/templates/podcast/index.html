@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block page_hero %}{% endblock %}
+
+{% block page_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='podcast.css') }}">
+<link rel="alternate" type="application/rss+xml" title="{{ show.title }}" href="{{ url_for('podcast_feed') }}">{% endblock %}
+
+{% block content %}
+<div class="editorial-layout podcast">
+  <header class="podcast-show">
+    {% if show_cover %}<img class="podcast-show__cover" src="{{ show_cover }}" width="160" height="160" alt="">{% endif %}
+    <div>
+      <h1>{{ show.title }}</h1>
+      <p class="podcast-show__description">{{ show.description }}</p>
+      <p class="podcast-show__author">主播：{{ show.author }}</p>
+      <div class="podcast-subscribe" id="subscribe">
+        {% if show.apple_url %}<a class="button button--quiet" href="{{ show.apple_url }}" rel="noopener">Apple Podcasts</a>{% endif %}
+        {% if show.xiaoyuzhou_url %}<a class="button button--quiet" href="{{ show.xiaoyuzhou_url }}" rel="noopener">小宇宙</a>{% endif %}
+        <a class="button button--quiet" href="{{ url_for('podcast_feed') }}">RSS</a>
+      </div>
+    </div>
+  </header>
+
+  <section aria-labelledby="podcast-episodes">
+    <h2 class="podcast-section-title" id="podcast-episodes">全部节目</h2>
+    <ol class="episode-list">
+      {% for episode in episodes %}
+      <li class="episode-item">
+        <a class="episode-item__link" href="{{ url_for('podcast_episode', number=episode.number) }}">
+          <span class="episode-item__number">EP-{{ '%03d' % episode.number }}</span>
+          <span class="episode-item__title">{{ episode.title }}</span>
+        </a>
+        <div class="episode-item__meta">
+          <time datetime="{{ (episode.published_at|localtime).isoformat() }}">{{ episode.published_at|dateformat('long') }}</time>
+          <span>{{ episode.audio_duration|duration }}</span>
+        </div>
+        {% if episode.summary %}<p class="episode-item__summary">{{ episode.summary }}</p>{% endif %}
+      </li>
+      {% else %}
+      <li class="empty-state">还没有节目。</li>
+      {% endfor %}
+    </ol>
+  </section>
+</div>
+{% endblock %}

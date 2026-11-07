@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block page_hero %}{% endblock %}
+
+{% block page_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='podcast.css') }}">
+<link rel="alternate" type="application/rss+xml" title="{{ show.title }}" href="{{ url_for('podcast_feed') }}">{% endblock %}
+
+{% block page_scripts %}<script src="{{ url_for('static', filename='podcast-player.js') }}" defer></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
+
+{% block content %}
+<article class="reading-layout podcast-episode">
+  <header class="podcast-episode__header">
+    <p class="podcast-episode__number">EP-{{ '%03d' % episode.number }}</p>
+    <h1>{{ episode.title }}</h1>
+    <div class="article-header__meta">
+      <time datetime="{{ (episode.published_at|localtime).isoformat() }}">{{ episode.published_at|dateformat('long') }}</time>
+      <span>{{ episode.audio_duration|duration }}</span>
+    </div>
+  </header>
+
+  <div class="podcast-player">
+    {% if cover %}<img class="podcast-player__cover" src="{{ cover }}" width="96" height="96" alt="">{% endif %}
+    <audio controls preload="none" data-episode-audio src="{{ audio_src }}"></audio>
+    <a class="podcast-player__download" href="{{ audio_src }}" download>下载音频</a>
+  </div>
+
+  {% if episode.body %}
+  <div class="article-body podcast-notes" data-episode-notes>{{ episode.body|render_content('markdown') }}</div>
+  {% endif %}
+
+  <nav class="podcast-episode__nav" aria-label="上一期和下一期">
+    {% if older %}<a href="{{ url_for('podcast_episode', number=older.number) }}">&larr; EP-{{ '%03d' % older.number }} {{ older.title }}</a>{% else %}<span></span>{% endif %}
+    {% if newer %}<a href="{{ url_for('podcast_episode', number=newer.number) }}">EP-{{ '%03d' % newer.number }} {{ newer.title }} &rarr;</a>{% endif %}
+  </nav>
+</article>
+
+{% include '_comments.html' %}
+{% endblock %}

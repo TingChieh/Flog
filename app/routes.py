@@ -35,6 +35,7 @@ from app.authorization import owned_post_or_404
 from app.images import (VARIANT_FOLDER, ImageUploadError, make_variant,
                         save_uploaded_image)
 from app.admin.forms import CategoryAdminForm
+from app.podcast import podcast_enabled, published_episodes
 
 
 def published_post_statement():
@@ -512,6 +513,11 @@ def sitemap():
                 post.updated_at or post.timestamp)
     for page in db.session.scalars(sa.select(Page).where(Page.is_published.is_(True))):
         add_url(url_for('public_page', slug=page.slug, _external=True), page.updated_at)
+    if podcast_enabled():
+        add_url(url_for('podcast_index', _external=True))
+        for episode in db.session.scalars(published_episodes()):
+            add_url(url_for('podcast_episode', number=episode.number,
+                            _external=True), episode.published_at)
     return app.response_class(ET.tostring(root, encoding='utf-8', xml_declaration=True),
                               content_type='application/xml; charset=utf-8')
 

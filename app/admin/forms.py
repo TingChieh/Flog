@@ -3,13 +3,15 @@ import re
 import sqlalchemy as sa
 from email_validator import EmailNotValidError, validate_email
 from flask_wtf import FlaskForm
-from wtforms import (BooleanField, HiddenField, IntegerField, SelectField,
+from flask_wtf.file import FileField
+from wtforms import (BooleanField, DateTimeLocalField, HiddenField,
+                     IntegerField, SelectField,
                      PasswordField, StringField, SubmitField, TextAreaField)
 from wtforms.validators import (DataRequired, Email, InputRequired, Length,
                                 NumberRange, Optional, ValidationError, AnyOf)
 
 from app import db
-from app.models import Category, Page, PageRedirect, User
+from app.models import Category, Episode, Page, PageRedirect, User
 from app.pages import PageValidationError, normalize_slug
 
 
@@ -213,3 +215,57 @@ class MailComposeForm(FlaskForm):
     def validate_subject(self, field):
         if re.search(r'[\r\n]', field.data or ''):
             raise ValidationError('主题不能换行。')
+
+
+class PodcastShowForm(FlaskForm):
+    title = StringField('节目名称', validators=[Optional(), Length(max=120)])
+    description = TextAreaField('节目简介', validators=[Optional(), Length(max=4000)])
+    author = StringField('主播 / 作者', validators=[Optional(), Length(max=120)])
+    owner_email = StringField(
+        '联系邮箱（Apple、小宇宙验证用）',
+        validators=[Optional(), Email(), Length(max=120)])
+    category = StringField('Apple 分类', validators=[Optional(), Length(max=60)])
+    cover = FileField('封面（正方形，建议 1400-3000 像素）')
+    apple_url = StringField('Apple Podcasts 链接', validators=[Optional(), Length(max=300)])
+    xiaoyuzhou_url = StringField('小宇宙链接', validators=[Optional(), Length(max=300)])
+    submit = SubmitField('保存')
+
+    def validate_apple_url(self, field):
+        _check_link(field)
+
+    def validate_xiaoyuzhou_url(self, field):
+        _check_link(field)
+
+
+def _check_link(field):
+    value = (field.data or '').strip()
+    if value and not re.match(r'https?://', value, re.IGNORECASE):
+        raise ValidationError('链接需要以 http:// 或 https:// 开头。')
+    field.data = value
+
+
+class EpisodeForm(FlaskForm):
+    number = IntegerField(
+        '期号', validators=[InputRequired(), NumberRange(min=1, max=100000)])
+    title = StringField('标题', validators=[DataRequired(), Length(max=120)])
+    summary = TextAreaField('摘要（列表页和 RSS 里显示）', validators=[Optional(), Length(max=500)])
+    body = TextAreaField('节目笔记（Markdown）', validators=[Optional()])
+    audio = FileField('音频文件（MP3 或 M4A）')
+    cover = FileField('单集封面（可选，不选则用节目封面）')
+    published_at = DateTimeLocalField(
+        '发布时间', format='%Y-%m-%dT%H:%M', validators=[InputRequired()])
+    is_published = BooleanField('已发布')
+    comments_enabled = BooleanField('允许评论')
+    submit = SubmitField('保存')
+
+    def __init__(self, *args, episode=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.episode_id = episode.id if episode is not None else None
+
+    def validate_number(self, field):
+        query = sa.select(Episode).where(Episode.number == field.data)
+        if self.episode_id is not None:
+            query = query.where(Episode.id != self.episode_id)
+        if db.session.scalar(query) is not None:
+            raise ValidationError('这个期号已经有节目了。')
+

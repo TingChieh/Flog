@@ -281,7 +281,7 @@ def test_site_text_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'd7b3a9e41c58']
+        'f4b9d2a73e15']
 
 
 def test_draft_generation_migration_preserves_existing_sequence():
@@ -1026,3 +1026,86 @@ def test_comment_notification_migration_adds_and_removes_columns():
             columns = {c['name'] for c in
                        sa.inspect(connection).get_columns('post_comment')}
             assert columns == {'id', 'name'}
+
+
+PODCAST_REVISION_PATH = Path(__file__).parents[1] / 'migrations' / 'versions' / (
+    'e2a7c5d81f36_add_podcast.py')
+
+
+def load_podcast_revision():
+    spec = importlib.util.spec_from_file_location('add_podcast', PODCAST_REVISION_PATH)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_podcast_migration_lets_comments_belong_to_an_episode_and_back():
+    revision = load_podcast_revision()
+    engine = sa.create_engine('sqlite://')
+
+    with engine.begin() as connection:
+        connection.execute(sa.text('CREATE TABLE post (id INTEGER PRIMARY KEY)'))
+        connection.execute(sa.text('CREATE TABLE page (id INTEGER PRIMARY KEY)'))
+        connection.execute(sa.text(
+            'CREATE TABLE post_comment (id INTEGER PRIMARY KEY, '
+            'post_id INTEGER REFERENCES post (id), '
+            'page_id INTEGER REFERENCES page (id), '
+            'CONSTRAINT ck_post_comment_target CHECK '
+            '((post_id IS NOT NULL) <> (page_id IS NOT NULL)))'))
+        connection.execute(sa.text('INSERT INTO post (id) VALUES (1)'))
+        connection.execute(sa.text(
+            'INSERT INTO post_comment (id, post_id) VALUES (1, 1)'))
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            revision.upgrade()
+
+            inspector = sa.inspect(connection)
+            assert {'episode', 'podcast_show'} <= set(inspector.get_table_names())
+            assert 'episode_id' in {c['name'] for c in inspector.get_columns('post_comment')}
+            connection.execute(sa.text(
+                "INSERT INTO episode (id, number, title, audio_filename, audio_size, "
+                "audio_duration, audio_mime, published_at, created_at) VALUES "
+                "(7, 1, 't', 'a.mp3', 1, 1, 'audio/mpeg', '2022-01-01', '2022-01-01')"))
+            connection.execute(sa.text(
+                'INSERT INTO post_comment (id, episode_id) VALUES (2, 7)'))
+            with pytest.raises(sa.exc.IntegrityError):
+                connection.execute(sa.text(
+                    'INSERT INTO post_comment (id, post_id, episode_id) VALUES (3, 1, 7)'))
+            with pytest.raises(sa.exc.IntegrityError):
+                connection.execute(sa.text('INSERT INTO post_comment (id) VALUES (4)'))
+
+            revision.downgrade()
+
+            inspector = sa.inspect(connection)
+            assert 'episode' not in inspector.get_table_names()
+            assert 'episode_id' not in {c['name'] for c in inspector.get_columns('post_comment')}
+            assert connection.execute(sa.text(
+                'SELECT id FROM post_comment')).scalars().all() == [1]
+
+
+PODCAST_SWITCH_REVISION_PATH = Path(__file__).parents[1] / 'migrations' / 'versions' / (
+    'f4b9d2a73e15_add_podcast_switch.py')
+
+
+def test_podcast_switch_migration_adds_the_columns_off_by_default():
+    spec = importlib.util.spec_from_file_location(
+        'add_podcast_switch', PODCAST_SWITCH_REVISION_PATH)
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    engine = sa.create_engine('sqlite://')
+
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            'CREATE TABLE podcast_show (id INTEGER PRIMARY KEY, title VARCHAR(120))'))
+        connection.execute(sa.text("INSERT INTO podcast_show (id, title) VALUES (1, 'x')"))
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            revision.upgrade()
+
+            assert tuple(connection.execute(sa.text(
+                'SELECT enabled, show_in_nav FROM podcast_show')).one()) == (0, 1)
+
+            revision.downgrade()
+
+            assert {c['name'] for c in sa.inspect(connection).get_columns(
+                'podcast_show')} == {'id', 'title'}

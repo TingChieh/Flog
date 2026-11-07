@@ -13,7 +13,7 @@ from itsdangerous import BadData, URLSafeTimedSerializer
 
 from app import db
 from app.likes import hash_address
-from app.models import Post, PostComment
+from app.models import Episode, Post, PostComment
 
 APPROVED, PENDING, DROPPED = 'approved', 'pending', 'dropped'
 MAX_LINKS_FOR_AUTO_APPROVAL = 2
@@ -22,7 +22,7 @@ _LINK = re.compile(r'https?://|www\.', re.IGNORECASE)
 
 
 class CommentsClosed(Exception):
-    """The post or page does not take comments."""
+    """The post, page or episode does not take comments."""
 
 
 class CommentRejected(Exception):
@@ -69,6 +69,8 @@ def count_links(body):
 def _target_filter(target):
     if isinstance(target, Post):
         return PostComment.post_id == target.id
+    if isinstance(target, Episode):
+        return PostComment.episode_id == target.id
     return PostComment.page_id == target.id
 
 
@@ -111,7 +113,7 @@ def _decide_status(body, email, is_admin):
 
 
 def find_reply_target(target, comment_id):
-    """The approved comment of this post or page with that id, else None."""
+    """The approved comment of this post, page or episode with that id, else None."""
     if not comment_id:
         return None
     return db.session.scalar(sa.select(PostComment).where(
@@ -159,6 +161,8 @@ def submit_comment(target, *, name, email, body, parent_id=None, honeypot='',
         user_id=author.id if is_admin else None)
     if isinstance(target, Post):
         comment.post = target
+    elif isinstance(target, Episode):
+        comment.episode = target
     else:
         comment.page = target
     db.session.add(comment)

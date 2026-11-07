@@ -25,15 +25,18 @@
 
 <div class="admin-list">
   {% for comment in post_comments %}
-  {% set owner = comment.post or comment.page %}
+  {% set owner = comment.post or comment.page or comment.episode %}
+  {% if comment.post_id %}{% set owner_url = url_for('post', post_id=comment.post_id) %}{% set owner_key = 'post:%d' % comment.post_id %}
+  {% elif comment.episode_id %}{% set owner_url = url_for('podcast_episode', number=comment.episode.number) %}{% set owner_key = 'episode:%d' % comment.episode_id %}
+  {% else %}{% set owner_url = url_for('public_page', slug=comment.page.slug) %}{% set owner_key = 'page:%d' % comment.page_id %}{% endif %}
   <article class="admin-list__row admin-comment-row" data-comment-row>
     <label class="admin-comment-row__select"><input type="checkbox" name="ids" value="{{ comment.id }}" form="bulk-comments" aria-label="选择这条评论"></label>
     <div class="admin-list__main">
       <strong class="comment-author">{{ comment.name }}</strong>
       <span>{{ comment.email }} · {{ '待审核' if comment.status == 'pending' else '已通过' }}{% if comment.user_id %} · 站长{% endif %}{% if comment.parent_id %} · 回复 #{{ comment.parent_id }}{% endif %}</span>
       <span>
-        <a data-comment-target href="{{ url_for('post', post_id=comment.post_id) if comment.post_id else url_for('public_page', slug=comment.page.slug) }}">{{ owner.title }}</a>
-        · <a href="{{ url_for('admin.comments', status=status if status != 'all' else None, target=('post:%d' % comment.post_id) if comment.post_id else ('page:%d' % comment.page_id)) }}">只看这里</a>
+        <a data-comment-target href="{{ owner_url }}">{{ owner.title }}</a>
+        · <a href="{{ url_for('admin.comments', status=status if status != 'all' else None, target=owner_key) }}">只看这里</a>
       </span>
       <p class="admin-comment-row__body">{{ comment.body }}</p>
     </div>

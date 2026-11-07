@@ -135,6 +135,21 @@ def make_video(tmp_path, extension='.mov', size='320x240', seconds=1):
     return path.read_bytes()
 
 
+@pytest.fixture()
+def podcast_on(application):
+    """The podcast switched on, as an admin does in its own admin page."""
+    from app.models import get_podcast_show
+    with application.app_context():
+        get_podcast_show().enabled = True
+        db.session.commit()
+
+
+def make_mp3(seconds=2):
+    """Bytes of a real, silent MP3 (128 kbps, 44.1 kHz) about ``seconds`` long."""
+    frame = b'\xff\xfb\x90\x44' + b'\x00' * 413
+    return frame * round(seconds * 44100 / 1152)
+
+
 def login(client, username):
     return client.post('/login', data={
         'username': username,

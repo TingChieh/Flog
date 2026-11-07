@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}节目设置{% endblock %}
+
+{% block admin_actions %}<a class="button button--quiet" href="{{ url_for('admin.podcast') }}">返回单集列表</a>{% endblock %}
+
+{% block admin_content %}
+<form class="admin-form" method="post" enctype="multipart/form-data" novalidate>
+  {{ form.hidden_tag() }}
+  <p class="form-text">留空则使用默认文字。</p>
+  {% for name in ['title', 'description', 'author', 'owner_email', 'category'] %}
+  {% set field = form[name] %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {% if name == 'description' %}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else ''), rows="4", placeholder=defaults[name]) }}
+    {% else %}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else ''), placeholder=defaults[name] or '') }}
+    {% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-field">
+    {{ form.cover.label(class="form-label") }}
+    {% if show.cover_filename %}<p><img src="{{ url_for('uploaded_files', filename=show.cover_filename) }}" width="120" height="120" alt="当前封面"></p>{% endif %}
+    {{ form.cover(class="form-control", accept="image/png,image/jpeg,image/gif") }}
+    {% for error in form.cover.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% for field in [form.apple_url, form.xiaoyuzhou_url] %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else ''), placeholder='https://') }}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  {{ form.submit(class="button button--cta") }}
+</form>
+{% endblock %}

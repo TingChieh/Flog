@@ -140,6 +140,10 @@ msgstr "搜索"
 msgid "Archive"
 msgstr "归档"
 
+#: app/templates/base.html
+msgid "Podcast"
+msgstr "播客"
+
 #: app/routes.py:273 app/templates/post/categories.html:5
 #: app/templates/post/categories.html:9
 msgid "Categories"
