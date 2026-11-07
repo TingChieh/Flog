@@ -270,6 +270,34 @@ def scenarios(t):
     """ + "}")
     t.check('lightbox shows the full-size file, not a variant', '/_w/' not in box['src'] and box['src'].endswith('.jpg') and box['w'] == 1333, box)
 
+    live = t.run(head + GOTO_POST + """
+      await page.locator('.live-photo img').click();
+      await page.waitForSelector('.pswp--open');
+      await page.waitForSelector('.pswp__live-video.is-playing', {timeout: 8000});
+      await page.waitForSelector('img.pswp__img:not(.pswp__img--placeholder)');
+      await page.waitForTimeout(600);
+      const playing = await page.evaluate(() => {
+        const clip = document.querySelector('.pswp__live-video'), img = clip.parentElement.querySelector('img.pswp__img');
+        const badge = document.querySelector('.pswp__live-toggle');
+        const ir = img.getBoundingClientRect(), br = badge.getBoundingClientRect();
+        const caption = document.querySelector('.pswp__custom-caption').textContent;
+        return {clip: !!clip, sized: clip.style.width === img.style.width && !!clip.style.width,
+                badge: !badge.hidden, pressed: badge.getAttribute('aria-pressed'),
+                offset: [Math.round(ir.right - br.right), Math.round(br.top - ir.top)], caption,
+                fits: badge.scrollWidth <= badge.clientWidth && br.height < 30};
+      });
+      await page.click('.pswp__live-toggle');
+      const stopped = await page.evaluate(() => ({
+        pressed: document.querySelector('.pswp__live-toggle').getAttribute('aria-pressed'),
+        paused: document.querySelector('.pswp__live-video').paused}));
+      return {playing, stopped};
+    """ + "}")
+    t.check('lightbox plays the Live Photo clip over the still', live['playing']['clip'] and live['playing']['sized'] and live['playing']['badge'] and live['playing']['pressed'] == 'true', live)
+    t.check('the lightbox LIVE button sits top-right of the photo, like the article', live['playing']['offset'] == [10, 10], live['playing'])
+    t.check('the lightbox LIVE button is not squeezed', live['playing']['fits'], live['playing'])
+    t.check('the lightbox shows no file name as a caption', live['playing']['caption'] == '', live['playing'])
+    t.check('the lightbox LIVE button stops it', live['stopped']['paused'] and live['stopped']['pressed'] == 'false', live)
+
     print('admin library')
     admin = t.run(head + f"""
       await page.goto(BASE + '/login');

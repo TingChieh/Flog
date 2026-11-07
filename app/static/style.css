@@ -2966,6 +2966,14 @@ textarea {
 .article-body img[data-lightbox-ready] { cursor: zoom-in; }
 .pswp__custom-caption { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); max-width: min(90%, 700px); color: white; background: rgba(0, 0, 0, .7); padding: 8px 12px; text-align: center; }
 .pswp__custom-caption:empty { display: none; }
+.pswp__live-video { position: absolute; top: 0; left: 0; z-index: 1; object-fit: cover; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.pswp__live-video.is-playing { opacity: 1; }
+.pswp__live-toggle { position: absolute; top: 10px; z-index: 2; width: max-content; white-space: nowrap; transform: translateX(calc(-100% - 10px)); }
+.pswp__live-toggle[aria-pressed="true"] { background: rgba(255, 255, 255, .85); color: #1d1d1f; }
+.pswp__live-toggle[aria-pressed="true"]::before {
+    box-shadow: 0 0 0 1.5px #1d1d1f;
+    background: radial-gradient(circle, #1d1d1f 35%, transparent 40%);
+}
 
 /* Article contents sits to the left of the reading column on wide screens. */
 #article-layout { position: relative; }
