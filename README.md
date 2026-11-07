@@ -179,8 +179,9 @@ node --test tests/*.test.js
 
 ## 部署
 
-生产服务器（`Isvoro_hk` 上的 `/opt/flog`，以 `flog` 用户运行，systemd 服务 `flog`）始终跟随公开仓库的
-`origin/main`。服务器访问不了 github.com，所以由本机推送：
+生产服务器（以 `flog` 用户运行，systemd 服务 `flog`）始终跟随公开仓库的
+`origin/main`。服务器访问不了 github.com，所以由本机推送。服务器的地址、目录等放在仓库之外的
+`~/.config/flog/deploy.env`（见下），不要提交。
 
 ```bash
 git push origin main
@@ -189,10 +190,12 @@ git push origin main
 ```
 
 提交以 git bundle 经 SSH 传到服务器，再作为 `origin/main` 快进合并，因此服务器版本严格等于公开仓库。
-脚本在改动任何东西之前，先把数据库、上传目录和 `.env` 备份到 `/root/flog-backups/`，
+脚本在改动任何东西之前，先把数据库、上传目录和 `.env` 备份到服务器上的备份目录，
 失败时会打印回滚命令。选项：`--no-optimize` 跳过旧图回填，`--recompress` 同时就地压缩旧图。
-主机、目录、虚拟环境、`uv` 路径等可用 `DEPLOY_HOST`、`DEPLOY_DIR`、`DEPLOY_VENV`、`DEPLOY_UV` 等环境变量覆盖（见脚本头部）。Caddy 配置不由脚本修改，
-上传的图片放在服务器的 `/var/www/flog-uploads`（`.env` 里的 `UPLOAD_FOLDER`），
+`deploy.env` 是一个 `KEY=value` 文件（路径可用 `FLOG_DEPLOY_ENV` 改），环境变量优先于它。必填：
+`DEPLOY_HOST`（SSH 别名）、`DEPLOY_DIR`（服务器上的检出目录）、`DEPLOY_UV`（服务器上 `uv` 的绝对路径）、
+`DEPLOY_UPLOADS`（`.env` 里的 `UPLOAD_FOLDER`）、`DEPLOY_BACKUPS`、`DEPLOY_SITE`（站点网址）；
+可选：`DEPLOY_USER`、`DEPLOY_SERVICE`、`DEPLOY_VENV`、`DEPLOY_LOCAL_URL`（见脚本头部）。Caddy 配置不由脚本修改，
 Caddy 直接发图的配置见 `docs/caddy-uploads.md`。
 
 ## Markdown 编辑器

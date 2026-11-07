@@ -15,22 +15,33 @@
 # dependencies -> ffmpeg -> database migration -> restart -> optimize -> smoke
 # test. Nothing is changed before the backup. Caddy is not touched.
 #
-# Settings (environment): DEPLOY_HOST, DEPLOY_DIR, DEPLOY_USER, DEPLOY_SERVICE,
-# DEPLOY_VENV (relative to DEPLOY_DIR), DEPLOY_UV (absolute path), DEPLOY_UPLOADS
-# (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_LOCAL_URL (checked on the
-# server), DEPLOY_SITE.
+# Settings: where the server is lives outside the repository, in
+# ${FLOG_DEPLOY_ENV:-~/.config/flog/deploy.env} (a shell file of KEY=value lines;
+# environment variables win over it). Required: DEPLOY_HOST (SSH alias),
+# DEPLOY_DIR (checkout), DEPLOY_UV (absolute path of uv on the server),
+# DEPLOY_UPLOADS (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_SITE (public
+# URL). Optional: DEPLOY_USER, DEPLOY_SERVICE, DEPLOY_VENV (relative to
+# DEPLOY_DIR), DEPLOY_LOCAL_URL (checked on the server).
 set -euo pipefail
 
-HOST=${DEPLOY_HOST:-Isvoro_hk}
-DIR=${DEPLOY_DIR:-/opt/flog}
+settings=${FLOG_DEPLOY_ENV:-$HOME/.config/flog/deploy.env}
+if [[ -f "$settings" ]]; then
+    # Keep variables that are already set: the environment overrides the file.
+    while IFS='=' read -r key value; do
+        if [[ -z "${!key:-}" ]]; then export "$key=${value//[\"\']/}"; fi
+    done < <(grep -E '^DEPLOY_[A-Z_]+=' "$settings")
+fi
+
+HOST=${DEPLOY_HOST:?set DEPLOY_HOST in $settings (see the header of this script)}
+DIR=${DEPLOY_DIR:?set DEPLOY_DIR in $settings}
+UV=${DEPLOY_UV:?set DEPLOY_UV in $settings}
+UPLOADS=${DEPLOY_UPLOADS:?set DEPLOY_UPLOADS in $settings}
+BACKUPS=${DEPLOY_BACKUPS:?set DEPLOY_BACKUPS in $settings}
+SITE=${DEPLOY_SITE:?set DEPLOY_SITE in $settings}
 APP_USER=${DEPLOY_USER:-flog}
 VENV=${DEPLOY_VENV:-.venv}
-UV=${DEPLOY_UV:-/opt/uv-tool/bin/uv}
 SERVICE=${DEPLOY_SERVICE:-flog}
-UPLOADS=${DEPLOY_UPLOADS:-/var/www/flog-uploads}
-BACKUPS=${DEPLOY_BACKUPS:-/root/flog-backups}
 LOCAL_URL=${DEPLOY_LOCAL_URL:-http://127.0.0.1:8001}
-SITE=${DEPLOY_SITE:-https://blog.aisaka.cc}
 SOCKET="/tmp/flog-deploy-%C"
 
 dry_run=0 optimize=1 recompress=""
@@ -39,7 +50,7 @@ for arg in "$@"; do
         --dry-run) dry_run=1 ;;
         --no-optimize) optimize=0 ;;
         --recompress) recompress="--recompress" ;;
-        -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; exit 2 ;;
     esac
 done
