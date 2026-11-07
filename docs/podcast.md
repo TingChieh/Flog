@@ -93,3 +93,6 @@ flask podcast add --number 4 --title "Episode title" \
 
 The audio is part of `UPLOAD_FOLDER`, so it is covered wherever the uploads are
 backed up. It is far bigger than the images, which matters for the deploy backup.
+
+The whole site, audio included, can be copied to Cloudflare R2 with
+`scripts/backup_r2.sh`; see the Backup section of the README.
