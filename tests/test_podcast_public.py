@@ -186,6 +186,20 @@ def test_podcast_pages_keep_the_blogs_menu_name_title_and_footer(client, applica
     assert [a.get('href') for a in current] == ['/podcast/']
 
 
+def test_the_footer_rss_link_follows_the_section(client, application, users):
+    with application.app_context():
+        add_episode(uploads(application), 1)
+
+    def footer_feed(path):
+        return page(client, path).xpath(
+            '//footer//a[contains(text(), "RSS")]/@href')
+
+    assert footer_feed('/podcast/') == ['/podcast/feed.xml']
+    assert footer_feed('/podcast/1') == ['/podcast/feed.xml']
+    assert footer_feed('/index') == ['/feed.xml']
+    assert footer_feed('/archive') == ['/feed.xml']
+
+
 def test_podcast_pages_offer_the_podcast_feed_next_to_the_blog_feed(client, application):
     for path in ('/podcast/', '/index'):
         feeds = page(client, path).xpath(

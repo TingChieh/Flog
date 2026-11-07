@@ -110,7 +110,7 @@
         <p>{{ site_text.site_name }} · 思考、记录，以及日常生活。</p>
         <div class="site-footer__meta">
           <span>Copyright &copy; {{ current_year }} Aisaka</span>
-          <a href="{{ url_for('feed') }}">{{ _('Subscribe via RSS') }}</a>
+          <a href="{{ url_for('podcast_feed' if request.endpoint in ('podcast_index', 'podcast_episode') else 'feed') }}">{{ _('Subscribe via RSS') }}</a>
           <span>Powered by <a href="https://github.com/tingchieh/flog">Flog</a></span>
           {% if current_user.is_authenticated %}
           <a href="{{ url_for('admin.dashboard') }}">管理</a>

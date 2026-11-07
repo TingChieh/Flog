@@ -3426,7 +3426,10 @@ html[data-theme="dark"] body.public-site {
 
 /* Admin: dashboard cards are links. */
 .admin-site a.admin-metric { display: block; color: var(--text-primary); text-decoration: none; }
-.admin-site a.admin-metric .admin-metric__label, .admin-site a.admin-metric .admin-metric__value { display: block; }
+.admin-site a.admin-metric .admin-metric__label, .admin-site a.admin-metric .admin-metric__value, .admin-site a.admin-metric .admin-metric__note { display: block; }
+/* A second, smaller line under the number: what is waiting, or the total. */
+.admin-metric__note { margin-top: 6px; color: var(--text-secondary); font-size: 13px; }
+.admin-metric__note--alert { color: var(--link-color); font-weight: 600; }
 .admin-site a.admin-metric:hover .admin-metric__label, .admin-site a.admin-metric:focus-visible .admin-metric__label { color: var(--text-primary); text-decoration: underline; }
 
 /* Admin: search, aligned list columns and confirmation text. */
@@ -3904,8 +3907,15 @@ html[data-theme="dark"] body.public-site {
 
 .admin-comment-row__body {
     margin: 4px 0 0;
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+.admin-comment-row__body > :first-child {
+    margin-top: 0;
+}
+
+.admin-comment-row__body > :last-child {
+    margin-bottom: 0;
 }
 
 .admin-comment-row__reply summary {

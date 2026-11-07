@@ -174,4 +174,21 @@ def test_dashboard_shows_how_many_are_waiting(client, application, users):
     seed(application, users)
     login(client, 'admin')
     dashboard = client.get('/admin/').get_data(as_text=True)
-    assert '3 / 待审 1' in dashboard
+    assert '1 条待审' in dashboard
+
+
+def test_the_comment_list_shows_comments_as_readers_see_them(client, application, users):
+    with application.app_context():
+        db.session.add(PostComment(
+            post_id=users['post'], name='n', email='e@e.co', status='approved',
+            body='这是**粗体**和`代码`，还有 <b>标签</b>。'))
+        db.session.commit()
+    login(client, 'admin')
+
+    page = lxml_html.fromstring(client.get('/admin/comments').get_data(as_text=True))
+    body = page.xpath('//div[contains(@class, "admin-comment-row__body")]')[0]
+
+    assert body.xpath('.//strong')[0].text == '粗体'
+    assert body.xpath('.//code')[0].text == '代码'
+    assert not body.xpath('.//b')
+    assert '<b>标签</b>' in body.text_content()

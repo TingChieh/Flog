@@ -19,16 +19,19 @@ def dashboard():
                 'value': str(_count(Post, Post.user_id == current_user.id))}]
     if current_user.is_admin:
         published = _count(Page, Page.is_published.is_(True))
+        page_total = _count(Page)
         comment_total = _count(PostComment)
         comments_waiting = _count(PostComment, PostComment.status == 'pending')
         metrics += [
             {'label': '全部文章', 'endpoint': 'admin.posts', 'scope': 'all',
              'value': str(_count(Post))},
             {'label': '页面', 'endpoint': 'admin.pages',
-             'value': f'{published} / {_count(Page)}'},
+             'value': str(published),
+             'note': f'共 {page_total} 个' if page_total != published else None},
             {'label': '评论', 'endpoint': 'admin.comments',
-             'value': (f'{comment_total} / 待审 {comments_waiting}'
-                       if comments_waiting else str(comment_total))},
+             'value': str(comment_total),
+             'note': f'{comments_waiting} 条待审' if comments_waiting else None,
+             'alert': bool(comments_waiting)},
             {'label': '用户', 'endpoint': 'admin.users',
              'value': str(_count(User))},
         ]

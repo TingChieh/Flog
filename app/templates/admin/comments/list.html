@@ -38,7 +38,7 @@
         <a data-comment-target href="{{ owner_url }}">{{ owner.title }}</a>
         · <a href="{{ url_for('admin.comments', status=status if status != 'all' else None, target=owner_key) }}">只看这里</a>
       </span>
-      <p class="admin-comment-row__body">{{ comment.body }}</p>
+      <div class="admin-comment-row__body">{{ comment.body|comment_markdown }}</div>
     </div>
     <div class="admin-list__actions">
       {% if comment.status == 'pending' %}
