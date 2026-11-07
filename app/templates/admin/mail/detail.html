@@ -1,6 +1,6 @@
 {% extends "admin/base.html" %}
 {% block admin_title %}邮件详情{% endblock %}
-{% block admin_actions %}<a class="button button--quiet" href="{{ url_for('admin.mail', box=box) }}">返回列表</a>{% endblock %}
+{% block admin_actions %}{% if can_send and box == 'received' %}<a class="button button--cta" href="{{ url_for('admin.mail_compose', reply=email_id) }}">回复</a> {% endif %}<a class="button button--quiet" href="{{ url_for('admin.mail', box=box) }}">返回列表</a>{% endblock %}
 {% block admin_content %}
 {% if error %}
 <div class="admin-notice">{{ error }}</div>

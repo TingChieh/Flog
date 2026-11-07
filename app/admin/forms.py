@@ -1,4 +1,7 @@
+import re
+
 import sqlalchemy as sa
+from email_validator import EmailNotValidError, validate_email
 from flask_wtf import FlaskForm
 from wtforms import (BooleanField, HiddenField, IntegerField, SelectField,
                      PasswordField, StringField, SubmitField, TextAreaField)
@@ -164,3 +167,49 @@ class SiteSettingsForm(FlaskForm):
     nav_categories_label = StringField(
         '分类名称（首页侧栏、分类页）', validators=[Optional(), Length(max=20)])
     submit = SubmitField('保存设置')
+
+
+MAX_RECIPIENTS = 10
+_MESSAGE_ID = r'<[^<>\s@]{1,100}@[^<>\s@]{1,100}>'
+
+
+def clean_message_ids(value, many=False):
+    """The Message-ID header value, or '' when it is not exactly that.
+
+    Thread headers come back from the browser, so anything that is not plain
+    <id@host> tokens is dropped rather than put into a header.
+    """
+    value = (value or '').strip()
+    pattern = _MESSAGE_ID + (f'(?: {_MESSAGE_ID}){{0,9}}' if many else '')
+    return value if re.fullmatch(pattern, value) else ''
+
+
+class MailComposeForm(FlaskForm):
+    sender = SelectField('发件人', validators=[DataRequired()])
+    to = StringField('收件人', validators=[DataRequired(), Length(max=1000)])
+    subject = StringField('主题', validators=[DataRequired(), Length(max=200)])
+    body = TextAreaField('正文', validators=[DataRequired(), Length(max=20000)])
+    in_reply_to = HiddenField()
+    references = HiddenField()
+    submit = SubmitField('发送')
+
+    recipients = ()
+
+    def validate_to(self, field):
+        parts = [p for p in re.split(r'[,;\s]+', field.data or '') if p]
+        if not parts:
+            raise ValidationError('请填写收件人。')
+        if len(parts) > MAX_RECIPIENTS:
+            raise ValidationError(f'收件人最多 {MAX_RECIPIENTS} 个。')
+        recipients = []
+        for part in parts:
+            try:
+                recipients.append(validate_email(
+                    part, check_deliverability=False).normalized)
+            except EmailNotValidError:
+                raise ValidationError(f'收件人地址无效：{part}')
+        self.recipients = recipients
+
+    def validate_subject(self, field):
+        if re.search(r'[\r\n]', field.data or ''):
+            raise ValidationError('主题不能换行。')

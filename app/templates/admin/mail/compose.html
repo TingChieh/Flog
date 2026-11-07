@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}写邮件{% endblock %}
+{% block admin_actions %}<a class="button button--quiet" href="{{ url_for('admin.mail', box='sent') }}">返回邮件列表</a>{% endblock %}
+{% block admin_content %}
+{% if not configured %}
+<div class="admin-notice">
+  还没有配置邮件发送。在服务器的 <code>.env</code> 里设置 <code>MAIL_SERVER</code>、<code>MAIL_USERNAME</code>、<code>MAIL_PASSWORD</code>
+  和 <code>MAIL_FROM</code>（用 Resend 时见 README），重启服务后这里就能写信。
+</div>
+{% else %}
+{% if notice %}<div class="admin-notice">{{ notice }}</div>{% endif %}
+<form class="admin-form" method="post" action="{{ url_for('admin.mail_compose') }}" novalidate>
+  {{ form.hidden_tag() }}
+  {% for name in ('sender', 'to', 'subject') %}
+  {% set field = form[name] %}
+  <div class="form-field">
+    {{ field.label(class="form-label") }}
+    {% if name == 'sender' %}
+    {{ field(class="form-select" + (' is-invalid' if field.errors else '')) }}
+    {% else %}
+    {{ field(class="form-control" + (' is-invalid' if field.errors else ''), maxlength=(1000 if name == 'to' else 200), placeholder=('多个地址用逗号分隔，最多 10 个' if name == 'to' else '')) }}
+    {% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-field">
+    {{ form.body.label(class="form-label") }}
+    {{ form.body(class="form-control" + (' is-invalid' if form.body.errors else ''), rows="16") }}
+    {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    <p class="form-text">纯文本邮件，暂不支持附件和 HTML。</p>
+  </div>
+  {{ form.submit(class="button button--cta") }}
+</form>
+{% endif %}
+{% endblock %}

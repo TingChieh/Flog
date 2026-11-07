@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% block admin_title %}邮件{% endblock %}
+{% block admin_actions %}{% if can_send %}<a class="button button--cta" href="{{ url_for('admin.mail_compose') }}">写邮件</a>{% endif %}{% endblock %}
 {% block admin_content %}
 <nav class="admin-filters" data-mail-tabs aria-label="邮件类型">
   {% for key, label in (('sent', '已发送'), ('received', '已收到')) %}

@@ -135,6 +135,7 @@ flask run
 | `MAIL_USERNAME` | 邮件功能需要 | SMTP 用户名；它是邮箱地址时同时作为发件地址 |
 | `MAIL_PASSWORD` | 邮件功能需要 | SMTP 密码或授权码 |
 | `MAIL_FROM` | 否 | 发件地址。SMTP 用户名不是邮箱地址时必须设置（例如 Resend：用户名 `resend`，密码是 API Key，发件地址用已验证域名下的地址） |
+| `MAIL_SENDERS` | 否 | 后台“邮件”页写信时可选的发件地址，逗号分隔，须是 Resend 已验证域名下的地址；`MAIL_FROM` 始终可选 |
 | `RESEND_API_KEY` | 否 | Resend 的 Full access 密钥，供后台“邮件”页只读查看收发的邮件；不设置则该页只显示配置说明 |
 | `UPLOAD_FOLDER` | 否 | 上传目录，默认 `instance/uploads` |
 | `DISPLAY_TIMEZONE` | 否 | 页面上日期的显示时区，默认 `Asia/Shanghai`；数据库里统一存 UTC |

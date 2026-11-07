@@ -19,6 +19,16 @@ def mail_sender():
     return next((value for value in candidates if '@' in value), None)
 
 
+def mail_senders():
+    """Addresses the admin page may send from: MAIL_SENDERS, then the default."""
+    result = []
+    for address in [*current_app.config['MAIL_SENDERS'], mail_sender() or '']:
+        address = address.strip()
+        if '@' in address and address.lower() not in [a.lower() for a in result]:
+            result.append(address)
+    return result
+
+
 def mail_configured():
     return bool(current_app.config['MAIL_SERVER'] and mail_sender())
 

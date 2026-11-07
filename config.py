@@ -65,6 +65,8 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_FROM = os.environ.get('MAIL_FROM', '').strip()
+    # Extra addresses the admin mail page may send from (comma separated).
+    MAIL_SENDERS = env_list('MAIL_SENDERS')
     # Full-access Resend key: only the admin mail page reads with it (GET requests).
     RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
     ADMINS = env_list('ADMIN_EMAILS')

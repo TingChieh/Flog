@@ -62,6 +62,7 @@ class MailItem:
     text: str = ''
     attachments: list = field(default_factory=list)
     authentication: dict = field(default_factory=dict)
+    message_id: str = ''
 
 
 @dataclass(frozen=True)
@@ -192,7 +193,8 @@ def _item(record):
         reply_to=_as_list(record.get('reply_to')),
         text=_body(record),
         attachments=_attachments(record.get('attachments')),
-        authentication=_authentication(record.get('authentication')))
+        authentication=_authentication(record.get('authentication')),
+        message_id=str(record.get('message_id') or ''))
 
 
 def _list(path, after):

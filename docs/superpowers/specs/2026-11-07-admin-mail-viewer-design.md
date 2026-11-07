@@ -8,7 +8,7 @@
 
 做一个**只读**的后台“邮件”页:列出 Resend 上已发送和已收到的邮件,点进去看详情。不新增任何服务,不装 Docker,不自托管邮箱软件。
 
-**不做**:在博客里写信或回复(用 Resend 的 Inboxes)、渲染邮件 HTML、下载附件、搜索、把邮件存进本地数据库。
+**不做**:渲染邮件 HTML、下载附件、搜索、把邮件存进本地数据库。(写信和回复见第 7 节,后来补充。)
 
 调研过的开源方案(inboxes、Mailstead、selfmail)都很年轻(星数 0 到 11),需要同样的完整权限密钥,还要处理不可信邮件内容和接收回调,因此不采用。
 
@@ -85,3 +85,15 @@ Resend 文档里“Inboxes 收件箱”和“域名收信”是两套东西。�
 
 - 新增:`app/resend_client.py`、`app/admin/mail.py`、`app/templates/admin/mail/list.html`、`app/templates/admin/mail/detail.html`、`tests/test_admin_mail.py`。
 - 修改:`config.py`、`app/admin/__init__.py`(导入新模块)、`app/templates/admin/base.html`(导航)、`app/static/style.css`(正文样式)、`.env.example`、`README.md`、`tests/test_env_config_removed.py`(登记新设置)。
+
+## 7. 写邮件与回复(补充)
+
+管理员希望在后台里直接用 `tingchieh@aisaka.cc`、`admin@aisaka.cc` 写信,所以在只读页之上加“写邮件”和“回复”。复用博客已有的 SMTP 发信(经 Resend),不需要新密钥。
+
+- **配置**:新增 `MAIL_SENDERS`(逗号分隔,可选),与 `MAIL_FROM` 一起组成发件人白名单(`app.email.mail_senders()`)。没设置时只有 `MAIL_FROM`。
+- **页面**:`GET/POST /admin/mail/compose`;列表页右上角“写邮件”;已收到邮件详情页的“回复”按钮(`?reply=<id>`)。邮件发送没配置时页面只显示说明,不显示表单。
+- **字段**:发件人(下拉,服务端按白名单校验)、收件人(逗号、分号或空白分隔,最多 10 个,逐个用 `email_validator` 校验)、主题(单行,最多 200 字)、正文(纯文本,最多 20000 字)。不支持附件、HTML、抄送、密送。
+- **回复预填**:收件人取 `reply_to` 的第一个,否则取发件人;主题加 `Re: `(已有则不重复);发件人取原邮件的收件地址(在白名单内才用);正文引用原文(最多 4000 字,每行加 `> `);有 `message_id` 就填入 `In-Reply-To` 和 `References`。预填失败(例如密钥不对)时显示错误,表单照常可用。
+- **线程头安全**:`In-Reply-To`、`References` 由浏览器隐藏字段带回,发送前只接受形如 `<id@host>` 的单个或最多 10 个标识(空格分隔),其他一律丢弃,不放进邮件头。
+- **发送**:同步发送。失败时在表单里显示“发送失败”,原因只写服务器日志,不回显。成功后清空列表缓存,闪现“邮件已发送。”并跳到“已发送”列表。
+- **测试**:`tests/test_admin_mail_compose.py`,覆盖权限、发件人白名单、收件人和主题校验、头注入、数量上限、发送失败不泄漏、回复预填、线程头、按钮显示条件、配置文档。
