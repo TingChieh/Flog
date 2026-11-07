@@ -2998,7 +2998,7 @@ textarea {
 
 /* Search stays usable as a normal link and form without JavaScript. */
 .search-trigger { color: var(--text-primary); white-space: nowrap; text-decoration: none; font-size: .92rem; }
-.search-trigger kbd { margin-left: .3rem; color: var(--text-secondary); background: var(--surface-muted); border: 1px solid var(--border); font: inherit; padding: .1rem .3rem; border-radius: 4px; }
+.search-trigger kbd { display: inline-block; min-width: 3em; text-align: center; margin-left: .3rem; color: var(--text-secondary); background: var(--surface-muted); border: 1px solid var(--border); font: inherit; padding: .1rem .3rem; border-radius: 4px; }
 .search-dialog { position: fixed; inset: 0; z-index: 10000; width: min(620px, calc(100% - 2rem)); max-height: min(75vh, 680px); margin: 10vh auto auto; padding: 1.4rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); }
 .search-dialog::backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); }
 .search-dialog__header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
