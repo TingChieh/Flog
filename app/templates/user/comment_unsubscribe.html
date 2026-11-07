@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+{% block page_hero %}{% endblock %}
+
+{% block content %}
+  <section class="form-shell public-page" aria-labelledby="page-title">
+    <header class="page-heading">
+      <div class="public-label">评论</div>
+      <h1 id="page-title">退订评论邮件</h1>
+      <p>不再给 {{ email }} 发送评论相关的邮件（回复通知、审核结果）？</p>
+    </header>
+    {{ wtf.quick_form(form) }}
+  </section>
+{% endblock %}

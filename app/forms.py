@@ -52,6 +52,10 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField(_l('Request Password Reset'))
 
 
+class CommentUnsubscribeForm(FlaskForm):
+    submit = SubmitField('确认退订')
+
+
 class PostForm(FlaskForm):
     title = StringField(_l('Title'), validators=[DataRequired(), Length(1, 120)])
     category = SelectField(

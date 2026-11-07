@@ -10,7 +10,9 @@ from langdetect import detect, LangDetectException
 from app import app, db
 from app.site_text import site_text
 from app.forms import LoginForm, RegistrationForm, \
-    PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm
+    PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, \
+    CommentUnsubscribeForm
+from app.comment_mail import email_from_unsubscribe_token, stop_notifications
 from app.models import Category, User, Post, Page, PageRedirect, PostComment, PostLike, get_site_settings
 from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
@@ -325,6 +327,21 @@ def legacy_archive(legacy_id):
     return redirect(url_for('post', post_id=post.id), code=301)
 
 
+@app.route('/comments/unsubscribe/<token>', methods=['GET', 'POST'])
+def comment_unsubscribe(token):
+    email = email_from_unsubscribe_token(token)
+    if email is None:
+        abort(404)
+    form = CommentUnsubscribeForm()
+    if form.validate_on_submit():
+        stop_notifications(email)
+        db.session.commit()
+        flash('已退订，之后不会再给你发评论相关的邮件。')
+        return redirect(url_for('index'))
+    return render_template('user/comment_unsubscribe.html',
+                           title='退订评论邮件', form=form, email=email)
+
+
 def _take_comment(target, form, destination):
     """Handle a posted comment. Returns a redirect, or None to show the form again."""
     if not target.comments_enabled:
@@ -503,6 +520,7 @@ def robots():
                               'Disallow: /register\n'
                               'Disallow: /reset_password_request\n'
                               'Disallow: /reset_password/\n'
+                              'Disallow: /comments/unsubscribe/\n'
                               f'Sitemap: {url_for("sitemap", _external=True)}\n',
                               content_type='text/plain; charset=utf-8')
 

@@ -73,7 +73,8 @@ def test_robots_disallows_admin_and_authentication_routes(client):
     lines = response.get_data(as_text=True).splitlines()
     assert 'User-agent: *' in lines
     for path in ('/admin', '/login', '/logout', '/register',
-                 '/reset_password_request', '/reset_password/'):
+                 '/reset_password_request', '/reset_password/',
+                 '/comments/unsubscribe/'):
         assert f'Disallow: {path}' in lines
     assert 'Sitemap: https://example.com/sitemap.xml' in lines
 
