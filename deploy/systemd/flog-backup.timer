@@ -1,0 +1,11 @@
+# Template: runs flog-backup.service every night. Enable with
+# `systemctl enable --now flog-backup.timer`.
+[Unit]
+Description=Nightly flog backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

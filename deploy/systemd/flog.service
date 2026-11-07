@@ -1,0 +1,22 @@
+# Template: the app server. Paths are examples -- point them at the checkout on
+# your server, then install with `systemctl link <path>/flog.service` (or copy it
+# to /etc/systemd/system) and `systemctl enable --now flog`.
+[Unit]
+Description=flog
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+User=flog
+Group=flog
+WorkingDirectory=/srv/flog/app
+ExecStart=/srv/flog/app/.venv/bin/gunicorn -b 127.0.0.1:8001 -w 2 flog:app
+Restart=always
+RestartSec=3
+KillMode=mixed
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

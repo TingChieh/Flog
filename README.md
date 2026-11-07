@@ -30,7 +30,7 @@
 
 - 界面仅提供简体中文，文案由 Flask-Babel 管理
 - 文章字体按用到的字切成子集并按页预加载
-- 部署与备份脚本：`scripts/deploy.sh`、`scripts/backup_r2.sh`
+- 部署与备份脚本：`scripts/deploy.sh`、`scripts/backup_r2.sh`，以及 `deploy/systemd/` 下的 systemd 单元模板
 
 ## 技术栈
 
@@ -58,6 +58,7 @@ Flog/
 │   ├── pages.py            # 独立页面与导航顺序
 │   ├── podcast.py          # 播客：音频、单集与 RSS
 │   └── post_drafts.py      # 草稿与修订
+├── deploy/systemd/         # systemd 单元模板：应用服务、每日 R2 备份的 service 与 timer
 ├── docs/                   # 迁移、播客、Caddy 配置等文档
 ├── migrations/             # Alembic 数据库迁移
 ├── scripts/
@@ -171,7 +172,7 @@ git push origin main
 服务器的地址、目录等放在仓库之外的 `~/.config/flog/deploy.env`（路径可用 `FLOG_DEPLOY_ENV` 改，环境变量优先），不要提交。它是 `KEY=value` 文件：
 
 - 必填：`DEPLOY_HOST`（SSH 别名）、`DEPLOY_DIR`（服务器上的检出目录）、`DEPLOY_UV`（服务器上 `uv` 的绝对路径）、`DEPLOY_UPLOADS`（`.env` 里的 `UPLOAD_FOLDER`）、`DEPLOY_BACKUPS`、`DEPLOY_SITE`（站点网址）
-- 可选：`DEPLOY_USER`、`DEPLOY_SERVICE`、`DEPLOY_VENV`、`DEPLOY_LOCAL_URL`（见脚本头部）
+- 可选：`DEPLOY_USER`、`DEPLOY_SERVICE`、`DEPLOY_VENV`、`DEPLOY_LOCAL_URL`、`DEPLOY_KEEP_BACKUPS`（备份目录里保留最近几份部署前备份，默认 10，更早的每次部署时自动删除；见脚本头部）
 
 Caddy 配置不由脚本修改；让 Caddy 直接发图的配置见 [docs/caddy-uploads.md](docs/caddy-uploads.md)。
 
@@ -211,7 +212,7 @@ scripts/backup_r2.sh --dry-run   # 只显示会传什么、删什么
 scripts/backup_r2.sh
 ```
 
-确认能跑后，用 cron 或 systemd timer 每天执行一次。**恢复**：从 R2 下载最新的 `db/` 转储用 `gunzip -c … | mysql flog` 导回，`uploads/` 同步回上传目录，`env/` 里取回 `.env`。
+确认能跑后每天执行一次：`deploy/systemd/` 里有 `flog-backup.service` 和 `flog-backup.timer` 模板（默认每天 03:30），把其中的路径改成服务器上的检出目录，用 `systemctl link` 装上，再 `systemctl enable --now flog-backup.timer`。**恢复**：从 R2 下载最新的 `db/` 转储用 `gunzip -c … | mysql flog` 导回，`uploads/` 同步回上传目录，`env/` 里取回 `.env`。
 
 ## Markdown 编辑器
 

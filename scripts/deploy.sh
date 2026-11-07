@@ -21,7 +21,8 @@
 # DEPLOY_DIR (checkout), DEPLOY_UV (absolute path of uv on the server),
 # DEPLOY_UPLOADS (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_SITE (public
 # URL). Optional: DEPLOY_USER, DEPLOY_SERVICE, DEPLOY_VENV (relative to
-# DEPLOY_DIR), DEPLOY_LOCAL_URL (checked on the server).
+# DEPLOY_DIR), DEPLOY_LOCAL_URL (checked on the server), DEPLOY_KEEP_BACKUPS
+# (how many pre-deploy backups to keep in DEPLOY_BACKUPS, default 10).
 set -euo pipefail
 
 settings=${FLOG_DEPLOY_ENV:-$HOME/.config/flog/deploy.env}
@@ -42,6 +43,8 @@ APP_USER=${DEPLOY_USER:-flog}
 VENV=${DEPLOY_VENV:-.venv}
 SERVICE=${DEPLOY_SERVICE:-flog}
 LOCAL_URL=${DEPLOY_LOCAL_URL:-http://127.0.0.1:8001}
+KEEP_BACKUPS=${DEPLOY_KEEP_BACKUPS:-10}
+[[ "$KEEP_BACKUPS" =~ ^[1-9][0-9]*$ ]] || { echo "DEPLOY_KEEP_BACKUPS must be a positive integer" >&2; exit 2; }
 SOCKET="/tmp/flog-deploy-%C"
 
 dry_run=0 optimize=1 recompress=""
@@ -50,7 +53,7 @@ for arg in "$@"; do
         --dry-run) dry_run=1 ;;
         --no-optimize) optimize=0 ;;
         --recompress) recompress="--recompress" ;;
-        -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -117,6 +120,9 @@ mysqldump --single-transaction --routines flog | gzip > '$backup/flog_full.sql.g
 tar -C '$(dirname "$UPLOADS")' -czf '$backup/uploads.tar.gz' '$(basename "$UPLOADS")'
 cp -p '$DIR/.env' '$backup/env'
 ls -la '$backup'"
+# Backups are named <stamp>-before-<commit>, so a reverse name sort is newest first.
+log "Keeping the newest $KEEP_BACKUPS backups"
+remote "ls -1d '$BACKUPS'/*-before-* 2>/dev/null | sort -r | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -rf --"
 
 # --------------------------------------------------------------------- code
 if [[ "$current" != "$target" ]]; then
