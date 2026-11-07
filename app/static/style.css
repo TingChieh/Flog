@@ -2320,6 +2320,16 @@ textarea {
     margin: 0;
 }
 
+.admin-list__order {
+    display: flex;
+    gap: 2px;
+}
+
+.admin-list__order button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
 .admin-form {
     width: min(720px, 100%);
     display: grid;

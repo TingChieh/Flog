@@ -19,6 +19,7 @@
      href="{{ url_for('admin.pages', filter=value if value != 'all' else None, q=search or None) }}">{{ label }}</a>
   {% endfor %}
 </nav>
+{% set can_reorder = active_filter == 'all' and not search %}
 <div class="admin-list admin-page-list">
   {% for page in pages %}
   <article class="admin-list__row">
@@ -31,6 +32,13 @@
       <span>{{ '导航可见' if page.show_in_nav else '导航隐藏' }} · {{ page.nav_order }}</span>
     </div>
     <div class="admin-list__actions">
+      {% if can_reorder %}
+      <form class="admin-list__order" method="post" action="{{ url_for('admin.move_page_order', page_id=page.id) }}">
+        {{ toggle_form.hidden_tag() }}
+        <button class="button button--quiet" type="submit" name="direction" value="up" aria-label="上移 {{ page.title }}" title="上移"{% if loop.first %} disabled{% endif %}>↑</button>
+        <button class="button button--quiet" type="submit" name="direction" value="down" aria-label="下移 {{ page.title }}" title="下移"{% if loop.last %} disabled{% endif %}>↓</button>
+      </form>
+      {% endif %}
       <form method="post" action="{{ url_for('admin.toggle_page_publication', page_id=page.id, q=search or None, filter=active_filter if active_filter != 'all' else None) }}">
         {{ toggle_form.hidden_tag() }}
         <button class="button button--quiet" type="submit">{{ '取消发布' if page.is_published else '发布' }}</button>

@@ -167,3 +167,58 @@ def test_toggles_reject_missing_csrf(client, application, users):
         application.config['WTF_CSRF_ENABLED'] = False
     with application.app_context():
         assert db.session.get(Page, page_id).is_published is True
+
+
+def nav_slugs(application):
+    with application.app_context():
+        return [page.slug for page in db.session.scalars(
+            db.select(Page).order_by(Page.nav_order, Page.title, Page.id))]
+
+
+def test_move_page_swaps_neighbours_even_when_orders_tie(
+        client, application, users):
+    # Every page starts at nav_order 0, so the shown order is by title.
+    ids = {slug: add_page(application, slug=slug, title=slug)
+           for slug in ('a', 'b', 'c')}
+    login(client, 'admin')
+    response = client.post(f'/admin/pages/{ids["c"]}/move',
+                           data={'direction': 'up'})
+    assert response.status_code == 302
+    assert nav_slugs(application) == ['a', 'c', 'b']
+    client.post(f'/admin/pages/{ids["c"]}/move', data={'direction': 'up'})
+    assert nav_slugs(application) == ['c', 'a', 'b']
+    client.post(f'/admin/pages/{ids["c"]}/move', data={'direction': 'down'})
+    assert nav_slugs(application) == ['a', 'c', 'b']
+
+
+def test_move_page_at_the_end_changes_nothing(client, application, users):
+    ids = {slug: add_page(application, slug=slug, title=slug)
+           for slug in ('a', 'b')}
+    login(client, 'admin')
+    assert client.post(f'/admin/pages/{ids["a"]}/move',
+                       data={'direction': 'up'}).status_code == 302
+    assert nav_slugs(application) == ['a', 'b']
+
+
+def test_move_page_rejects_bad_direction_and_non_admin(
+        client, application, users):
+    page_id = add_page(application)
+    assert client.post(f'/admin/pages/{page_id}/move',
+                       data={'direction': 'up'}).status_code in (302, 401, 403)
+    login(client, 'admin')
+    assert client.post(f'/admin/pages/{page_id}/move',
+                       data={'direction': 'sideways'}).status_code == 400
+    assert client.get(f'/admin/pages/{page_id}/move').status_code == 405
+
+
+def test_page_list_offers_move_buttons_only_on_the_full_list(
+        client, application, users):
+    add_page(application, slug='a', title='a')
+    add_page(application, slug='b', title='b')
+    login(client, 'admin')
+    full = lxml_html.fromstring(client.get('/admin/pages').get_data(as_text=True))
+    assert len(full.xpath('//button[@name="direction"]')) == 4
+    assert len(full.xpath('//button[@name="direction"][@disabled]')) == 2
+    filtered = lxml_html.fromstring(client.get(
+        '/admin/pages?filter=published').get_data(as_text=True))
+    assert not filtered.xpath('//button[@name="direction"]')

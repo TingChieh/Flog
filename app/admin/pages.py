@@ -9,7 +9,7 @@ from app.admin.forms import DeleteForm, PageForm, ToggleForm
 from app.content import BODY_FORMAT_MARKDOWN, normalize_body_format
 from app.models import Page
 from app.pages import (PAGE_CONTENT, PageValidationError,
-                       delete_content_page, save_page)
+                       delete_content_page, move_page, save_page)
 from app.security import admin_required
 
 
@@ -96,6 +96,24 @@ def toggle_page_publication(page_id):
 @admin_required
 def toggle_page_navigation(page_id):
     return _toggle_page_flag(page_id, 'show_in_nav', '页面导航显示已更新。')
+
+
+@bp.route('/pages/<int:page_id>/move', methods=['POST'])
+@login_required
+@admin_required
+def move_page_order(page_id):
+    direction = request.form.get('direction')
+    if direction not in ('up', 'down') or \
+            not ToggleForm().validate_on_submit():
+        abort(400)
+    page = db.get_or_404(Page, page_id)
+    try:
+        move_page(page, direction)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash('页面顺序保存失败，请重试。')
+    return redirect(url_for('admin.pages'))
 
 
 @bp.route('/pages/new', methods=['GET', 'POST'])

@@ -140,3 +140,23 @@ def visible_navigation_pages():
     return db.session.scalars(sa.select(Page).where(
         Page.is_published.is_(True), Page.show_in_nav.is_(True)
     ).order_by(Page.nav_order, Page.title, Page.id)).all()
+
+
+def move_page(page, direction):
+    """Move a page one place up or down the navigation order.
+
+    Pages often share the same nav_order, so the whole order is first
+    renumbered 0..n-1 in the order it is shown, then neighbours are swapped.
+    Returns False when the page is already at that end.
+    """
+    pages = db.session.scalars(sa.select(Page).order_by(
+        Page.nav_order, Page.title, Page.id)).all()
+    index = next(i for i, item in enumerate(pages) if item.id == page.id)
+    target = index - 1 if direction == 'up' else index + 1
+    if not 0 <= target < len(pages):
+        return False
+    pages[index], pages[target] = pages[target], pages[index]
+    for position, item in enumerate(pages):
+        if item.nav_order != position:
+            item.nav_order = position
+    return True
