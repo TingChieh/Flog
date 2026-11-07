@@ -3,4 +3,4 @@ from flask import Blueprint
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-from app.admin import account, images, modules, pages, posts, routes, settings, users  # noqa: E402,F401
+from app.admin import account, images, mail, modules, pages, posts, routes, settings, users  # noqa: E402,F401

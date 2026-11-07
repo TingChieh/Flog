@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}邮件{% endblock %}
+{% block admin_content %}
+<nav class="admin-filters" data-mail-tabs aria-label="邮件类型">
+  {% for key, label in (('sent', '已发送'), ('received', '已收到')) %}
+  <a class="admin-filter{% if box == key %} admin-filter--active{% endif %}"
+     href="{{ url_for('admin.mail', box=key) }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if not configured %}
+<div class="admin-notice">
+  还没有配置 <code>RESEND_API_KEY</code>。在服务器的 <code>.env</code> 里填入一把 Resend 的 Full access 密钥，重启服务后这里就会显示邮件。
+  Resend 的只发信密钥读不了邮件列表，建议单独建一把专给后台用的密钥。
+</div>
+{% elif error %}
+<div class="admin-notice">{{ error }}</div>
+{% else %}
+<div class="admin-list">
+  {% for item in page.items %}
+  <article class="admin-list__row" data-mail-row>
+    <div class="admin-list__main">
+      <strong><a href="{{ url_for('admin.mail_detail', box=box, email_id=item.id) }}">{{ item.subject or '（无主题）' }}</a></strong>
+      <span>{{ item.sender }} → {{ item.to|join('，') }}</span>
+      <span>{% if item.created_at %}{{ (item.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% endif %}{% if item.status %} · {{ item.status }}{% endif %}</span>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>还没有邮件。</p></div>
+  {% endfor %}
+</div>
+{% if after or (page.has_more and page.items) %}
+<nav class="mail-pager" aria-label="翻页">
+  {% if page.has_more and page.items %}<a href="{{ url_for('admin.mail', box=box, after=page.items[-1].id) }}">较早的邮件</a>{% endif %}
+  {% if after %}<a href="{{ url_for('admin.mail', box=box) }}">回到最新</a>{% endif %}
+</nav>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block admin_title %}邮件详情{% endblock %}
+{% block admin_actions %}<a class="button button--quiet" href="{{ url_for('admin.mail', box=box) }}">返回列表</a>{% endblock %}
+{% block admin_content %}
+{% if error %}
+<div class="admin-notice">{{ error }}</div>
+{% else %}
+<h2 class="mail-subject">{{ item.subject or '（无主题）' }}</h2>
+<dl class="image-facts mail-facts">
+  <dt>发件人</dt><dd>{{ item.sender or '—' }}</dd>
+  <dt>收件人</dt><dd>{{ item.to|join('，') or '—' }}</dd>
+  {% if item.cc %}<dt>抄送</dt><dd>{{ item.cc|join('，') }}</dd>{% endif %}
+  {% if item.bcc %}<dt>密送</dt><dd>{{ item.bcc|join('，') }}</dd>{% endif %}
+  {% if item.reply_to %}<dt>回复地址</dt><dd>{{ item.reply_to|join('，') }}</dd>{% endif %}
+  <dt>时间</dt><dd>{% if item.created_at %}{{ (item.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% else %}—{% endif %}</dd>
+  {% if item.status %}<dt>状态</dt><dd>{{ item.status }}</dd>{% endif %}
+  {% if item.authentication %}
+  <dt>发件验证</dt>
+  <dd>{% for name in ('spf', 'dkim', 'dmarc') %}{% if item.authentication.get(name) %}{{ name|upper }} {{ item.authentication[name] }}{% if not loop.last %} · {% endif %}{% endif %}{% endfor %}</dd>
+  {% endif %}
+</dl>
+
+{% if item.attachments %}
+<h3 class="mail-heading">附件</h3>
+<ul class="mail-attachments">
+  {% for attachment in item.attachments %}
+  <li>{{ attachment.filename }}{% if attachment.content_type %} · {{ attachment.content_type }}{% endif %}{% if attachment.size is not none %} · {{ attachment.size|filesize }}{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<h3 class="mail-heading">正文</h3>
+<pre class="mail-body">{{ item.text or '（没有正文）' }}</pre>
+
+<p>
+  <a href="https://resend.com/emails/{{ 'receiving/' if box == 'received' else '' }}{{ email_id }}"
+     target="_blank" rel="noopener noreferrer">在 Resend 中打开</a>
+</p>
+{% endif %}
+{% endblock %}
