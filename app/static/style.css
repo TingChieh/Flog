@@ -987,6 +987,12 @@ code {
     border-bottom: 1px solid var(--border);
 }
 
+/* No comments below it: the form is the end of the page, so no second rule above the footer's. */
+.comments-section[data-empty] > .comment-form {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
 .comment-form__identity {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1048,10 +1054,6 @@ code {
     background: transparent;
     color: var(--danger);
     font-size: 0.8rem;
-}
-
-.comments-empty {
-    color: var(--text-secondary);
 }
 
 .comment-badge {
@@ -3939,14 +3941,6 @@ html[data-theme="dark"] body.public-site {
     gap: 8px;
 }
 
-img.emoji {
-    display: inline-block;
-    width: 1.2em;
-    height: 1.2em;
-    margin: 0 0.05em;
-    vertical-align: -0.2em;
-}
-
 .emoji-picker {
     position: absolute;
     z-index: 1080;
@@ -4010,19 +4004,13 @@ img.emoji {
     border: 0;
     border-radius: 6px;
     background: transparent;
-    line-height: 0;
+    font-size: 24px;
+    line-height: 1.2;
 }
 
 .emoji-picker__item:hover,
 .emoji-picker__item:focus-visible {
     background: var(--border);
-}
-
-.emoji-picker__item img.emoji {
-    width: 26px;
-    height: 26px;
-    margin: 0;
-    vertical-align: top;
 }
 
 .emoji-picker__empty {
@@ -4090,3 +4078,35 @@ img.emoji {
     gap: 24px;
     margin-top: 20px;
 }
+
+/* Menu: links sit quiet in grey, the page you are on is ink with a hairline underline. */
+.public-site .site-nav__links a { position: relative; transition: color .2s ease; }
+.public-site .site-nav__links a[aria-current="page"] { font-weight: 600; }
+@media (width >= 1200px) {
+    .public-site .site-nav__links a { color: var(--text-secondary); }
+    .public-site .site-nav__links a:hover,
+    .public-site .site-nav__links a:focus-visible,
+    .public-site .site-nav__links a[aria-current="page"] { color: var(--text-primary); background: transparent; }
+    .public-site .site-nav__links a[aria-current="page"] {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 8px;
+    }
+}
+/* Phone panel: a short ink bar marks the current row, hover keeps the existing soft row. */
+@media (width < 1200px) {
+    .public-site .site-nav__links a[aria-current="page"]::before {
+        content: '';
+        position: absolute;
+        inset: 13px auto 13px 0;
+        width: 2px;
+        border-radius: 1px;
+        background: var(--text-primary);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .public-site .site-nav__links a { transition: none; }
+}
+
+/* Selected text: a soft wash of the theme's olive, text colour untouched, instead of the browser's default blue. */
+::selection { background: color-mix(in srgb, var(--text-secondary) 28%, transparent); text-shadow: none; }

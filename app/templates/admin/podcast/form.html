@@ -52,7 +52,6 @@
 
 {% block page_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/vditor/4.0.1/dist/index.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='emoji-editor.css') }}">
 {% endblock %}
 
 {% block page_scripts %}
@@ -60,6 +59,6 @@
 <script src="{{ url_for('static', filename='image-picker.js') }}"></script>
 <script src="{{ url_for('static', filename='upload-progress.js') }}"></script>
 <script src="{{ url_for('static', filename='emoji-data.js') }}"></script>
-<script src="{{ url_for('static', filename='emoji-picker.js') }}" data-base="{{ url_for('static', filename='emoji/noto/') }}"></script>
+<script src="{{ url_for('static', filename='emoji-picker.js') }}"></script>
 <script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
 {% endblock %}

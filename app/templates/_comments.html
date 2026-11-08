@@ -16,7 +16,7 @@
 {% endmacro %}
 
 {% if comments_enabled or comment_count %}
-<section class="comments-section" id="comments" aria-labelledby="comments-title">
+<section class="comments-section" id="comments" aria-labelledby="comments-title"{% if not comment_threads %} data-empty{% endif %}>
     <header class="comments-section__heading">
         <h2 id="comments-title">{{ _('Comments') }}</h2>
         <span>{{ comment_count }}</span>
@@ -65,9 +65,10 @@
     </form>
     <script src="{{ url_for('static', filename='comment-reply.js') }}" defer></script>
     <script src="{{ url_for('static', filename='emoji-data.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='emoji-picker.js') }}" data-base="{{ url_for('static', filename='emoji/noto/') }}" defer></script>
+    <script src="{{ url_for('static', filename='emoji-picker.js') }}" defer></script>
     {% endif %}
 
+    {% if comment_threads %}
     <div class="comment-list">
         {% for thread in comment_threads %}
         {{ comment_item(thread.comment, comments_enabled) }}
@@ -76,9 +77,8 @@
             {% for reply in thread.replies %}{{ comment_item(reply, comments_enabled, True) }}{% endfor %}
         </div>
         {% endif %}
-        {% else %}
-        <p class="comments-empty">{{ _('No comments yet.') }}</p>
         {% endfor %}
     </div>
+    {% endif %}
 </section>
 {% endif %}

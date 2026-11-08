@@ -1,19 +1,16 @@
-"""Build the emoji set the site ships: Noto 72px PNGs plus the data the scripts read.
+"""Build the data behind the emoji picker: groups, Chinese names and search keywords.
 
-Usage (all three inputs are downloaded separately, see docs/superpowers/plans/2026-11-06-emoji.md):
+The picker inserts plain emoji characters and every system draws them its own way, so no
+images are involved. Both inputs are downloaded separately, see docs/superpowers/plans/2026-11-06-emoji.md:
 
-    python -I scripts/build_emoji.py --noto DIR --emoji-test FILE --cldr-zh FILE
+    python -I scripts/build_emoji.py --emoji-test FILE --cldr-zh FILE
 
 Standard library only. Output goes to app/static (--out to change):
-    emoji/noto/<key>.png, LICENSE, NOTICE   the images
-    emoji-keys.js                           which emoji can be swapped for an image
-    emoji-data.js                           the picker's groups, names and keywords
+    emoji-data.js    the picker's groups, names and keywords
 """
 import argparse
 import json
 import re
-import shutil
-import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -31,15 +28,6 @@ GROUP_LABELS = {
     'Objects': '物品',
     'Symbols': '符号',
 }
-DEFAULT_MAX_BYTES = 8_000_000
-NOTICE = """\
-The emoji images in this directory come from Noto Emoji
-(https://github.com/googlefonts/noto-emoji), Copyright Google Inc.,
-licensed under the Apache License, Version 2.0. See LICENSE.
-
-The images (the 72px PNGs) are copied unmodified and renamed after their code points.
-Run scripts/build_emoji.py to regenerate them.
-"""
 _LINE = re.compile(
     r'^(?P<cps>[0-9A-F ]+?)\s*;\s*(?P<status>[\w-]+)\s*#\s*\S+\s+E[\d.]+\s+(?P<name>.+)$')
 
@@ -85,88 +73,35 @@ def parse_cldr(xml_text):
     return {key: (names.get(key), keywords.get(key, [])) for key in set(names) | set(keywords)}
 
 
-def image_dir(noto_dir):
-    """Noto's 72px PNGs: big enough for 2x screens at the sizes the site shows."""
-    path = Path(noto_dir) / '2D' / 'png' / '72'
-    if not path.is_dir():
-        sys.exit(f'no 2D/png/72 directory under {noto_dir}')
-    return path
-
-
-def find_image(noto_dir, chars):
-    """Noto names files emoji_u<hex>_<hex>.png, sometimes with the FE0F kept."""
-    for variant in (chars, strip_selector(chars)):
-        name = '_'.join(f'{ord(c):04x}' for c in variant)
-        path = image_dir(noto_dir) / f'emoji_u{name}.png'
-        if path.is_file():
-            return path
-    return None
-
-
-def find_license(noto_dir):
-    """The artwork is Apache 2.0 (kept beside the SVGs); the checkout's root
-    LICENSE is the font's OFL."""
-    beside_artwork = Path(noto_dir) / '2D' / 'svg' / 'LICENSE'
-    return beside_artwork if beside_artwork.is_file() else Path(noto_dir) / 'LICENSE'
-
-
-def build(noto_dir, emoji_test, cldr_zh, out_dir, max_bytes=DEFAULT_MAX_BYTES):
+def build(emoji_test, cldr_zh, out_dir):
     entries = parse_emoji_test(Path(emoji_test).read_text(encoding='utf-8'))
     annotations = parse_cldr(Path(cldr_zh).read_text(encoding='utf-8'))
 
-    chosen, missing = [], []
-    for chars, group, name in entries:
-        image = find_image(noto_dir, chars)
-        if image is None:
-            missing.append(chars)
-        else:
-            chosen.append((chars, group, name, image))
-
-    total = sum(image.stat().st_size for *_, image in chosen)
-    if total > max_bytes:
-        sys.exit(f'{total} bytes of images is over the {max_bytes} byte budget; '
-                 'narrow the groups instead of raising the budget')
-
-    out_dir = Path(out_dir)
-    images = out_dir / 'emoji' / 'noto'
-    if images.exists():
-        shutil.rmtree(images)
-    images.mkdir(parents=True)
     groups = {}
-    for chars, group, name, image in chosen:
-        key = key_of(chars)
-        shutil.copyfile(image, images / f'{key}.png')
-        zh_name, words = annotations.get(key, (None, []))
+    for chars, group, name in entries:
+        zh_name, words = annotations.get(key_of(chars), (None, []))
         item = [chars, zh_name or name, ' '.join([*words, name.lower()])]
         groups.setdefault(group, []).append(item)
 
-    shutil.copyfile(find_license(noto_dir), images / 'LICENSE')
-    (images / 'NOTICE').write_text(NOTICE, encoding='utf-8')
-    keys = ' '.join(key_of(chars) for chars, *_ in chosen)
-    (out_dir / 'emoji-keys.js').write_text(
-        f'window.FlogEmojiKeys = "{keys}";\n', encoding='utf-8')
     data = {'groups': [
         {'id': group.lower().replace(' & ', '-').replace(' ', '-'),
          'label': GROUP_LABELS[group], 'items': items}
         for group, items in groups.items()]}
+    out_dir = Path(out_dir)
     (out_dir / 'emoji-data.js').write_text(
         'window.FlogEmoji = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n',
         encoding='utf-8')
-    return {'copied': len(chosen), 'missing': missing, 'bytes': total}
+    return {'emoji': len(entries)}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--noto', required=True, type=Path, help='a checkout of googlefonts/noto-emoji')
     parser.add_argument('--emoji-test', required=True, type=Path)
     parser.add_argument('--cldr-zh', required=True, type=Path)
     parser.add_argument('--out', type=Path, default=Path(__file__).parents[1] / 'app' / 'static')
-    parser.add_argument('--max-bytes', type=int, default=DEFAULT_MAX_BYTES)
     args = parser.parse_args(argv)
-    result = build(args.noto, args.emoji_test, args.cldr_zh, args.out, args.max_bytes)
-    print(f"copied {result['copied']} images, {result['bytes']} bytes")
-    if result['missing']:
-        print(f"{len(result['missing'])} emoji have no Noto image: {''.join(result['missing'])}")
+    result = build(args.emoji_test, args.cldr_zh, args.out)
+    print(f"wrote {result['emoji']} emoji")
 
 
 if __name__ == '__main__':

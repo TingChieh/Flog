@@ -2,8 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-import pytest
-
 SCRIPT = Path(__file__).parents[1] / 'scripts' / 'build_emoji.py'
 
 EMOJI_TEST = """\
@@ -53,28 +51,14 @@ def load_script():
     return module
 
 
-def make_noto(tmp_path, names):
-    noto = tmp_path / 'noto'
-    (noto / '2D' / 'png' / '72').mkdir(parents=True, exist_ok=True)
-    for name in names:
-        (noto / '2D' / 'png' / '72' / name).write_text(f'png {name}')
-    (noto / 'LICENSE').write_text('Apache License fixture')
-    return noto
-
-
-def run_build(tmp_path, names, **kwargs):
-    build = load_script().build
-    noto = make_noto(tmp_path, names)
+def run_build(tmp_path):
     emoji_test = tmp_path / 'emoji-test.txt'
     emoji_test.write_text(EMOJI_TEST)
     cldr = tmp_path / 'zh.xml'
     cldr.write_text(CLDR_ZH)
     out = tmp_path / 'out'
-    return build(noto, emoji_test, cldr, out, **kwargs), out
-
-
-ALL_SVGS = ['emoji_u1f600.png', 'emoji_u263a.png', 'emoji_u1f44b.png',
-            'emoji_u0031_20e3.png', 'emoji_u2764.png']
+    out.mkdir()
+    return load_script().build(emoji_test, cldr, out), out
 
 
 def read_data(out):
@@ -84,43 +68,20 @@ def read_data(out):
     return json.loads(text[len(prefix):].rstrip().rstrip(';'))
 
 
-def test_copies_selected_images_under_stripped_keys(tmp_path):
-    result, out = run_build(tmp_path, ALL_SVGS)
-    copied = sorted(p.name for p in (out / 'emoji' / 'noto').glob('*.png'))
-    assert copied == ['1f44b.png', '1f600.png', '263a.png', '2764.png', '31-20e3.png']
-    assert result['copied'] == 5
-    assert result['missing'] == []
-
-
 def test_skips_flags_components_skin_tones_and_zwj_sequences(tmp_path):
-    _, out = run_build(tmp_path, ALL_SVGS + [
-        'emoji_u1f44b_1f3fb.png', 'emoji_u1f468_200d_1f469_200d_1f467.png',
-        'emoji_u1f1e8_1f1f3.png', 'emoji_u1f3fb.png'])
-    keys = (out / 'emoji-keys.js').read_text()
-    for skipped in ('1f44b-1f3fb', '1f468', '1f1e8', '1f3fb'):
-        assert skipped not in keys
-    assert not list((out / 'emoji' / 'noto').glob('1f1e8*'))
+    result, out = run_build(tmp_path)
+    chars = [item[0] for group in read_data(out)['groups'] for item in group['items']]
+    assert chars == ['😀', '☺️', '👋', '1️⃣', '❤️']
+    assert result['emoji'] == 5
 
 
-def test_finds_files_named_with_or_without_the_variation_selector(tmp_path):
-    result, out = run_build(tmp_path, [
-        'emoji_u1f600.png', 'emoji_u263a_fe0f.png', 'emoji_u1f44b.png',
-        'emoji_u0031_fe0f_20e3.png', 'emoji_u2764.png'])
-    assert result['missing'] == []
-    assert (out / 'emoji' / 'noto' / '263a.png').read_text() == 'png emoji_u263a_fe0f.png'
-
-
-def test_missing_images_are_reported_and_left_out_of_the_data(tmp_path):
-    result, out = run_build(tmp_path, ['emoji_u1f600.png'])
-    assert '👋' in ''.join(result['missing'])
-    data = read_data(out)
-    chars = [item[0] for group in data['groups'] for item in group['items']]
-    assert chars == ['😀']
-    assert (out / 'emoji-keys.js').read_text().strip() == 'window.FlogEmojiKeys = "1f600";'
+def test_writes_only_the_picker_data(tmp_path):
+    _, out = run_build(tmp_path)
+    assert [p.name for p in out.iterdir()] == ['emoji-data.js']
 
 
 def test_data_groups_use_chinese_labels_and_keep_the_fully_qualified_char(tmp_path):
-    _, out = run_build(tmp_path, ALL_SVGS)
+    _, out = run_build(tmp_path)
     groups = read_data(out)['groups']
     assert [g['label'] for g in groups] == ['表情', '人物', '符号']
     smileys = {item[0]: item for item in groups[0]['items']}
@@ -130,43 +91,7 @@ def test_data_groups_use_chinese_labels_and_keep_the_fully_qualified_char(tmp_pa
 
 
 def test_names_fall_back_to_english_when_cldr_has_no_entry(tmp_path):
-    _, out = run_build(tmp_path, ALL_SVGS)
+    _, out = run_build(tmp_path)
     keycap = [item for g in read_data(out)['groups'] for item in g['items']
               if item[0].startswith('1')][0]
     assert keycap[1] == 'keycap: 1'
-
-
-def test_license_and_notice_are_written(tmp_path):
-    _, out = run_build(tmp_path, ALL_SVGS)
-    assert (out / 'emoji' / 'noto' / 'LICENSE').read_text() == 'Apache License fixture'
-    notice = (out / 'emoji' / 'noto' / 'NOTICE').read_text()
-    assert 'Noto Emoji' in notice and 'Apache License' in notice
-
-
-def test_total_size_over_the_budget_fails_before_writing(tmp_path):
-    with pytest.raises(SystemExit):
-        run_build(tmp_path, ALL_SVGS, max_bytes=10)
-
-
-def test_rebuilding_replaces_stale_files(tmp_path):
-    _, out = run_build(tmp_path, ALL_SVGS)
-    stale = out / 'emoji' / 'noto' / 'dead.png'
-    stale.write_text('stale')
-    run_build(tmp_path, ALL_SVGS)
-    assert not stale.exists()
-
-
-def test_license_comes_from_the_artwork_not_the_font(tmp_path):
-    noto = make_noto(tmp_path, ['emoji_u1f600.png'])
-    (noto / '2D' / 'svg').mkdir(parents=True)
-    (noto / '2D' / 'svg' / 'LICENSE').write_text('Apache License artwork')
-    (noto / 'LICENSE').write_text('SIL Open Font License')
-    emoji_test = tmp_path / 'emoji-test.txt'
-    emoji_test.write_text(EMOJI_TEST)
-    cldr = tmp_path / 'zh.xml'
-    cldr.write_text(CLDR_ZH)
-    out = tmp_path / 'out'
-
-    load_script().build(noto, emoji_test, cldr, out)
-
-    assert (out / 'emoji' / 'noto' / 'LICENSE').read_text() == 'Apache License artwork'

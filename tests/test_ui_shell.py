@@ -170,7 +170,9 @@ def test_article_page_uses_reading_layout_and_divided_comments(client, users):
     assert 'class="article-actions"' in html
     assert 'class="comments-section"' in html
     assert 'class="comment-form"' in html
-    assert 'class="comment-list"' in html
+    # No comments yet: no list and no "no comments" line, just the form.
+    assert 'class="comment-list"' not in html
+    assert 'comments-empty' not in html
 
 
 def test_article_has_no_copy_link_and_qr_code_uses_site_styles(client, users):

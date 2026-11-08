@@ -29,10 +29,6 @@
   }
   if (typeof document === 'undefined') return;
 
-  const base = document.currentScript?.dataset.base || '/static/emoji/noto/';
-  const keyOf = (chars) => Array.from(chars.replace(/️/g, ''))
-    .map((c) => c.codePointAt(0).toString(16)).join('-');
-
   const readRecent = () => {
     try {
       const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
@@ -69,12 +65,7 @@
     button.type = 'button';
     button.className = 'emoji-picker__item';
     button.title = item[1];
-    const image = document.createElement('img');
-    image.className = 'emoji';
-    image.alt = item[0];
-    image.loading = 'lazy';
-    image.src = `${base}${keyOf(item[0])}.png`;
-    button.append(image);
+    button.textContent = item[0];
     button.addEventListener('click', () => onPick(item[0]));
     return button;
   };

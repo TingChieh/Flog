@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from lxml import html as lxml_html
 
 from app import db
@@ -232,3 +234,12 @@ def test_comment_without_notify_box_stays_silent(client, application, users):
     post_comment(client, users['post'])
     with application.app_context():
         assert db.session.scalar(db.select(PostComment)).notify_replies is False
+
+
+def test_emoji_are_left_to_the_system_to_draw(client, users):
+    # No Noto image swap on public pages, and the picker shows plain characters.
+    html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
+    assert 'emoji.js' not in html and 'emoji-keys.js' not in html
+    assert 'emoji/noto' not in html
+    picker = (Path(__file__).parents[1] / 'app' / 'static' / 'emoji-picker.js').read_text()
+    assert 'createElement(\'img\')' not in picker
