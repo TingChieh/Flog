@@ -1,9 +1,11 @@
-"""Likes without signing in: a browser is one reader, a network is capped.
+"""Reactions without signing in: a browser is one reader, a network is capped.
 
-A browser gets a random cookie the first time it likes something; only a keyed
-hash of it is stored, so a like can be taken back from the same browser. To
-blunt scripts that simply drop the cookie, a post accepts only a few likes from
-one network address (stored hashed too, never the address itself).
+A reader picks one emoji per post (picking it again takes it back, picking
+another one changes it). A browser gets a random cookie the first time it
+reacts; only a keyed hash of it is stored, so a reaction can be taken back from
+the same browser. To blunt scripts that simply drop the cookie, a post accepts
+only a few reactions from one network address (stored hashed too, never the
+address itself).
 """
 import hashlib
 import hmac
@@ -11,6 +13,7 @@ import secrets
 
 import sqlalchemy as sa
 from flask import current_app, request
+from flask_babel import lazy_gettext as _l
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -20,7 +23,18 @@ from app.models import PostLike
 COOKIE_NAME = 'flog_visitor'
 COOKIE_MAX_AGE = 2 * 365 * 24 * 60 * 60
 
-LIKED, UNLIKED, LIMITED = 'liked', 'unliked', 'limited'
+# (emoji, name); the first one is what a plain like becomes.
+REACTIONS = (
+    ('\u2764\ufe0f', _l('Love')),
+    ('\U0001f44d', _l('Agree')),
+    ('\U0001f602', _l('Funny')),
+    ('\U0001f389', _l('Celebrate')),
+    ('\U0001f914', _l('Thinking')),
+)
+REACTION_EMOJI = tuple(emoji for emoji, _name in REACTIONS)
+DEFAULT_REACTION = REACTION_EMOJI[0]
+
+LIKED, CHANGED, UNLIKED, LIMITED = 'liked', 'changed', 'unliked', 'limited'
 
 
 def _digest(kind, value):
@@ -66,13 +80,32 @@ def is_liked(post, token):
     return bool(_own_likes(post.id, token))
 
 
-def toggle_like(post, token):
-    """Like the post, or take the like back. Returns LIKED, UNLIKED or LIMITED."""
+def own_reaction(post, token):
+    """The emoji this reader picked for the post, or None."""
+    own = _own_likes(post.id, token)
+    return own[0].emoji if own else None
+
+
+def reaction_counts(post):
+    """{emoji: how many readers picked it} for every offered emoji."""
+    rows = db.session.execute(
+        sa.select(PostLike.emoji, sa.func.count()).where(PostLike.post_id == post.id)
+        .group_by(PostLike.emoji)).all()
+    found = dict(rows)
+    return {emoji: found.get(emoji, 0) for emoji in REACTION_EMOJI}
+
+
+def react(post, token, emoji=DEFAULT_REACTION):
+    """Pick the emoji, take it back, or change it. Returns LIKED, CHANGED, UNLIKED or LIMITED."""
     existing = _own_likes(post.id, token)
     if existing:
+        if all(like.emoji == emoji for like in existing):
+            for like in existing:
+                db.session.delete(like)
+            return UNLIKED
         for like in existing:
-            db.session.delete(like)
-        return UNLIKED
+            like.emoji = emoji
+        return CHANGED
     address = hash_address()
     taken = db.session.scalar(sa.select(sa.func.count()).select_from(PostLike).where(
         PostLike.post_id == post.id, PostLike.ip_hash == address))
@@ -80,10 +113,11 @@ def toggle_like(post, token):
         return LIMITED
     db.session.add(PostLike(
         post_id=post.id, visitor_id=_digest('visitor', token), ip_hash=address,
-        user_id=current_user.id if current_user.is_authenticated else None))
+        emoji=emoji, user_id=current_user.id if current_user.is_authenticated else None))
     try:
         db.session.flush()
     except IntegrityError:
-        # A double click got there first; the post is liked either way.
+        # A double click got there first; the post is reacted to either way.
         db.session.rollback()
     return LIKED
+

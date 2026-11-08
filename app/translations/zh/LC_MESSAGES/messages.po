@@ -328,10 +328,6 @@ msgstr "点赞"
 msgid "Liked"
 msgstr "已点赞"
 
-#: app/templates/post/post.html:67
-msgid "Generate QR Code"
-msgstr "生成二维码"
-
 #: app/templates/post/_article.html:6
 #, python-format
 msgid "Published on %(date)s"
@@ -344,15 +340,7 @@ msgstr "更新于 %(date)s"
 
 #: app/routes.py
 msgid "Too many likes have come from your network for this post."
-msgstr "你所在的网络对这篇文章的点赞已达上限。"
-
-#: app/templates/post/post.html:64
-msgid "Article QR code"
-msgstr "文章二维码"
-
-#: app/templates/post/post.html:67
-msgid "Scan to read on your phone"
-msgstr "扫码，在手机上阅读"
+msgstr "你所在的网络对这篇文章的表情回应已达上限。"
 
 #: app/templates/post/post.html:75
 msgid "Comments"
@@ -617,3 +605,27 @@ msgstr "重置你的密码"
 #~ msgid "Send private message"
 #~ msgstr "发送私信"
 
+
+#: app/likes.py
+msgid "Love"
+msgstr "喜欢"
+
+#: app/likes.py
+msgid "Agree"
+msgstr "赞同"
+
+#: app/likes.py
+msgid "Funny"
+msgstr "好笑"
+
+#: app/likes.py
+msgid "Celebrate"
+msgstr "庆祝"
+
+#: app/likes.py
+msgid "Thinking"
+msgstr "思考"
+
+#: app/templates/post/post.html
+msgid "React to this post"
+msgstr "给这篇文章留个表情"

@@ -48,7 +48,7 @@ def test_search_results_use_editorial_rows(client, application, users):
     assert '生成二维码' not in html
     detail = client.get(f'/post/{users["post"]}').get_data(as_text=True)
     assert '复制链接' not in detail
-    assert '生成二维码' in detail
+    assert '生成二维码' not in detail
 
 
 def test_empty_search_does_not_return_all_posts(client, users):

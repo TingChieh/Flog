@@ -175,16 +175,14 @@ def test_article_page_uses_reading_layout_and_divided_comments(client, users):
     assert 'comments-empty' not in html
 
 
-def test_article_has_no_copy_link_and_qr_code_uses_site_styles(client, users):
+def test_article_has_no_copy_link_or_qr_code(client, users):
     html = client.get(f'/post/{users["post"]}').get_data(as_text=True)
 
     assert 'copyToClipboard' not in html
     assert 'bootstrap.Popover' not in html
     assert 'qr-code-btn' not in html
-    assert 'static/qr-share.js' in html
-    css = Path('app/static/style.css').read_text()
-    for selector in ('.qr-share__toggle', '.qr-share__panel', '.qr-share__code'):
-        assert selector in css
+    assert 'qr-share' not in html and 'qrcode' not in html
+    assert 'qr-share' not in Path('app/static/style.css').read_text()
 
 
 def test_homepage_editorial_styles_define_responsive_rail_and_utilities():

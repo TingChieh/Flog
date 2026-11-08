@@ -18,6 +18,11 @@ def like(client, post_id, address='10.0.0.1', **headers):
                        environ_overrides={'REMOTE_ADDR': address})
 
 
+def core(response):
+    body = response.get_json()
+    return {'liked': body['liked'], 'count': body['count']}
+
+
 def count(application):
     with application.app_context():
         return db.session.scalar(sa.select(sa.func.count()).select_from(PostLike))
@@ -27,8 +32,8 @@ def test_a_guest_can_like_and_take_the_like_back(client, application, users):
     first = like(client, users['post'])
     second = like(client, users['post'])
 
-    assert first.status_code == 200 and first.get_json() == {'liked': True, 'count': 1}
-    assert second.get_json() == {'liked': False, 'count': 0}
+    assert first.status_code == 200 and core(first) == {'liked': True, 'count': 1}
+    assert core(second) == {'liked': False, 'count': 0}
     assert count(application) == 0
 
 
@@ -47,9 +52,8 @@ def test_the_page_remembers_what_this_browser_liked(client, application, users):
     liked = html.fromstring(client.get(f'/post/{users["post"]}').data)
     stranger = html.fromstring(application.test_client().get(f'/post/{users["post"]}').data)
 
-    assert liked.xpath('//button[contains(@class,"like-button")]/@aria-pressed') == ['true']
-    assert liked.xpath('//span[@data-like-label]/text()') == ['已点赞']
-    assert stranger.xpath('//button[contains(@class,"like-button")]/@aria-pressed') == ['false']
+    assert liked.xpath('//button[@data-reaction]/@aria-pressed') == ['true', 'false', 'false', 'false', 'false']
+    assert stranger.xpath('//button[@data-reaction]/@aria-pressed') == ['false'] * 5
     assert stranger.xpath('//form[@data-like-form]')
 
 
@@ -57,7 +61,7 @@ def test_two_browsers_on_different_networks_both_count(client, application, user
     like(client, users['post'], address='10.0.0.1')
     other = like(application.test_client(), users['post'], address='10.0.0.2')
 
-    assert other.get_json() == {'liked': True, 'count': 2}
+    assert core(other) == {'liked': True, 'count': 2}
 
 
 def test_one_network_is_capped_per_post_even_without_cookies(application, users):
@@ -65,7 +69,7 @@ def test_one_network_is_capped_per_post_even_without_cookies(application, users)
 
     assert [r.status_code for r in results] == [200, 200, 200, 429, 429]
     assert results[2].get_json()['count'] == 3
-    assert results[3].get_json() == {'liked': False, 'count': 3}
+    assert core(results[3]) == {'liked': False, 'count': 3}
     assert count(application) == 3
 
 
@@ -88,7 +92,7 @@ def test_a_browser_that_already_liked_can_still_take_it_back_at_the_cap(client, 
         like(application.test_client(), users['post'])
 
     assert like(application.test_client(), users['post']).status_code == 429
-    assert like(client, users['post']).get_json() == {'liked': False, 'count': 2}
+    assert core(like(client, users['post'])) == {'liked': False, 'count': 2}
 
 
 def test_a_visitor_cannot_choose_their_address_through_the_forwarded_header(application, users):
@@ -108,7 +112,7 @@ def test_a_limited_like_from_a_plain_form_comes_back_with_a_message(application,
     response = client.post(f'/post/{users["post"]}/like', follow_redirects=True,
                            environ_overrides={'REMOTE_ADDR': '10.0.0.1'})
 
-    assert '你所在的网络对这篇文章的点赞已达上限。' in response.get_data(as_text=True)
+    assert '你所在的网络对这篇文章的表情回应已达上限。' in response.get_data(as_text=True)
 
 
 def test_only_hashes_are_stored(client, application, users):
@@ -141,8 +145,8 @@ def test_a_like_made_before_anonymous_likes_still_counts_for_that_user(client, a
     page = html.fromstring(client.get(f'/post/{users["post"]}').data)
     result = like(client, users['post'])
 
-    assert page.xpath('//button[contains(@class,"like-button")]/@aria-pressed') == ['true']
-    assert result.get_json() == {'liked': False, 'count': 0}
+    assert page.xpath('//button[@data-reaction]/@aria-pressed')[0] == 'true'
+    assert core(result) == {'liked': False, 'count': 0}
 
 
 def test_unpublished_posts_cannot_be_liked(client, application, users):
@@ -220,3 +224,91 @@ def test_migration_downgrade_drops_anonymous_likes_and_restores_the_old_shape():
     assert 'visitor_id' not in columns and 'ip_hash' not in columns
     assert columns['user_id']['nullable'] is False
     assert remaining == [(7,)]
+
+
+# --- picking an emoji ---------------------------------------------------------
+
+def react(client, post_id, emoji, address='10.0.0.1'):
+    return client.post(f'/post/{post_id}/like', data={'emoji': emoji}, headers=JSON,
+                       environ_overrides={'REMOTE_ADDR': address})
+
+
+def test_a_reader_picks_an_emoji_and_the_counts_say_which(client, application, users):
+    body = react(client, users['post'], '\U0001f602').get_json()
+
+    assert body['liked'] is True and body['reaction'] == '\U0001f602'
+    assert body['counts']['\U0001f602'] == 1 and sum(body['counts'].values()) == 1
+
+
+def test_picking_another_emoji_moves_the_reaction(client, application, users):
+    react(client, users['post'], '\U0001f602')
+    body = react(client, users['post'], '\U0001f389').get_json()
+
+    assert body['reaction'] == '\U0001f389' and body['liked'] is True and body['count'] == 1
+    assert body['counts']['\U0001f602'] == 0 and body['counts']['\U0001f389'] == 1
+    assert count(application) == 1
+
+
+def test_picking_the_same_emoji_again_takes_it_back(client, application, users):
+    react(client, users['post'], '\U0001f44d')
+    body = react(client, users['post'], '\U0001f44d').get_json()
+
+    assert body['reaction'] is None and body['liked'] is False and body['count'] == 0
+    assert count(application) == 0
+
+
+def test_changing_the_emoji_does_not_use_up_the_network_cap(application, users):
+    client = application.test_client()
+    react(client, users['post'], '\U0001f602')
+    for emoji in ('\U0001f389', '\U0001f914', '\u2764\ufe0f', '\U0001f44d'):
+        assert react(client, users['post'], emoji).status_code == 200
+
+
+def test_an_emoji_that_is_not_offered_is_refused(client, application, users):
+    assert react(client, users['post'], '\U0001f4a9').status_code == 400
+    assert count(application) == 0
+
+
+def test_a_plain_like_is_a_heart(client, application, users):
+    body = like(client, users['post']).get_json()
+
+    assert body['reaction'] == '\u2764\ufe0f'
+
+
+def test_the_page_offers_every_emoji_with_its_count_and_marks_mine(client, application, users):
+    react(client, users['post'], '\U0001f389')
+    react(application.test_client(), users['post'], '\U0001f389', address='10.0.0.2')
+    page = html.fromstring(client.get(f'/post/{users["post"]}').data)
+
+    values = page.xpath('//form[@data-like-form]//button[@data-reaction]/@value')
+    assert values == ['\u2764\ufe0f', '\U0001f44d', '\U0001f602', '\U0001f389', '\U0001f914']
+    mine = page.xpath('//button[@data-reaction][@aria-pressed="true"]')
+    assert [b.get('value') for b in mine] == ['\U0001f389']
+    assert mine[0].xpath('.//span[@data-reaction-count]/text()') == ['2']
+    assert page.xpath('//button[@data-reaction][@value="\U0001f602"]//span[@data-reaction-count]/text()') == []
+
+
+def test_emoji_migration_turns_every_earlier_like_into_a_heart_and_reverts_cleanly():
+    path = Path(__file__).parents[1] / 'migrations' / 'versions' / 'a9c3e7f2d514_post_like_emoji.py'
+    spec = importlib.util.spec_from_file_location('post_like_emoji', path)
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    engine = sa.create_engine('sqlite://')
+
+    with engine.begin() as connection:
+        old_like_table(connection)
+        with Operations.context(MigrationContext.configure(connection)):
+            revision.upgrade()
+            emoji = connection.execute(sa.text('SELECT emoji FROM post_like')).scalars().all()
+            revision.downgrade()
+            columns = [c['name'] for c in sa.inspect(connection).get_columns('post_like')]
+
+    assert emoji == ['❤️']
+    assert 'emoji' not in columns
+
+
+def test_a_plain_form_reaction_redirects_without_a_fragment(client, users):
+    response = client.post(f'/post/{users["post"]}/like', data={'emoji': '\U0001f44d'})
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == f'/post/{users["post"]}'

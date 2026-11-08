@@ -294,7 +294,7 @@ class PostComment(db.Model):
 
 
 class PostLike(db.Model):
-    """A like from a browser (``visitor_id``) and, if they were signed in, a user."""
+    """A reaction from a browser (``visitor_id``) and, if they were signed in, a user."""
     __table_args__ = (
         sa.UniqueConstraint('post_id', 'user_id', name='uq_post_like'),
         sa.UniqueConstraint('post_id', 'visitor_id', name='uq_post_like_visitor'),
@@ -308,6 +308,9 @@ class PostLike(db.Model):
     # Hashes only: of the browser's random cookie, and of the network address.
     visitor_id: so.Mapped[Optional[str]] = so.mapped_column(sa.String(64))
     ip_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(64), index=True)
+    # The reaction the reader picked; one of app.likes.REACTIONS.
+    emoji: so.Mapped[str] = so.mapped_column(
+        sa.String(16), default='\u2764\ufe0f', server_default='\u2764\ufe0f')
     timestamp: so.Mapped[datetime] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc))
 

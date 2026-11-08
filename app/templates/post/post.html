@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/photoswipe/photoswipe.css') }}">
 {% endblock %}
 
-{% block page_scripts %}<script src="{{ url_for('static', filename='live-photo.js') }}" defer></script><script type="module" src="{{ url_for('static', filename='article-enhancements.js') }}"></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script><script src="{{ url_for('static', filename='qr-share.js') }}" defer></script><script src="{{ url_for('static', filename='like-button.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
+{% block page_scripts %}<script src="{{ url_for('static', filename='live-photo.js') }}" defer></script><script type="module" src="{{ url_for('static', filename='article-enhancements.js') }}"></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script><script src="{{ url_for('static', filename='like-button.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
 
 {% block content %}
 <div class="reading-progress" aria-hidden="true"><div class="reading-progress__bar"></div></div>
@@ -14,27 +14,19 @@
     {% include 'post/_article.html' %}
 
     <div class="article-actions" id="post-actions">
-        <form method="post" action="{{ url_for('toggle_post_like', post_id=post.id) }}"
-              data-like-form data-label-like="{{ _('Like') }}" data-label-liked="{{ _('Liked') }}">
+        <form class="reactions" method="post" action="{{ url_for('toggle_post_like', post_id=post.id) }}"
+              role="group" aria-label="{{ _('React to this post') }}" data-like-form>
             {# The comment form already carries this page's token; reuse it. #}
             <input type="hidden" name="csrf_token" value="{{ form.csrf_token.current_token if form.csrf_token else '' }}">
-            <button type="submit" class="like-button{% if liked %} like-button--active{% endif %}"
-                    aria-pressed="{{ 'true' if liked else 'false' }}">
-                <span aria-hidden="true">&#9829;</span>
-                <span data-like-label>{{ _('Liked') if liked else _('Like') }}</span>
-                <span class="like-count">{{ post.likes_count() }}</span>
+            <input type="hidden" name="emoji" value="" data-reaction-fallback disabled>
+            {% for emoji, name in reactions %}
+            <button type="submit" name="emoji" value="{{ emoji }}" class="reaction{% if reaction == emoji %} reaction--active{% endif %}"
+                    aria-pressed="{{ 'true' if reaction == emoji else 'false' }}" title="{{ name }}" aria-label="{{ name }}" data-reaction>
+                <span class="reaction__emoji" aria-hidden="true" data-reaction-emoji>{{ emoji }}</span>
+                <span class="reaction__roll"><span class="reaction__count" data-reaction-count>{{ reaction_counts.get(emoji, 0) or '' }}</span></span>
             </button>
+            {% endfor %}
         </form>
-
-        <div class="qr-share" data-qr-share data-url="{{ url_for('post', post_id=post.id, _external=True) }}">
-            <button class="qr-share__toggle" type="button" aria-expanded="false" aria-controls="qr-share-panel">
-                {{ _('Generate QR Code') }}
-            </button>
-            <div class="qr-share__panel" id="qr-share-panel" role="dialog" aria-label="{{ _('Article QR code') }}" hidden>
-                <div class="qr-share__code" data-qr-target></div>
-                <p class="qr-share__hint">{{ _('Scan to read on your phone') }}</p>
-            </div>
-        </div>
     </div>
 </article>
 

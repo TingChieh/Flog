@@ -23,8 +23,9 @@ from app.security import admin_required
 from app.content import (normalize_body_format, prepare_content_source,
                          render_content, render_article)
 from app.post_drafts import DraftValues, publish_draft, save_draft
-from app.likes import (LIKED, LIMITED, attach_visitor_cookie, is_liked,
-                       new_visitor_token, read_visitor_token, toggle_like)
+from app.likes import (CHANGED, DEFAULT_REACTION, LIKED, LIMITED, REACTION_EMOJI, REACTIONS,
+                       attach_visitor_cookie, new_visitor_token, own_reaction,
+                       react, read_visitor_token, reaction_counts)
 from app.pages import PAGE_CONTENT, page_for_public_slug
 from app.comments import (APPROVED, PENDING, CommentRejected, CommentsClosed,
                           comment_context, submit_comment)
@@ -397,7 +398,9 @@ def post(post_id):
     article_html, article_toc = render_article(post.body, post.body_format)
     response = make_response(render_template(
         'post/post.html', article_html=article_html, article_toc=article_toc, title=post.title or _('Untitled'), post=post, form=form,
-        liked=is_liked(post, read_visitor_token()),
+        reaction=own_reaction(post, read_visitor_token()),
+        reactions=REACTIONS,
+        reaction_counts=reaction_counts(post),
         **comment_context(post, form),
     ))
     if counted:
@@ -408,19 +411,25 @@ def post(post_id):
 @app.route('/post/<int:post_id>/like', methods=['POST'])
 def toggle_post_like(post_id):
     post = public_post_or_404(post_id)
+    emoji = request.form.get('emoji') or DEFAULT_REACTION
+    if emoji not in REACTION_EMOJI:
+        abort(400)
     token = read_visitor_token()
     issued = None if token else new_visitor_token()
-    result = toggle_like(post, token or issued)
+    result = react(post, token or issued, emoji)
     db.session.commit()
     best = request.accept_mimetypes.best_match(['text/html', 'application/json'])
     if best == 'application/json':
-        response = jsonify(liked=result == LIKED, count=post.likes_count())
+        response = jsonify(
+            liked=result in (LIKED, CHANGED), count=post.likes_count(),
+            reaction=emoji if result in (LIKED, CHANGED) else None,
+            counts=reaction_counts(post))
         if result == LIMITED:
             response.status_code = 429
     else:
         if result == LIMITED:
             flash(_('Too many likes have come from your network for this post.'))
-        response = redirect(url_for('post', post_id=post.id, _anchor='post-actions'))
+        response = redirect(url_for('post', post_id=post.id))
     if issued:
         attach_visitor_cookie(response, issued)
     return response

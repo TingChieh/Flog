@@ -854,105 +854,6 @@ code {
     margin: 0;
 }
 
-.like-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 32px;
-    padding: 0.25rem 0.65rem;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--surface);
-    color: var(--text-primary);
-    text-decoration: none;
-}
-
-.like-button:hover,
-.like-button--active {
-    border-color: var(--danger);
-    color: var(--danger);
-}
-
-.qr-share {
-    position: relative;
-}
-
-.qr-share__toggle {
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
-    padding: 0.25rem 0.65rem;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--surface);
-    color: var(--text-primary);
-    font: inherit;
-    cursor: pointer;
-}
-
-.qr-share__toggle:hover,
-.qr-share__toggle[aria-expanded="true"] {
-    border-color: var(--text-primary);
-}
-
-.qr-share__panel {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    z-index: 10;
-    width: 200px;
-    padding: 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    text-align: center;
-}
-
-.qr-share__panel[hidden] {
-    display: none;
-}
-
-/* The code is always dark on white so phones can read it in either theme. */
-.qr-share__code {
-    width: 168px;
-    height: 168px;
-    margin: 0 auto;
-    padding: 10px;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-}
-
-.qr-share__code img,
-.qr-share__code canvas {
-    display: block;
-    width: 148px;
-    height: 148px;
-}
-
-.qr-share__code--text {
-    overflow-wrap: anywhere;
-    color: #1d1d1f;
-    font-size: 12px;
-    line-height: 1.4;
-    text-align: left;
-}
-
-.qr-share__hint {
-    margin: 12px 0 0;
-    color: var(--text-secondary);
-    font-size: 13px;
-    text-indent: 0;
-}
-
-.like-count {
-    min-width: 1.2rem;
-    padding-left: 0.45rem;
-    border-left: 1px solid var(--border);
-    text-align: center;
-}
-
 .comments-section__heading {
     display: flex;
     align-items: baseline;
@@ -4121,3 +4022,38 @@ html[data-theme="dark"] body.public-site {
 @media (prefers-reduced-motion: reduce) {
     .article-body a, .page-body a, .post-comment__text a { transition: none; }
 }
+
+/* Reactions: a row of emoji; yours is outlined in ink, counts sit beside each one. */
+.reactions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.reaction {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 36px;
+    padding: 0 12px;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-serif);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color .2s ease, background-color .2s ease, transform .15s ease;
+}
+.reaction__emoji { display: inline-block; font-size: 18px; line-height: 1; }
+.reaction__roll { position: relative; display: inline-flex; margin-left: 6px; overflow: hidden; }
+.reaction__count { display: inline-block; min-width: .6em; font-variant-numeric: tabular-nums; text-align: center; }
+.reaction__count--ghost { position: absolute; inset: 0; }
+.reaction__count:empty { display: none; }
+.reaction__roll:not(:has(> .reaction__count:not(:empty))):not(:has(> .reaction__count--ghost)) { display: none; }
+.reaction:hover:not(:disabled) { border-color: var(--text-secondary); background: var(--surface-muted); }
+.reaction:active:not(:disabled) { transform: scale(.94); }
+.reaction:focus-visible { outline: 2px solid var(--link-color); outline-offset: 2px; }
+.reaction--active { border-color: var(--text-primary); background: var(--surface-muted); color: var(--text-primary); }
+@media (prefers-reduced-motion: reduce) { .reaction { transition: none; } }
+
+/* The emoji that float up from a reaction you just picked; the script removes them when done. */
+.reaction-burst { position: fixed; z-index: 1090; width: 0; height: 0; pointer-events: none; }
+.reaction-burst__item { position: absolute; left: 0; top: 0; font-size: 22px; line-height: 1; opacity: 0; will-change: transform, opacity; }
