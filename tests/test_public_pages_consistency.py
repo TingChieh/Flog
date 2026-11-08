@@ -71,11 +71,14 @@ def assert_public_list(page, label):
     assert not page.xpath('//ul[contains(@class, "pagination")]')
 
 
-def test_category_page_uses_public_list(client, users):
+def test_category_page_is_laid_out_like_the_archive(client, users):
     response, page = get_page(client, '/category/1')
     assert response.status_code == 200
-    assert_public_list(page, '分类')
-    assert page.xpath('//div[contains(@class, "editorial-list")]')
+    assert not page.xpath('//header[contains(@class, "hero--page")]')
+    assert page.xpath('//section[contains(@class, "content-section") and contains(@class, "archive")]')
+    assert page.xpath('//div[@class="public-label"][normalize-space()="分类"]')
+    assert page.xpath('//h1[@id="page-title"]/text()') == ['General']
+    assert page.xpath('//ul[contains(@class, "archive-list")]//a[contains(@class, "archive-entry__title")]')
 
 
 from app.models import Post
@@ -95,8 +98,6 @@ def test_500_page_matches_the_404_structure(application):
 def test_new_public_page_strings_are_chinese(client, application, users):
     _, reset = get_page(client, '/reset_password_request')
     assert reset.xpath('//div[@class="public-label"]')[0].text_content() == '账号'
-    _, category = get_page(client, '/category/1')
-    assert 'General 下的文章' in category.text_content()
 
 
 def test_site_ignores_the_browser_language(client, users):

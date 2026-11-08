@@ -316,7 +316,7 @@ def posts_by_category(category_id):
     # Get all posts that belong to this category
     posts = db.session.scalars(published_post_statement().where(
         Post.category_id == category.id
-    )).all()
+    ).order_by(Post.timestamp.desc(), Post.id.desc())).all()
 
     # Render the posts in the category using a template
     return render_template(

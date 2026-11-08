@@ -658,7 +658,6 @@ code {
 
 .post-body table,
 .post-content table,
-.article-body table,
 .list-group-item table {
     width: 100%;
     max-width: 100%;
@@ -672,7 +671,6 @@ code {
 
 .post-body table thead th,
 .post-content table thead th,
-.article-body table thead th,
 .list-group-item table thead th {
     background-color: var(--text-primary);
     color: var(--surface);
@@ -685,8 +683,6 @@ code {
 .post-body table td,
 .post-content table th,
 .post-content table td,
-.article-body table th,
-.article-body table td,
 .list-group-item table th,
 .list-group-item table td {
     border: 1px solid rgba(0, 0, 0, 0.08);
@@ -698,7 +694,6 @@ code {
 
 .post-body table tbody tr:nth-child(even),
 .post-content table tbody tr:nth-child(even),
-.article-body table tbody tr:nth-child(even),
 .list-group-item table tbody tr:nth-child(even) {
     background-color: var(--surface-muted);
 }
@@ -720,7 +715,6 @@ code {
 
     .post-body table,
     .post-content table,
-    .article-body table,
     .list-group-item table {
         display: table;
         width: 100%;
@@ -732,8 +726,6 @@ code {
     .post-body table td,
     .post-content table th,
     .post-content table td,
-    .article-body table th,
-    .article-body table td,
     .list-group-item table th,
     .list-group-item table td {
         text-align: center;
@@ -3039,6 +3031,7 @@ body.public-site {
     --surface: #fbfaf8;
     --text-primary: #1c1915;
     --text-secondary: #746d48;
+    --link-color: #6d6526;
     --reading-width: 640px;
     --bs-body-font-family: var(--font-serif);
     font-family: var(--font-serif);
@@ -3052,6 +3045,7 @@ html[data-theme="dark"] body.public-site {
     --surface-muted: #30302b;
     --text-primary: #f0eee8;
     --text-secondary: #bfb998;
+    --link-color: #d6cb8c;
     --border: #514f46;
 }
 .public-site .site-shell {
@@ -3529,10 +3523,8 @@ html[data-theme="dark"] body.public-site {
 
 /* Tables: editorial rules, sized to the content, alignment from the Markdown. */
 .article-body table, .page-body table {
-    display: block;
-    width: fit-content;
-    max-width: 100%;
-    overflow-x: auto;
+    display: table;
+    width: 100%;
     margin: 1.8em 0;
     border-collapse: collapse;
     border-spacing: 0;
@@ -4110,3 +4102,22 @@ html[data-theme="dark"] body.public-site {
 
 /* Selected text: a soft wash of the theme's olive, text colour untouched, instead of the browser's default blue. */
 ::selection { background: color-mix(in srgb, var(--text-secondary) 28%, transparent); text-shadow: none; }
+
+/* Links in content: the theme's olive with a hairline underline, not the browser's blue. */
+.article-body a, .page-body a, .post-comment__text a {
+    color: var(--link-color);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .22em;
+    text-decoration-color: color-mix(in srgb, var(--link-color) 45%, transparent);
+    transition: text-decoration-color .2s ease, color .2s ease;
+}
+.article-body a:hover, .page-body a:hover, .post-comment__text a:hover,
+.article-body a:focus-visible, .page-body a:focus-visible, .post-comment__text a:focus-visible {
+    color: var(--text-primary);
+    text-decoration-thickness: 1px;
+    text-decoration-color: currentColor;
+}
+@media (prefers-reduced-motion: reduce) {
+    .article-body a, .page-body a, .post-comment__text a { transition: none; }
+}

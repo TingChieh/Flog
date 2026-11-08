@@ -63,6 +63,15 @@ def test_prices_and_stray_dollars_are_not_math(application, source):
     assert 'math' not in html
 
 
+def test_an_escaped_dollar_loses_its_backslash(application):
+    # Typora writes a literal dollar sign as \$.
+    with application.app_context():
+        html = render(r'### 3. 用 "\$" 包围' + '\n\n' + r'costs \$5 and \$a\$')
+    assert '"$" 包围' in html
+    assert 'costs $5 and $a$' in html
+    assert '\\$' not in html and 'math' not in html
+
+
 def test_math_in_code_is_left_alone(application):
     source = 'inline `$a_1$` code\n\n```\n$$\nx\n$$\n$y$\n```\n\n    $z$\n'
     with application.app_context():

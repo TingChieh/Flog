@@ -51,6 +51,9 @@ class MathPreprocessor(Preprocessor):
 
 class MathExtension(Extension):
     def extendMarkdown(self, md):
+        # Typora writes a literal dollar sign as "\$"; Python-Markdown would keep the backslash.
+        if '$' not in md.ESCAPED_CHARS:
+            md.ESCAPED_CHARS.append('$')
         # After the fenced code preprocessor (25) has stashed code blocks.
         md.preprocessors.register(MathPreprocessor(md), 'flog_math', 20)
 
