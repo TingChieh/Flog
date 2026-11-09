@@ -17,6 +17,20 @@ BOXES = ('sent', 'received')
 QUOTE_LIMIT = 4000
 
 
+def _bare(address):
+    return parseaddr(address)[1].lower()
+
+
+def _is_for_me(item, mine):
+    """Whether a received mail was sent to an address the site really uses.
+
+    Resend accepts mail for every address on the domain, so most spam comes in
+    for addresses nobody ever set up (info@, contact@, ...).
+    """
+    return any(_bare(address) in mine
+               for address in (*item.to, *item.cc, *item.bcc))
+
+
 @bp.route('/mail', methods=['GET'])
 @login_required
 @admin_required
@@ -24,10 +38,13 @@ def mail():
     box = request.args.get('box', 'sent')
     if box not in BOXES:
         box = 'sent'
+    show_all = request.args.get('all') == '1'
     after = request.args.get('after', '')
     if not resend_client.is_valid_id(after):
         after = ''
     page = error = None
+    items = []
+    stray = set()
     configured = resend_client.configured()
     if configured:
         fetch = (resend_client.list_received if box == 'received'
@@ -36,7 +53,15 @@ def mail():
             page = fetch(after=after or None)
         except resend_client.ResendError as exc:
             error = str(exc)
+    if page:
+        items = page.items
+        mine = {_bare(address) for address in mail_senders()}
+        if box == 'received' and mine:
+            stray = {item.id for item in items if not _is_for_me(item, mine)}
+            if not show_all:
+                items = [item for item in items if item.id not in stray]
     return render_template('admin/mail/list.html', box=box, page=page,
+                           items=items, stray=stray, show_all=show_all,
                            error=error, configured=configured, after=after,
                            can_send=mail_configured())
 

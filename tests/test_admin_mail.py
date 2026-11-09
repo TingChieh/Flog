@@ -57,6 +57,7 @@ def http_error(code):
 @pytest.fixture()
 def resend(application, monkeypatch):
     monkeypatch.setitem(application.config, 'RESEND_API_KEY', 're_test_key')
+    monkeypatch.setitem(application.config, 'MAIL_FROM', 'admin@aisaka.cc')
     resend_client.clear_cache()
     fake = FakeResend()
     monkeypatch.setattr('app.resend_client.urllib.request.urlopen', fake)
@@ -71,9 +72,9 @@ def sent_item(email_id, subject='Hello', event='delivered', **extra):
             'last_event': event, **extra}
 
 
-def received_item(email_id, subject='你好'):
+def received_item(email_id, subject='你好', to='admin@aisaka.cc'):
     return {'id': email_id, 'from': 'Ann <ann@example.org>',
-            'to': ['admin@aisaka.cc'], 'subject': subject,
+            'to': [to], 'subject': subject,
             'created_at': '2026-11-07T07:00:00.000Z'}
 
 
@@ -157,6 +158,54 @@ def test_received_list_uses_the_receiving_endpoint(admin_client, resend):
     assert '2026-11-07 15:00' in row.text_content()
     assert row.xpath(f'.//a[@href="/admin/mail/received/{FIRST}"]')
     assert urlparse(resend.requests[0].full_url).path == '/emails/receiving'
+
+
+def test_received_list_hides_mail_for_addresses_nobody_uses(
+        admin_client, resend, application):
+    application.config['MAIL_SENDERS'] = ['Hi <hi@aisaka.cc>']
+    resend.json('/emails/receiving', {'has_more': True, 'data': [
+        received_item(FIRST, 'spam', to='info@aisaka.cc'),
+        received_item(SECOND, 'real', to='ADMIN@aisaka.cc'),
+        received_item(THIRD, 'also real', to='Hi <hi@aisaka.cc>')]})
+    _, page = page_of(admin_client, '/admin/mail?box=received')
+    first, second = rows(page)
+    assert 'real' in first.text_content() and 'also real' in second.text_content()
+    assert 'spam' not in page.text_content()
+    more = page.xpath('//a[contains(., "显示另外 1 封")]')
+    assert more and parse_qs(urlparse(more[0].get('href')).query) == {
+        'box': ['received'], 'all': ['1']}
+    older = page.xpath('//a[contains(., "较早的邮件")]')[0].get('href')
+    assert 'all=' not in older
+
+
+def test_received_list_can_show_every_mail(admin_client, resend):
+    resend.json('/emails/receiving', {'has_more': True, 'data': [
+        received_item(FIRST, 'spam', to='info@aisaka.cc'),
+        received_item(SECOND, 'real')]})
+    _, page = page_of(admin_client, '/admin/mail?box=received&all=1')
+    spam, real = rows(page)
+    assert spam.get('data-mail-stray') is not None
+    assert real.get('data-mail-stray') is None
+    assert '不常用的地址' in spam.text_content()
+    assert page.xpath('//a[contains(., "只显示发给常用地址")]')
+    assert 'all=1' in page.xpath(
+        '//a[contains(., "较早的邮件")]')[0].get('href')
+
+
+def test_a_page_of_only_stray_mail_says_so(admin_client, resend):
+    resend.json('/emails/receiving', {'has_more': False, 'data': [
+        received_item(FIRST, 'spam', to='info@aisaka.cc')]})
+    _, page = page_of(admin_client, '/admin/mail?box=received')
+    assert rows(page) == []
+    assert '都发给了不常用的地址' in page.text_content()
+    assert page.xpath('//a[contains(., "显示另外 1 封")]')
+
+
+def test_sent_list_is_never_filtered(admin_client, resend):
+    resend.json('/emails', {'has_more': False, 'data': [sent_item(FIRST)]})
+    _, page = page_of(admin_client, '/admin/mail')
+    assert len(rows(page)) == 1
+    assert not page.xpath('//a[contains(., "显示另外")]')
 
 
 def test_unknown_box_falls_back_to_sent(admin_client, resend):

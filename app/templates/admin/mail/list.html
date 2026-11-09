@@ -18,22 +18,28 @@
 <div class="admin-notice">{{ error }}</div>
 {% else %}
 <div class="admin-list">
-  {% for item in page.items %}
-  <article class="admin-list__row" data-mail-row>
+  {% for item in items %}
+  <article class="admin-list__row" data-mail-row{% if item.id in stray %} data-mail-stray{% endif %}>
     <div class="admin-list__main">
       <strong><a href="{{ url_for('admin.mail_detail', box=box, email_id=item.id) }}">{{ item.subject or '（无主题）' }}</a></strong>
       <span>{{ item.sender }} → {{ item.to|join('，') }}</span>
-      <span>{% if item.created_at %}{{ (item.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% endif %}{% if item.status %} · {{ item.status }}{% endif %}</span>
+      <span>{% if item.created_at %}{{ (item.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% endif %}{% if item.status %} · {{ item.status }}{% endif %}{% if item.id in stray %} · 发给了不常用的地址{% endif %}</span>
     </div>
   </article>
   {% else %}
-  <div class="empty-state"><p>还没有邮件。</p></div>
+  <div class="empty-state"><p>{% if stray and not show_all %}这一页的邮件都发给了不常用的地址。{% else %}还没有邮件。{% endif %}</p></div>
   {% endfor %}
 </div>
+{% if stray %}
+<nav class="mail-pager" aria-label="过滤">
+  {% if show_all %}<a href="{{ url_for('admin.mail', box=box, after=after or none) }}">只显示发给常用地址的邮件</a>
+  {% else %}<a href="{{ url_for('admin.mail', box=box, after=after or none, all=1) }}">显示另外 {{ stray|length }} 封发给不常用地址的邮件</a>{% endif %}
+</nav>
+{% endif %}
 {% if after or (page.has_more and page.items) %}
 <nav class="mail-pager" aria-label="翻页">
-  {% if page.has_more and page.items %}<a href="{{ url_for('admin.mail', box=box, after=page.items[-1].id) }}">较早的邮件</a>{% endif %}
-  {% if after %}<a href="{{ url_for('admin.mail', box=box) }}">回到最新</a>{% endif %}
+  {% if page.has_more and page.items %}<a href="{{ url_for('admin.mail', box=box, after=page.items[-1].id, all=1 if show_all else none) }}">较早的邮件</a>{% endif %}
+  {% if after %}<a href="{{ url_for('admin.mail', box=box, all=1 if show_all else none) }}">回到最新</a>{% endif %}
 </nav>
 {% endif %}
 {% endif %}
