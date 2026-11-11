@@ -120,3 +120,7 @@ def optimize(recompress):
                f'recompressed {stats.recompressed} '
                f'(saved {stats.saved_bytes / 1024:.0f} KB), '
                f'{stats.missing} missing on disk.')
+    if recompress:
+        from app.avatars import shrink_existing_avatars
+        shrunk, saved = shrink_existing_avatars()
+        click.echo(f'Shrank {shrunk} avatar(s) (saved {saved / 1024:.0f} KB).')

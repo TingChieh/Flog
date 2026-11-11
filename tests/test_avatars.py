@@ -133,3 +133,24 @@ def test_signature_only_avatars_are_rejected(client, application, users):
     login(client, 'author')
     upload(client, b'\x89PNG\r\n\x1a\n' + b'0' * 20)
     assert avatar_filename(application, users['author']) is None
+
+
+def test_optimize_shrinks_oversized_avatars_in_place(application):
+    from pathlib import Path
+    from app.avatars import AVATAR_EDGE, shrink_existing_avatars
+    folder = Path(avatar_dir(application))
+    folder.mkdir(parents=True)
+    big = folder / ('0' * 32 + '.png')
+    big.write_bytes(make_image(size=(1200, 1200), noise=True))
+    small = folder / ('1' * 32 + '.png')
+    small.write_bytes(PNG)
+    before = small.read_bytes()
+
+    shrunk, saved = shrink_existing_avatars()
+
+    assert shrunk == 1 and saved > 0
+    with PILImage.open(big) as image:
+        assert max(image.size) == AVATAR_EDGE
+    assert small.read_bytes() == before
+    result = application.test_cli_runner().invoke(args=['images', 'optimize', '--recompress'])
+    assert 'Shrank 0 avatar(s)' in result.output

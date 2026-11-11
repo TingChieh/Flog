@@ -3,8 +3,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from app import db
-from app.images import (ALLOWED_SIGNATURES, ImageUploadError, process_image,
-                        upload_folder)
+from app.images import (ALLOWED_SIGNATURES, ImageUploadError, _replace_file,
+                        process_image, upload_folder)
 
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024
@@ -60,6 +60,34 @@ def save_avatar(file, user):
         remove_avatar_file(filename)
         raise
     remove_avatar_file(previous)
+
+
+def shrink_existing_avatars():
+    """Re-encode stored avatars bigger than ``AVATAR_EDGE`` in place.
+
+    Avatars saved before uploads were resized can be megabytes for a 70 px
+    picture. Names and formats stay, so nothing needs updating. Returns
+    (files shrunk, bytes saved).
+    """
+    folder = avatar_folder()
+    if not folder.is_dir():
+        return 0, 0
+    shrunk = saved = 0
+    for path in sorted(folder.iterdir()):
+        extension = path.suffix.lower()
+        if extension not in ALLOWED_SIGNATURES or not path.is_file():
+            continue
+        raw = path.read_bytes()
+        try:
+            processed = process_image(raw, extension, max_edge=AVATAR_EDGE,
+                                      convert=False)
+        except ImageUploadError:
+            continue
+        if len(processed.data) < len(raw):
+            _replace_file(path, processed.data)
+            shrunk += 1
+            saved += len(raw) - len(processed.data)
+    return shrunk, saved
 
 
 def clear_avatar(user):
