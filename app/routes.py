@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree as ET
 from urllib.parse import urlsplit
 from flask import abort, render_template, flash, redirect, send_from_directory, url_for, request, g, make_response, jsonify
@@ -58,12 +58,22 @@ def public_post_or_404(post_id):
         published_post_statement().where(Post.id == post_id))
 
 
+# How stale last_seen may get; otherwise every signed-in request writes the user row.
+LAST_SEEN_INTERVAL = timedelta(minutes=5)
+
+
 @app.before_request
 def before_request():
-    if current_user.is_authenticated:
-        current_user.last_seen = datetime.now(timezone.utc)
-        db.session.commit()
     g.locale = str(get_locale())
+    if request.endpoint == 'static' or not current_user.is_authenticated:
+        return
+    now = datetime.now(timezone.utc)
+    seen = current_user.last_seen
+    if seen is not None and seen.tzinfo is None:
+        seen = seen.replace(tzinfo=timezone.utc)
+    if seen is None or now - seen >= LAST_SEEN_INTERVAL:
+        current_user.last_seen = now
+        db.session.commit()
 
 
 @app.route('/')
