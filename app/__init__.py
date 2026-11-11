@@ -82,7 +82,8 @@ if not app.debug:
 
     if not os.path.exists('logs'):
         os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/flog.log', maxBytes=10240,
+    # 10 x 1 MB: enough to still hold yesterday's errors on a busy day.
+    file_handler = RotatingFileHandler('logs/flog.log', maxBytes=1024 * 1024,
                                        backupCount=10)
     file_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
