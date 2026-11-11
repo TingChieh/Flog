@@ -7,22 +7,20 @@ from flask_babel import _, ngettext, get_locale
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from sqlalchemy.exc import SQLAlchemyError
-from langdetect import detect, LangDetectException
 from app import app, db
 from app.site_text import site_text
 from app.forms import LoginForm, RegistrationForm, \
-    PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, SearchForm, \
+    PostCommentForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, \
     CommentUnsubscribeForm
 from app.comment_mail import (email_from_unsubscribe_token,
                               notify_comment_pending,
                               notify_comment_published, stop_notifications)
-from app.models import Category, User, Post, Page, PageRedirect, PostComment, PostLike, get_site_settings
+from app.models import Category, User, Post, Page, PostComment, get_site_settings
 from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
 
 from app.security import admin_required
-from app.content import (normalize_body_format, prepare_content_source,
-                         render_content, render_article)
+from app.content import normalize_body_format, render_content, render_article
 from app.post_drafts import DraftValues, publish_draft, save_draft
 from app.likes import (CHANGED, DEFAULT_REACTION, LIKED, LIMITED, REACTION_EMOJI, REACTIONS,
                        attach_visitor_cookie, new_visitor_token, own_reaction,
@@ -474,7 +472,6 @@ def toggle_post_like(post_id):
 @admin_required
 def delete_post_comment(comment_id):
     comment = db.get_or_404(PostComment, comment_id)
-    post_id = comment.post_id
     db.session.delete(comment)
     db.session.commit()
     flash(_('Comment deleted.'))
