@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 
@@ -41,3 +43,22 @@ def test_the_sites_own_files_and_unversioned_vendor_files_keep_revalidating(clie
 
 def test_pages_are_not_cached_by_this_rule(client, users):
     assert 'immutable' not in client.get('/').headers.get('Cache-Control', '')
+
+
+def test_the_sites_own_files_are_linked_with_a_content_fingerprint(client, application):
+    from flask import url_for
+    with application.test_request_context():
+        style = url_for('static', filename='style.css')
+        font = url_for('static', filename='fonts/source-serif-4-normal-latin.woff2')
+        folder = url_for('static', filename='vendor/katex/0.19.0')
+    assert re.fullmatch(r'/static/style\.css\?v=[0-9a-f]{12}', style)
+    assert '?' not in font and '?' not in folder
+
+    assert client.get(style).headers['Cache-Control'] == 'public, max-age=31536000, immutable'
+    stale = client.get('/static/style.css?v=000000000000')
+    assert 'immutable' not in stale.headers.get('Cache-Control', '')
+
+
+def test_pages_link_the_fingerprinted_stylesheet(client):
+    html = client.get('/').get_data(as_text=True)
+    assert re.search(r'href="/static/style\.css\?v=[0-9a-f]{12}"', html)

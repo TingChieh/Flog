@@ -367,7 +367,7 @@ def test_editors_carry_the_library_url_and_load_the_picker_script(
         form = document.xpath('//form[@data-image-upload-url]')
         assert form, path
         assert form[0].get('data-image-library-url') == '/admin/images/picker', path
-        scripts = document.xpath('//script/@src')
+        scripts = [src.split('?')[0] for src in document.xpath('//script/@src')]
         picker = [i for i, s in enumerate(scripts) if s.endswith('/image-picker.js')]
         editor = [i for i, s in enumerate(scripts) if s.endswith('/markdown-editor.js')]
         assert picker and editor and picker[0] < editor[0], path

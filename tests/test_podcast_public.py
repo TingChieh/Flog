@@ -131,7 +131,7 @@ def test_the_player_has_site_controls_and_keeps_the_browser_ones_as_a_fallback(
     assert controls.xpath('.//*[@data-player-total]')[0].text == '0:03'
     assert [b.get('data-player-skip') for b in controls.xpath('.//button[@data-player-skip]')] == ['-15', '30']
     assert controls.xpath('.//button[@data-player-rate]')
-    scripts = tree.xpath('//script/@src')
+    scripts = [src.split('?')[0] for src in tree.xpath('//script/@src')]
     assert '/static/podcast-controls.js' in scripts and '/static/podcast-player.js' in scripts
     assert player.xpath('.//a[@download]')
 
