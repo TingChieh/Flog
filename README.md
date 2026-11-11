@@ -131,7 +131,7 @@ flask run                            # http://127.0.0.1:5000
 | `MAIL_SENDERS` | 否 | 后台“邮件”页写信时可选的发件地址，逗号分隔，须是 Resend 已验证域名下的地址；`MAIL_FROM` 始终可选 |
 | `RESEND_API_KEY` | 否 | Resend 的 Full access 密钥，供后台“邮件”页查看收发的邮件；不设置则该页只显示配置说明 |
 | `UPLOAD_FOLDER` | 否 | 上传目录，默认 `instance/uploads` |
-| `SITE_URL` | 否 | 本站的公开网址（不带结尾斜杠），旧播客域名重定向时用它拼出目标地址 |
+| `SITE_URL` | 否 | 本站的公开网址（不带结尾斜杠），旧播客域名重定向时用它拼出目标地址；以 `https://` 开头时登录 Cookie 只经 HTTPS 发送 |
 | `PODCAST_REDIRECT_HOSTS` | 否 | 以前是播客独立站的域名，逗号分隔；访问它们会 301 到 `SITE_URL` 下的 `/podcast/`，旧单集地址和旧 RSS 地址也会对应跳转 |
 | `PODCAST_AUDIO_MAX_MB` | 否 | 后台上传单集音频的大小上限（MB），默认 `300` |
 | `DISPLAY_TIMEZONE` | 否 | 页面上日期的显示时区，默认 `Asia/Shanghai`；数据库里统一存 UTC |

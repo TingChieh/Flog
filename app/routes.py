@@ -99,6 +99,19 @@ def index():
                            prev_url=prev_url)
 
 
+def _is_local_path(target):
+    """Whether ``target`` is a path on this site, safe to redirect to after sign-in.
+
+    Browsers read ``//host`` and ``/\\host`` as other sites, and drop tabs and
+    line breaks before they look.
+    """
+    if (not target or not target.startswith('/') or '\\' in target
+            or any(ord(char) < 0x20 for char in target)):
+        return False
+    parts = urlsplit(target)
+    return not parts.scheme and not parts.netloc and not target.startswith('//')
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -112,7 +125,7 @@ def login():
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
-        if not next_page or urlsplit(next_page).netloc != '':
+        if not _is_local_path(next_page):
             next_page = url_for('index')
         return redirect(next_page)
     return render_template('user/login.html', title=_('Sign In'), form=form)

@@ -3,6 +3,8 @@ import io
 import re
 from pathlib import Path
 
+import pytest
+
 from app import db
 from app.content import render_content
 from app.models import Post
@@ -152,3 +154,50 @@ def test_authenticated_image_upload_accepts_images_over_legacy_five_mb_limit(
 
     assert response.status_code == 200
     assert response.get_json()['uploaded'] == 1
+
+
+def test_responses_carry_security_headers(client):
+    response = client.get('/')
+    assert response.headers['X-Content-Type-Options'] == 'nosniff'
+    assert response.headers['X-Frame-Options'] == 'SAMEORIGIN'
+    assert response.headers['Referrer-Policy'] == 'strict-origin-when-cross-origin'
+
+
+def test_https_site_url_makes_sign_in_cookies_secure(monkeypatch):
+    import importlib
+    import config
+    monkeypatch.setenv('SITE_URL', 'https://blog.example.com')
+    try:
+        secure = importlib.reload(config).Config
+        assert secure.SESSION_COOKIE_SECURE and secure.REMEMBER_COOKIE_SECURE
+        monkeypatch.setenv('SITE_URL', '')
+        assert not importlib.reload(config).Config.SESSION_COOKIE_SECURE
+    finally:
+        monkeypatch.undo()
+        importlib.reload(config)
+
+
+
+@pytest.mark.parametrize('target', [
+    '//evil.example', '/\\evil.example', '/\t/evil.example',
+    'https://evil.example', 'https:evil.example', 'javascript:alert(1)',
+])
+def test_sign_in_never_redirects_off_site(client, users, target):
+    response = client.post('/login', query_string={'next': target}, data={
+        'username': 'author', 'password': 'password'})
+    assert response.headers['Location'] == '/index'
+
+
+def test_sign_in_returns_to_a_local_page(client, users):
+    response = client.post('/login', query_string={'next': '/admin/posts?scope=mine'},
+                           data={'username': 'author', 'password': 'password'})
+    assert response.headers['Location'] == '/admin/posts?scope=mine'
+
+
+def test_user_without_a_password_cannot_sign_in(client, application, users):
+    from app.models import User
+    with application.app_context():
+        db.session.get(User, users['author']).password_hash = None
+        db.session.commit()
+    response = client.post('/login', data={'username': 'author', 'password': 'guess'})
+    assert response.status_code == 302 and response.headers['Location'] == '/login'

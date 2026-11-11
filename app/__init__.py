@@ -96,7 +96,7 @@ from app.admin import bp as admin_bp
 
 app.register_blueprint(admin_bp)
 
-from app import routes, models, errors, cli, static_cache, font_preload
+from app import routes, models, errors, cli, static_cache, font_preload, security_headers
 from app import podcast_routes
 
 from app.search import excerpt, plain_text

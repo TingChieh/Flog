@@ -92,6 +92,11 @@ class Config:
     # The public address of this site, used where a link must leave the
     # current host (the redirect from the old podcast domain).
     SITE_URL = os.environ.get('SITE_URL', '').strip().rstrip('/')
+    # A site served over HTTPS keeps its sign-in cookies off plain HTTP.
+    SESSION_COOKIE_SECURE = SITE_URL.startswith('https://')
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_SAMESITE = 'Lax'
     # Hostnames that used to be the podcast's own site; requests to them are
     # redirected to the podcast pages under SITE_URL.
     PODCAST_REDIRECT_HOSTS = frozenset(

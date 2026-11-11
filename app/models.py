@@ -50,7 +50,8 @@ class User(UserMixin, db.Model):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        return bool(self.password_hash) and check_password_hash(
+            self.password_hash, password)
 
     @property
     def is_admin(self):
@@ -194,7 +195,7 @@ class Post(db.Model):
             self.likes.select().where(PostLike.user_id == user.id)) is not None
 
     def __repr__(self):
-        return '<Post {}>'.format(self.body)
+        return '<Post {}>'.format(self.title)
 
 
 class PostDraft(db.Model):
