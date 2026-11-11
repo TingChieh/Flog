@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from functools import lru_cache
 from urllib.parse import quote, urlsplit
 
 import sqlalchemy as sa
@@ -161,9 +162,19 @@ def optimize_images(rendered):
         html.tostring(child, encoding='unicode', method='html') for child in root)
 
 
+# Markdown, code highlighting and sanitizing are the slow part of a page and
+# depend on nothing but the source, so each worker keeps its recent results.
+RENDER_CACHE_SIZE = 64
+
+
 def _render_html(value, body_format):
-    source = value or ''
-    if normalize_body_format(body_format) == BODY_FORMAT_MARKDOWN:
+    return _render_source(value or '', normalize_body_format(body_format))
+
+
+@lru_cache(maxsize=RENDER_CACHE_SIZE)
+def _render_source(source, body_format):
+    value = source
+    if body_format == BODY_FORMAT_MARKDOWN:
         try:
             source = markdown(source, extensions=['extra', 'sane_lists', 'codehilite',
                                         ListIndentExtension(), MathExtension(),
@@ -185,7 +196,14 @@ def render_content(value, body_format, images=True):
 
 def render_article(value, body_format):
     """Render a sanitized article and build links without replacing existing IDs."""
-    rendered = _render_html(value, body_format)
+    rendered, entries = _article_source(value or '', normalize_body_format(body_format))
+    return Markup(optimize_images(rendered)), [dict(entry) for entry in entries]
+
+
+@lru_cache(maxsize=RENDER_CACHE_SIZE)
+def _article_source(value, body_format):
+    """The article's HTML with heading anchors, and its table of contents."""
+    rendered = _render_source(value, body_format)
     root = html.fragment_fromstring(rendered, create_parent='div')
     used = {element.get('id') for element in root.iter() if element.get('id') is not None}
     entries = []
@@ -206,5 +224,4 @@ def render_article(value, body_format):
         entries.append({'title': title, 'level': heading.tag, 'href': '#' + quote(anchor, safe='')})
     result = str(escape(root.text or '')) + ''.join(
         html.tostring(child, encoding='unicode', method='html') for child in root)
-    return (Markup(optimize_images(sanitize_html(result))),
-            entries if len(entries) >= 3 else [])
+    return sanitize_html(result), tuple(entries) if len(entries) >= 3 else ()

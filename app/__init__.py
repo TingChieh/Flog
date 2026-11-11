@@ -99,5 +99,6 @@ app.register_blueprint(admin_bp)
 from app import routes, models, errors, cli, static_cache, font_preload
 from app import podcast_routes
 
-from app.search import plain_text
+from app.search import excerpt, plain_text
 app.jinja_env.filters['plain_text'] = plain_text
+app.jinja_env.filters['excerpt'] = excerpt

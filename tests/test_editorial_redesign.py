@@ -18,6 +18,9 @@ def test_home_lists_category_excerpt_and_date_without_reading_time(client, appli
     assert not item.xpath('.//button')
     assert not page.xpath('//aside[contains(@class, "category-rail")]')
     assert not page.xpath('//header[contains(@class, "hero--home")]')
+    # The list shows two lines of it, so the page does not carry the rest.
+    excerpt = item.xpath('.//a[contains(@class, "editorial-post__link")]/p')[0].text_content()
+    assert excerpt.startswith('汉' * 100) and excerpt.endswith('…') and len(excerpt) < 300
 
 
 def test_sharing_controls_are_on_article_not_list(client, users):

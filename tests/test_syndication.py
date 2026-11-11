@@ -92,3 +92,23 @@ def test_feed_orders_latest_first_and_subscription_is_translated(client, applica
     root = etree.fromstring(client.get('/feed.xml').data)
     assert [item.findtext('title') for item in root.findall('./channel/item')] == ['Newer', 'Older']
     assert '订阅 RSS' in client.get('/').get_data(as_text=True)
+
+
+def test_feed_carries_only_the_latest_posts_under_the_site_name(client, application):
+    from app.routes import FEED_POST_LIMIT
+    from app.models import get_site_settings
+    with application.app_context():
+        get_site_settings().site_name = 'My Notes'
+        author = User(username='writer', email='writer@example.com')
+        db.session.add(author)
+        db.session.flush()
+        db.session.add_all(
+            Post(title=f'Post {number}', body='<p>text</p>', author=author,
+                 is_published=True,
+                 timestamp=datetime(2024, 1, 1, number % 24, number % 60, tzinfo=timezone.utc))
+            for number in range(FEED_POST_LIMIT + 5))
+        db.session.commit()
+
+    root = etree.fromstring(client.get('/feed.xml').data)
+    assert root.findtext('./channel/title') == 'My Notes'
+    assert len(root.findall('./channel/item')) == FEED_POST_LIMIT

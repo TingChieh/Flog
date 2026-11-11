@@ -506,3 +506,17 @@ def test_cli_command_reports_what_it_did(application):
 
     assert result.exit_code == 0
     assert 'recorded sizes for 1' in result.output
+
+
+def test_rendered_articles_are_reused_but_images_stay_current(application):
+    from app.content import _article_source
+    with application.app_context():
+        source = '## One\n\n## Two\n\n## Three\n\ntext'
+        first_html, first_toc = render_article(source, 'markdown')
+        hits = _article_source.cache_info().hits
+        second_html, second_toc = render_article(source, 'markdown')
+        assert _article_source.cache_info().hits == hits + 1
+        assert first_html == second_html and first_toc == second_toc
+        # Callers get their own table of contents to change.
+        second_toc[0]['title'] = 'changed'
+        assert render_article(source, 'markdown')[1][0]['title'] == 'One'

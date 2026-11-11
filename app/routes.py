@@ -5,6 +5,7 @@ from flask import abort, render_template, flash, redirect, send_from_directory, 
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_babel import _, ngettext, get_locale
 import sqlalchemy as sa
+import sqlalchemy.orm as so
 from sqlalchemy.exc import SQLAlchemyError
 from langdetect import detect, LangDetectException
 from app import app, db
@@ -43,6 +44,15 @@ def published_post_statement():
     return sa.select(Post).where(Post.is_published.is_(True))
 
 
+# Feed readers only look at recent entries, and each one carries the whole post.
+FEED_POST_LIMIT = 20
+
+
+def listed_post_statement():
+    """Published posts for a list of titles: the bodies are not loaded."""
+    return published_post_statement().options(so.defer(Post.body))
+
+
 def public_post_or_404(post_id):
     return db.first_or_404(
         published_post_statement().where(Post.id == post_id))
@@ -60,7 +70,8 @@ def before_request():
 @app.route('/index')
 def index():
     page = request.args.get('page', 1, type=int)
-    query = published_post_statement().order_by(Post.timestamp.desc())
+    query = published_post_statement().options(
+        so.selectinload(Post.category)).order_by(Post.timestamp.desc())
     posts = db.paginate(query, page=page,
                         per_page=app.config['POSTS_PER_PAGE'], error_out=False)
     next_url = url_for('index', page=posts.next_num) \
@@ -262,7 +273,7 @@ def upload():
 @app.route('/archive')
 def archive():
     posts = db.session.scalars(
-        published_post_statement().order_by(Post.timestamp.desc(), Post.id.desc())
+        listed_post_statement().order_by(Post.timestamp.desc(), Post.id.desc())
     ).all()
     return render_template('post/archive.html', title=site_text()['nav_archive'], posts=posts)
 
@@ -312,10 +323,10 @@ def edit_category(category_id):
 @app.route('/category/<int:category_id>', methods=['GET'])
 def posts_by_category(category_id):
     # Query for the category by its ID
-    category = Category.query.get_or_404(category_id)
+    category = db.get_or_404(Category, category_id)
     
     # Get all posts that belong to this category
-    posts = db.session.scalars(published_post_statement().where(
+    posts = db.session.scalars(listed_post_statement().where(
         Post.category_id == category.id
     ).order_by(Post.timestamp.desc(), Post.id.desc())).all()
 
@@ -480,14 +491,16 @@ def rss_feed():
 
 @app.route('/feed.xml')
 def feed():
+    site_name = site_text()['site_name']
     fg = FeedGenerator()
-    fg.title("Aisaka's Blog")
+    fg.title(site_name)
     fg.link(href=url_for('feed', _external=True), rel='self')
     # feedgen uses the last registered link for the RSS channel link.
     fg.link(href=request.url_root, rel='alternate')
-    fg.description("Aisaka's Blog")
+    fg.description(site_name)
     posts = db.session.scalars(
         published_post_statement().order_by(Post.timestamp.desc(), Post.id.desc())
+        .limit(FEED_POST_LIMIT)
     ).all()
     for post in posts:
         entry = fg.add_entry(order='append')
@@ -517,7 +530,7 @@ def sitemap():
 
     add_url(request.url_root)
     add_url(url_for('archive', _external=True))
-    for post in db.session.scalars(published_post_statement()):
+    for post in db.session.scalars(listed_post_statement()):
         add_url(url_for('post', post_id=post.id, _external=True),
                 post.updated_at or post.timestamp)
     for page in db.session.scalars(sa.select(Page).where(Page.is_published.is_(True))):

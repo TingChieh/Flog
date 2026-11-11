@@ -3,6 +3,7 @@ import re
 from html.parser import HTMLParser
 
 import sqlalchemy as sa
+import sqlalchemy.orm as so
 from markupsafe import Markup, escape
 from sqlalchemy.exc import OperationalError
 from flask import url_for
@@ -27,6 +28,15 @@ def plain_text(source, body_format='html'):
     parser = _Text()
     parser.feed(source or '')
     return ' '.join(' '.join(parser.parts).split())
+
+
+# A listing shows two lines of a post; more text only adds page weight.
+EXCERPT_LENGTH = 240
+
+
+def excerpt(source, body_format='html', length=EXCERPT_LENGTH):
+    text = plain_text(source, body_format)
+    return text if len(text) <= length else text[:length].rstrip() + '…'
 
 
 def snippet(body, query, length=180, body_format='html'):
@@ -69,7 +79,7 @@ def search_posts(query, limit=20, offset=0, count=False):
     if count:
         statement = statement.with_only_columns(sa.func.count())
     else:
-        statement = statement.order_by(
+        statement = statement.options(so.selectinload(Post.category)).order_by(
             sa.case((title_match, 0), else_=1), Post.timestamp.desc(), Post.id.desc()
         ).offset(offset).limit(limit)
     if use_fts:

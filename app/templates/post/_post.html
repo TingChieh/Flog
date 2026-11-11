@@ -2,7 +2,7 @@
   <div class="editorial-post__category">{% if post.category %}<a href="{{ url_for('posts_by_category', category_id=post.category.id) }}">{{ post.category.name }}</a>{% else %}{{ _('Uncategorized') }}{% endif %}</div>
   <a class="editorial-post__link" href="{{ url_for('post', post_id=post.id) }}">
     <h3 class="editorial-post__title">{% if search_result %}{{ highlight(post.title or _('Untitled'), query) }}{% else %}{{ post.title or _('Untitled') }}{% endif %}</h3>
-    {% if search_result %}<p>{{ search_result.snippet }}</p>{% else %}<p>{{ post.body|plain_text(post.body_format) }}</p>{% endif %}
+    {% if search_result %}<p>{{ search_result.snippet }}</p>{% else %}<p>{{ post.body|excerpt(post.body_format) }}</p>{% endif %}
   </a>
   <div class="editorial-post__meta"><time datetime="{{ post.local_timestamp.isoformat() }}">{{ post.timestamp|dateformat('long') }}</time></div>
 </article>
