@@ -80,8 +80,8 @@ if not app.debug:
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
 
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
+    # Every gunicorn worker runs this at once, so the folder may appear meanwhile.
+    os.makedirs('logs', exist_ok=True)
     # 10 x 1 MB: enough to still hold yesterday's errors on a busy day.
     file_handler = RotatingFileHandler('logs/flog.log', maxBytes=1024 * 1024,
                                        backupCount=10)
