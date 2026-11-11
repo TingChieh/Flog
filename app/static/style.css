@@ -3031,8 +3031,10 @@ html[data-theme="dark"] body.public-site {
 }
 .public-site .page-item.disabled .page-link { background: transparent; color: var(--text-secondary); opacity: .4; text-decoration: none; pointer-events: none; }
 .public-site .editorial-post { padding: 0; margin: 0 0 60px; border: 0; }
-.public-site .editorial-post__category { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+/* The category sits in the meta line beside the date, not as a label above the title. */
 .public-site .editorial-post__category a { color: inherit; text-decoration: none; }
+.public-site .editorial-post__category a:hover,
+.public-site .editorial-post__category a:focus-visible { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
 .public-site .editorial-post__title { margin: 0 0 8px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
 .public-site .editorial-post__link p {
     display: -webkit-box;
@@ -3044,7 +3046,7 @@ html[data-theme="dark"] body.public-site {
     font-size: 18px;
     line-height: 1.45;
 }
-.public-site .editorial-post__meta { margin-top: 15px; display: flex; gap: 6px; color: var(--text-secondary); font-size: 14px; }
+.public-site .editorial-post__meta { margin-top: 15px; display: flex; align-items: baseline; gap: 14px; color: var(--text-secondary); font-size: 14px; }
 .public-site .editorial-post__meta time { width: auto; margin: 0; }
 .public-site .reading-layout, .public-site .comments-section { width: min(640px, 100%); }
 .public-site .article-header { margin-bottom: 30px; }
@@ -3141,7 +3143,9 @@ html[data-theme="dark"] body.public-site {
 .public-site .search-page-form button { border: 0; text-decoration: underline; }
 .public-site .search-pagination { display: flex; gap: 24px; }
 .public-site .search-pagination a { min-height: 44px; display: inline-flex; align-items: center; color: var(--text-secondary); }
-.public-site .public-page .empty-state { color: var(--text-secondary); font-family: var(--font-serif); font-size: 18px; }
+/* Public empty states read as a quiet line of text, not a grey box. */
+.public-site .empty-state { max-width: none; margin: 0; padding: 0; background: none; border: 0; border-radius: 0; text-align: left; color: var(--text-secondary); font-family: var(--font-serif); font-size: 17px; }
+.public-site .public-page .empty-state { font-family: var(--font-serif); font-size: 18px; }
 /* Navigation: serif brand and menu that match the Chinese body font. */
 .public-site .site-brand { font-family: 'Source Serif 4', 'Noto Serif SC', 'Songti SC', Georgia, serif; font-size: 22px; font-weight: 600; letter-spacing: 0; }
 .public-site .site-nav__links a { font-family: 'Source Serif 4', 'Noto Serif SC', 'Songti SC', Georgia, serif; font-size: 15px; font-weight: 500; }

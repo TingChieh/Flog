@@ -2,6 +2,8 @@
 
 {% block page_hero %}{% endblock %}
 
+{% block description %}{{ episode.summary or episode.title }}{% endblock %}
+
 {% block page_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='podcast.css') }}">
 <link rel="alternate" type="application/rss+xml" title="{{ show.title }}" href="{{ url_for('podcast_feed') }}">{% endblock %}
 

@@ -5,7 +5,7 @@
 <section class="content-section public-page" aria-labelledby="page-title">
   <header class="page-heading">
     <div class="public-label">{{ _('Search') }}</div>
-    <h1 id="page-title">{{ _('Search results') }}{% if query %} · {{ query }}{% endif %}</h1>
+    <h1 id="page-title">{{ _('Search results') }}{% if query %}：{{ query }}{% endif %}</h1>
     {% if query %}<p class="search-count">{{ ngettext('%(num)s result', '%(num)s results', result_count) }}</p>{% endif %}
   </header>
   <form method="get" action="{{ url_for('search') }}" class="search-page-form">

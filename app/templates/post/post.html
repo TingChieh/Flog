@@ -2,6 +2,8 @@
 
 {% block page_hero %}{% endblock %}
 
+{% block description %}{{ post.body|excerpt(post.body_format, post.title, 150) }}{% endblock %}
+
 {% block page_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/photoswipe/photoswipe.css') }}">
 {% endblock %}
@@ -15,7 +17,7 @@
 
     <div class="article-actions" id="post-actions">
         <form class="reactions" method="post" action="{{ url_for('toggle_post_like', post_id=post.id) }}"
-              role="group" aria-label="{{ _('React to this post') }}" data-like-form>
+              aria-label="{{ _('React to this post') }}" data-like-form>
             {# The comment form already carries this page's token; reuse it. #}
             <input type="hidden" name="csrf_token" value="{{ form.csrf_token.current_token if form.csrf_token else '' }}">
             <input type="hidden" name="emoji" value="" data-reaction-fallback disabled>

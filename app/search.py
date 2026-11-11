@@ -30,12 +30,19 @@ def plain_text(source, body_format='html'):
     return ' '.join(' '.join(parser.parts).split())
 
 
-# A listing shows two lines of a post; more text only adds page weight.
-EXCERPT_LENGTH = 240
+# A listing shows two lines of a post (about 70 characters at most); more text
+# only adds page weight and pulls in more font pieces.
+EXCERPT_LENGTH = 120
 
 
-def excerpt(source, body_format='html', length=EXCERPT_LENGTH):
+def excerpt(source, body_format='html', title='', length=EXCERPT_LENGTH):
+    """The opening of a post for a list, without the title it often starts with."""
     text = plain_text(source, body_format)
+    title = ' '.join((title or '').split())
+    # Old posts open with a date line and then the title; skip up to the title.
+    index = text.find(title, 0, len(title) + 20) if title else -1
+    if index >= 0 and text[index + len(title):].strip():
+        text = text[index + len(title):].lstrip(' ：:，,。')
     return text if len(text) <= length else text[:length].rstrip() + '…'
 
 

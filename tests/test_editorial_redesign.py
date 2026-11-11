@@ -46,3 +46,32 @@ def test_chinese_menu_is_translated(client, users):
         f'/post/{users["post"]}', headers={'Accept-Language': 'zh'}).data)
     assert page.xpath('//button[@data-nav-toggle]')[0].text_content().strip() == '切换导航'
     assert '复制链接' not in page.text_content()
+
+
+def test_list_excerpt_skips_the_title_the_post_opens_with(client, application, users):
+    with application.app_context():
+        post = db.session.get(Post, users['post'])
+        post.title = '学之悟道'
+        post.body = '<p>2023.04.21 学之悟道 昨日看了一场直播。</p>'
+        db.session.commit()
+    item = html.fromstring(client.get('/').data).xpath('//article[contains(@class, "editorial-post")]')[0]
+    assert item.xpath('.//a[contains(@class, "editorial-post__link")]/p')[0].text_content() == '昨日看了一场直播。'
+    # The category reads in the meta line next to the date.
+    meta = item.xpath('.//div[contains(@class, "editorial-post__meta")]')[0]
+    assert meta.xpath('.//a[@href="/category/1"]') and meta.xpath('.//time')
+
+
+def test_a_single_page_of_posts_has_no_pagination(client, users):
+    page = html.fromstring(client.get('/').data)
+    assert not page.xpath('//ul[contains(@class, "pagination")]')
+    assert not page.xpath('//a[@href="None"]')
+
+
+def test_pages_describe_themselves_for_search_engines(client, application, users):
+    with application.app_context():
+        db.session.get(Post, users['post']).body = '<p>Fish and chips by the sea.</p>'
+        db.session.commit()
+    home = html.fromstring(client.get('/').data)
+    assert home.xpath('//meta[@name="description"]/@content')[0].strip()
+    post = html.fromstring(client.get(f'/post/{users["post"]}').data)
+    assert post.xpath('//meta[@name="description"]/@content') == ['Fish and chips by the sea.']

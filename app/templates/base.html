@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <link rel="alternate" type="application/rss+xml" title="{{ _('Subscribe via RSS') }}" href="{{ url_for('feed') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% block description %}{{ site_text.site_name }}：思考、记录，以及日常生活。{% endblock %}">
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
     {% if title %}
     <title>{{ title }} - {{ site_text.site_name }}</title>
@@ -107,7 +108,7 @@
             aria-label="Back to top" hidden>↑</button>
     <footer class="site-footer">
       <div class="site-footer__inner">
-        <p>{{ site_text.site_name }} · 思考、记录，以及日常生活。</p>
+        <p>{{ site_text.site_name }}　思考、记录，以及日常生活。</p>
         <div class="site-footer__meta">
           <span>Copyright &copy; {{ current_year }} Aisaka</span>
           <a href="{{ url_for('podcast_feed' if request.endpoint in ('podcast_index', 'podcast_episode') else 'feed') }}">{{ _('Subscribe via RSS') }}</a>

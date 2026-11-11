@@ -22,6 +22,8 @@ if (body && bar) {
   const images = Array.from(body.querySelectorAll('img'));
   images.forEach((img, index) => {
     img.dataset.lightboxReady = '';
+    // A button needs a name, and an empty alt would also mark the image as decoration.
+    if (!img.getAttribute('alt')) img.setAttribute('alt', '查看大图');
     img.setAttribute('role', 'button');
     img.setAttribute('tabindex', '0');
     img.setAttribute('aria-haspopup', 'dialog');
