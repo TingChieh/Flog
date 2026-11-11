@@ -37,11 +37,19 @@ def test_signed_out_footer_has_login_and_no_admin_link(client, users):
     assert page.xpath('//footer//a[@href="/login"]')
 
 
-def test_moment_is_set_to_a_locale_that_exists_in_moment_js(client, users):
-    # moment.js ships "zh-cn", not "zh"; an unknown code silently keeps English.
+def test_comment_times_are_written_by_the_server_in_chinese(client, application, users):
+    from datetime import datetime, timedelta, timezone
+    from app import db
+    from app.models import PostComment
+    with application.app_context():
+        db.session.add(PostComment(
+            post_id=users['post'], name='读者', email='r@example.com', body='好文',
+            timestamp=datetime.now(timezone.utc) - timedelta(days=3)))
+        db.session.commit()
     body = client.get(f'/post/{users["post"]}').get_data(as_text=True)
-    assert 'moment.locale("zh-cn")' in body
-    assert 'moment.locale("zh")' not in body
+    assert '3天前' in body
+    # No third-party script just to word a date.
+    assert 'moment' not in body
 
 
 def test_primary_navigation_has_no_categories_link(client, users):

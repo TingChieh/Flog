@@ -10,7 +10,6 @@ flask-babel
 Flask-Login
 Flask-Mail
 Flask-Migrate
-Flask-Moment
 Flask-SQLAlchemy
 Flask-WTF
 gunicorn

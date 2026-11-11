@@ -19,7 +19,7 @@ from flask import request
 from app import app
 
 LONG_LIVED = re.compile(
-    r'^(fonts/.+\.(woff2|ttf)|vendor/(katex|mermaid|vditor)/\d[\w.]*/.+)$')
+    r'^(fonts/.+\.(woff2|ttf)|vendor/(bootstrap|katex|mermaid|vditor)/\d[\w.]*/.+)$')
 ONE_YEAR = 'public, max-age=31536000, immutable'
 STATIC = Path(app.static_folder).resolve()
 # (filename, mtime, size) -> fingerprint; a changed file gets a new key.

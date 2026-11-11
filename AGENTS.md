@@ -20,7 +20,7 @@ flask translate compile                             # rebuild messages.mo after 
 - Business logic lives in plain modules, not in views: `post_drafts.py` (drafts and revisions), `comments.py` and `comment_mail.py`, `images.py` and `live_photos.py` (upload, compression, resized variants, HEIC and Live Photo video), `pages.py`, `search.py` and `search_index.py`, `likes.py`, `post_views.py`, `authorization.py`.
 - `app/content.py` renders Markdown (with `markdown_extras.py` for task lists and math), and `app/security.py` sanitizes all rendered HTML with bleach. Anything that outputs user content goes through them; do not mark user input as safe elsewhere.
 - Roles are only `user` and `admin` (`User.is_admin`). Admin views use `admin_required`.
-- Templates: `app/templates/` (`base.html` is the public shell, `admin/base.html` the admin shell, `email/` the HTML mail shell). Static files: `app/static/`; the Vditor, KaTeX and Mermaid builds under `static/vendor/` are vendored and pinned, so do not edit them.
+- Templates: `app/templates/` (`base.html` is the public shell, `admin/base.html` the admin shell, `email/` the HTML mail shell). Static files: `app/static/`; the Bootstrap CSS, Vditor, KaTeX and Mermaid builds under `static/vendor/` are vendored and pinned, so do not edit them.
 
 ## Conventions
 

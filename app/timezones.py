@@ -1,8 +1,9 @@
 """Dates are stored in UTC and shown in the site's display time zone."""
-from datetime import timezone
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from flask import current_app
+from flask_babel import format_timedelta
 
 
 def display_zone():
@@ -35,3 +36,10 @@ def later_update(published, updated):
         return None
     local = to_display(updated)
     return local if local.date() > to_display(published).date() else None
+
+
+def time_ago(value):
+    """How long ago ``value`` was, in the site's language ("3天前")."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return format_timedelta(value - datetime.now(timezone.utc), add_direction=True)

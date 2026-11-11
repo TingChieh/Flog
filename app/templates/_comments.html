@@ -4,7 +4,7 @@
     <div class="post-comment__body">
         <header>
             <span><strong>{{ comment.name }}</strong>{% if comment.user_id %}<span class="comment-badge">作者</span>{% endif %}</span>
-            <time>{{ moment(comment.timestamp).fromNow() }}</time>
+            <time datetime="{{ (comment.timestamp|localtime).isoformat() }}" title="{{ comment.timestamp|datetimeformat('medium') }}">{{ comment.timestamp|ago }}</time>
         </header>
         <div class="post-comment__text">{{ comment.body|comment_markdown }}</div>
         {% if can_reply %}

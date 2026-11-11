@@ -39,7 +39,7 @@
 - SQLite（本地默认）或 MySQL / MariaDB（生产）
 - Jinja2、原生 JavaScript、CSS
 - Vditor 4.0.1（Markdown 编辑器，位于 `app/static/vendor/vditor/`，只保留必需文件，见其中的 README）
-- KaTeX 0.19.0 与 Mermaid 12.2.0（位于 `app/static/vendor/`，自托管）
+- Bootstrap 5.3.3 CSS、KaTeX 0.19.0 与 Mermaid 12.2.0（位于 `app/static/vendor/`，自托管）
 - mutagen（读取 MP3 / M4A 的时长）
 - Gunicorn；Pytest 与 Node.js Test Runner
 
