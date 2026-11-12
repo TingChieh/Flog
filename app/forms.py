@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from flask_babel import _, lazy_gettext as _l
 from wtforms import HiddenField, IntegerField, SelectField, StringField, PasswordField, \
     BooleanField, SubmitField, TextAreaField
+from wtforms.fields import SelectChoice
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, \
     Length, Optional
 from wtforms.widgets import HiddenInput
@@ -67,7 +68,7 @@ class PostForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         categories = db.session.execute(sa.select(Category).order_by(Category.name)).scalars()
-        self.category.choices = [(category.id, category.name) for category in categories]
+        self.category.choices = [SelectChoice(category.id, category.name) for category in categories]
 
 
 class PostDraftForm(PostForm):

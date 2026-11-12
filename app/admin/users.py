@@ -3,6 +3,7 @@ from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
+from wtforms.fields import SelectChoice
 from app import db
 from app.admin import bp
 from app.admin.forms import UserCreateForm, UserDeleteForm, UserEditForm
@@ -120,7 +121,7 @@ def delete_user(user_id):
     candidates = db.session.scalars(sa.select(User).where(
         User.id != target.id).order_by(User.username)).all()
     form = UserDeleteForm()
-    form.receiver.choices = [(user.id, user.username) for user in candidates]
+    form.receiver.choices = [SelectChoice(user.id, user.username) for user in candidates]
     if request.method == 'GET':
         form.receiver.data = current_user.id
     if form.validate_on_submit():

@@ -346,3 +346,14 @@ def test_the_owner_is_mailed_a_link_to_the_episode(client, application, users, o
     assert outbox
     assert 'http://localhost/podcast/1#comment-' in outbox[0].body
     assert '第一集' in outbox[0].subject
+
+
+def test_feed_answers_conditional_requests_with_304(client, application):
+    with application.app_context():
+        add_episode(uploads(application), 1, '第一集')
+    first = client.get('/podcast/feed.xml')
+    assert first.headers['ETag']
+    assert 'max-age' in first.headers['Cache-Control']
+    again = client.get('/podcast/feed.xml',
+                       headers={'If-None-Match': first.headers['ETag']})
+    assert again.status_code == 304

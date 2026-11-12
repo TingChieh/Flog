@@ -4,7 +4,7 @@ Nothing here commits except where noted; the caller owns the transaction.
 """
 import re
 import shutil
-from datetime import timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
 from urllib.parse import unquote
@@ -337,7 +337,11 @@ def build_feed():
         fg.podcast.itunes_image(cover)
         fg.image(cover, title=show['title'], link=home_url)
 
-    for episode in db.session.scalars(latest_episodes()):
+    episodes = db.session.scalars(latest_episodes()).all()
+    # feedgen stamps "now" by default, which would change the ETag every second.
+    fg.lastBuildDate(max((_aware(e.published_at) for e in episodes),
+                         default=datetime(1970, 1, 1, tzinfo=timezone.utc)))
+    for episode in episodes:
         entry = fg.add_entry(order='append')
         permalink = url_for('podcast_episode', number=episode.number,
                             _external=True)

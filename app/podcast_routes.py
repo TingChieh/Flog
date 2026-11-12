@@ -89,5 +89,11 @@ def podcast_episode(number):
 
 @app.route('/podcast/feed.xml')
 def podcast_feed():
-    return app.response_class(
+    response = app.response_class(
         build_feed(), content_type='application/rss+xml; charset=utf-8')
+    # Podcast apps poll the feed all day; an ETag lets them get a 304 when
+    # nothing changed instead of the whole document.
+    response.add_etag()
+    response.cache_control.public = True
+    response.cache_control.max_age = 300
+    return response.make_conditional(request)

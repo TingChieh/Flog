@@ -2,6 +2,7 @@ import re
 import unicodedata
 
 import sqlalchemy as sa
+import sqlalchemy.orm as so
 
 from app import db
 from app.content import normalize_body_format, prepare_content_source
@@ -137,7 +138,8 @@ def page_for_public_slug(slug):
 
 
 def visible_navigation_pages():
-    return db.session.scalars(sa.select(Page).where(
+    # The menu only needs titles and slugs, not every page's full body.
+    return db.session.scalars(sa.select(Page).options(so.defer(Page.body)).where(
         Page.is_published.is_(True), Page.show_in_nav.is_(True)
     ).order_by(Page.nav_order, Page.title, Page.id)).all()
 

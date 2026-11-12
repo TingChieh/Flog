@@ -10,7 +10,7 @@ from PIL import Image as PILImage, ImageChops
 from sqlalchemy.engine import make_url
 
 
-os.environ['SECRET_KEY'] = 'test-secret'
+os.environ['SECRET_KEY'] = 'test-secret-key-at-least-32-bytes-long'
 test_url = os.environ.get('TEST_DATABASE_URL', 'sqlite://')
 parsed_url = make_url(test_url)
 if parsed_url.get_backend_name() != 'sqlite':

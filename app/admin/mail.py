@@ -6,6 +6,7 @@ from flask import (abort, current_app, flash, redirect, render_template,
                    request, url_for)
 from flask_login import login_required
 
+from wtforms.fields import SelectChoice
 from app import resend_client
 from app.admin import bp
 from app.admin.forms import MailComposeForm, clean_message_ids
@@ -99,7 +100,7 @@ def _prefill_reply(form, email_id):
     subject = item.subject.strip()
     form.subject.data = (subject if subject.lower().startswith('re:')
                          else f'Re: {subject}'.strip())
-    allowed = [value for value, _ in form.sender.choices]
+    allowed = [choice.value for choice in form.sender.choices]
     for address in item.to:
         candidate = parseaddr(address)[1].lower()
         match = next((a for a in allowed if a.lower() == candidate), None)
@@ -122,7 +123,7 @@ def _prefill_reply(form, email_id):
 def mail_compose():
     configured = mail_configured()
     form = MailComposeForm()
-    form.sender.choices = [(address, address) for address in mail_senders()]
+    form.sender.choices = [SelectChoice(address, address) for address in mail_senders()]
     notice = None
     if configured:
         if request.method == 'GET' and request.args.get('reply'):

@@ -7,6 +7,7 @@ from flask_wtf.file import FileField
 from wtforms import (BooleanField, DateTimeLocalField, HiddenField,
                      IntegerField, SelectField,
                      PasswordField, StringField, SubmitField, TextAreaField)
+from wtforms.fields import SelectChoice
 from wtforms.validators import (DataRequired, Email, InputRequired, Length,
                                 NumberRange, Optional, ValidationError, AnyOf)
 
@@ -103,7 +104,7 @@ class CategoryAdminForm(FlaskForm):
         field.data = name
 
 
-ROLE_CHOICES = [('user', '普通用户'), ('admin', '管理员')]
+ROLE_CHOICES = [SelectChoice('user', '普通用户'), SelectChoice('admin', '管理员')]
 
 
 class UserDeleteForm(FlaskForm):
