@@ -58,3 +58,30 @@ Notes
   from the library removes its variants and Live Photo clip too.
 - Moving the uploads: copy the directory (`rsync -a`), set `UPLOAD_FOLDER` in
   `.env`, restart `flog`, then rsync once more for anything uploaded meanwhile.
+
+## Fonts and vendor files straight from disk
+
+The article font pieces and the version-numbered folders under `static/vendor/`
+never change under the same URL, so Caddy can serve them too. Point
+`DEPLOY_STATIC_MIRROR` at a folder Caddy can read (the checkout itself is
+usually private); `scripts/deploy.sh` rsyncs `fonts/` and `vendor/` there on
+every deploy. Then add this inside the site block, before `handle /files/*`:
+
+```caddyfile
+	@immutable_static path_regexp ^/static/(fonts/.+\.(woff2|ttf)|vendor/(bootstrap|katex|mermaid|vditor)/[0-9][A-Za-z0-9._]*/.+)$
+	handle @immutable_static {
+		route {
+			header Cache-Control "public, max-age=31536000, immutable"
+			uri strip_prefix /static
+			file_server {
+				root /srv/flog-static          # = DEPLOY_STATIC_MIRROR
+				pass_thru
+			}
+			rewrite * /static{uri}
+			reverse_proxy 127.0.0.1:8001
+		}
+	}
+```
+
+The site's own CSS and JS are not listed: they change in place and rely on the
+app's `?v=` fingerprint, which Caddy cannot check.

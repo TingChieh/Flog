@@ -22,7 +22,9 @@
 # DEPLOY_UPLOADS (the app's UPLOAD_FOLDER), DEPLOY_BACKUPS, DEPLOY_SITE (public
 # URL). Optional: DEPLOY_USER, DEPLOY_SERVICE, DEPLOY_VENV (relative to
 # DEPLOY_DIR), DEPLOY_LOCAL_URL (checked on the server), DEPLOY_KEEP_BACKUPS
-# (how many pre-deploy backups to keep in DEPLOY_BACKUPS, default 10).
+# (how many pre-deploy backups to keep in DEPLOY_BACKUPS, default 10),
+# DEPLOY_STATIC_MIRROR (a folder the web server can read; the fonts and vendor
+# folders are copied there on every deploy, see docs/caddy-uploads.md).
 set -euo pipefail
 
 settings=${FLOG_DEPLOY_ENV:-$HOME/.config/flog/deploy.env}
@@ -44,6 +46,7 @@ VENV=${DEPLOY_VENV:-.venv}
 SERVICE=${DEPLOY_SERVICE:-flog}
 LOCAL_URL=${DEPLOY_LOCAL_URL:-http://127.0.0.1:8001}
 KEEP_BACKUPS=${DEPLOY_KEEP_BACKUPS:-10}
+STATIC_MIRROR=${DEPLOY_STATIC_MIRROR:-}
 [[ "$KEEP_BACKUPS" =~ ^[1-9][0-9]*$ ]] || { echo "DEPLOY_KEEP_BACKUPS must be a positive integer" >&2; exit 2; }
 SOCKET="/tmp/flog-deploy-%C"
 
@@ -163,6 +166,10 @@ To roll back:
 Full backup: $backup (database dump, uploads, .env)
 EOF
 }
+if [[ -n "$STATIC_MIRROR" ]]; then
+    log "Mirroring fonts and vendor files to $STATIC_MIRROR"
+    remote "mkdir -p $STATIC_MIRROR && rsync -a --delete $DIR/app/static/fonts $DIR/app/static/vendor $STATIC_MIRROR/ && chmod -R a+rX $STATIC_MIRROR"
+fi
 log "Restarting $SERVICE"
 restarted_at=$(remote "date '+%Y-%m-%d %H:%M:%S'")
 remote "systemctl restart $SERVICE"

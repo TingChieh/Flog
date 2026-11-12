@@ -172,7 +172,7 @@ git push origin main
 服务器的地址、目录等放在仓库之外的 `~/.config/flog/deploy.env`（路径可用 `FLOG_DEPLOY_ENV` 改，环境变量优先），不要提交。它是 `KEY=value` 文件：
 
 - 必填：`DEPLOY_HOST`（SSH 别名）、`DEPLOY_DIR`（服务器上的检出目录）、`DEPLOY_UV`（服务器上 `uv` 的绝对路径）、`DEPLOY_UPLOADS`（`.env` 里的 `UPLOAD_FOLDER`）、`DEPLOY_BACKUPS`、`DEPLOY_SITE`（站点网址）
-- 可选：`DEPLOY_USER`、`DEPLOY_SERVICE`、`DEPLOY_VENV`、`DEPLOY_LOCAL_URL`、`DEPLOY_KEEP_BACKUPS`（备份目录里保留最近几份部署前备份，默认 10，更早的每次部署时自动删除；见脚本头部）
+- 可选：`DEPLOY_USER`、`DEPLOY_SERVICE`、`DEPLOY_VENV`、`DEPLOY_LOCAL_URL`、`DEPLOY_STATIC_MIRROR`（Web 服务器可读的目录，每次部署把字体与 vendor 文件同步过去，供 Caddy 直接托管）、`DEPLOY_KEEP_BACKUPS`（备份目录里保留最近几份部署前备份，默认 10，更早的每次部署时自动删除；见脚本头部）
 
 Caddy 配置不由脚本修改；让 Caddy 直接发图的配置见 [docs/caddy-uploads.md](docs/caddy-uploads.md)。
 
