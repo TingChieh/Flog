@@ -34,6 +34,13 @@ blog.example.com {
 		reverse_proxy 127.0.0.1:8001
 	}
 }
+
+# Optional: redirect an old hostname and let browsers cache the 308 for a year.
+old.example.com {
+	header Cache-Control "public, max-age=31536000, immutable"
+	header Strict-Transport-Security "max-age=31536000"
+	redir https://blog.example.com{uri} permanent
+}
 ```
 
 Notes
