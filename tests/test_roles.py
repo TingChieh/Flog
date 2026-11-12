@@ -34,6 +34,9 @@ def test_new_user_defaults_to_user_role(application):
 
 
 def test_registration_defaults_to_user_role(client, application):
+    with application.app_context():
+        get_site_settings().registration_open = True
+        db.session.commit()
     response = client.post('/register', data={
         'username': 'registered-member',
         'email': 'registered-member@example.com',
@@ -49,10 +52,6 @@ def test_registration_defaults_to_user_role(client, application):
 
 
 def test_closed_registration_rejects_a_valid_submission(client, application):
-    with application.app_context():
-        get_site_settings().registration_open = False
-        db.session.commit()
-
     response = client.post('/register', data={
         'username': 'blocked',
         'email': 'blocked@example.com',

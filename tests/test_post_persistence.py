@@ -12,7 +12,7 @@ def test_get_site_settings_initializes_defaults_when_row_is_missing(application)
         settings = get_site_settings()
 
         assert settings.id == 1
-        assert settings.registration_open is True
+        assert settings.registration_open is False
         assert settings.post_revision_limit == 20
 
 

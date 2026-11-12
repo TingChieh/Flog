@@ -124,7 +124,7 @@ class Category(db.Model):
 class SiteSettings(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True, default=1)
     registration_open: so.Mapped[bool] = so.mapped_column(
-        sa.Boolean, nullable=False, default=True, server_default=sa.true())
+        sa.Boolean, nullable=False, default=False, server_default=sa.false())
     post_revision_limit: so.Mapped[int] = so.mapped_column(
         sa.Integer, nullable=False, default=20, server_default=sa.text('20'))
     # Wording shown across the public site; blank means "use the default".
@@ -140,7 +140,7 @@ def get_site_settings():
     settings = db.session.get(SiteSettings, 1)
     if settings is None:
         settings = SiteSettings(
-            id=1, registration_open=True, post_revision_limit=20)
+            id=1, registration_open=False, post_revision_limit=20)
         db.session.add(settings)
     return settings
 

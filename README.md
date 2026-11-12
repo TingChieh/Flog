@@ -2,7 +2,7 @@
 
 一个基于 Flask 的个人博客与轻量内容管理系统：写文章、发布页面、收评论、做播客，后台一处管理。没有前端构建步骤，Python 加原生 JavaScript 和 CSS 就能跑。
 
-线上站点：[flog.aisaka.cc](https://flog.aisaka.cc)
+线上站点：[blog.aisaka.cc](https://blog.aisaka.cc)
 
 ## 功能
 
