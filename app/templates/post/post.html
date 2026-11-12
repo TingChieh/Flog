@@ -5,7 +5,8 @@
 {% block description %}{{ post.body|excerpt(post.body_format, post.title, 150) }}{% endblock %}
 
 {% block page_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='vendor/photoswipe/photoswipe.css') }}">
+{# Only the lightbox uses it, and that needs the script anyway: no need to wait for it. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/photoswipe/photoswipe.css') }}" media="print" onload="this.media='all'">
 {% endblock %}
 
 {% block page_scripts %}<script src="{{ url_for('static', filename='live-photo.js') }}" defer></script><script type="module" src="{{ url_for('static', filename='article-enhancements.js') }}"></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script><script src="{{ url_for('static', filename='like-button.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}

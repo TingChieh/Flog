@@ -25,3 +25,11 @@ def test_image_captions_are_preserved_and_sanitized(client, application, users):
     assert 'alt="&lt;img src=x onerror=alert(1)&gt;"' in html
     assert '<script>alert(3)</script>' not in html
     assert 'onerror="alert(2)"' not in html
+
+
+def test_lightbox_styles_and_site_script_do_not_hold_back_the_page(client, users):
+    from lxml import html
+    page = html.fromstring(client.get(f'/post/{users["post"]}').data)
+    sheet = page.xpath('//link[contains(@href, "photoswipe.css")]')[0]
+    assert sheet.get('media') == 'print' and sheet.get('onload') == "this.media='all'"
+    assert page.xpath('//script[contains(@src, "/static/site.js")]')[0].get('defer') is not None
