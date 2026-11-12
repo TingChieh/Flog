@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from lxml import html as lxml_html
@@ -12,10 +13,12 @@ def get_page(client, path, **kwargs):
 
 
 def test_every_page_loads_the_article_fonts_once(client, users):
-    home = client.get('/').get_data(as_text=True)
-    article = client.get(f'/post/{users["post"]}').get_data(as_text=True)
-    assert home.count('fonts/article-fonts.css') == 1
-    assert article.count('fonts/article-fonts.css') == 1
+    def links(path):
+        # The <noscript> copy only stands in when scripts are off.
+        page = re.sub(r'<noscript>.*?</noscript>', '', client.get(path).get_data(as_text=True))
+        return page.count('fonts/article-fonts.css')
+    assert links('/') == 1
+    assert links(f'/post/{users["post"]}') == 1
 
 
 def test_latin_brand_font_is_preloaded(client):
