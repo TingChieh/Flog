@@ -192,3 +192,20 @@ def test_the_comment_list_shows_comments_as_readers_see_them(client, application
     assert body.xpath('.//code')[0].text == '代码'
     assert not body.xpath('.//b')
     assert '<b>标签</b>' in body.text_content()
+
+
+def test_long_lists_are_split_into_pages_that_keep_the_filters(client, application, users):
+    from app.admin.modules import COMMENTS_PER_PAGE
+    with application.app_context():
+        db.session.add_all(PostComment(post_id=users['post'], name=f'Reader {n}',
+                                       email=f'r{n}@example.com', body='hello',
+                                       status='pending')
+                           for n in range(COMMENTS_PER_PAGE + 3))
+        db.session.commit()
+    login(client, 'admin')
+
+    first = listing(client, '?status=pending')
+    assert len(row_names(first)) == COMMENTS_PER_PAGE
+    older = first.xpath('//nav[@aria-label="评论分页"]//a')[0].get('href')
+    assert 'status=pending' in older and 'page=2' in older
+    assert len(row_names(listing(client, '?status=pending&page=2'))) == 3

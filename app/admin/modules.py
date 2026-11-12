@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+import sqlalchemy.orm as so
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
@@ -12,6 +13,9 @@ from app.comment_mail import notify_comment_published, notify_comments_approved
 from app.comments import CommentRejected, CommentsClosed, submit_comment
 from app.models import Category, Post, PostComment
 from app.security import admin_required
+
+
+COMMENTS_PER_PAGE = 50
 
 
 def _commit_or_flash(message):
@@ -106,7 +110,10 @@ def comments():
     target = request.args.get('target', '')
     condition = _comment_target(target)
 
-    query = sa.select(PostComment).order_by(
+    # Each row names the post, page or episode it belongs to.
+    query = sa.select(PostComment).options(
+        so.selectinload(PostComment.post), so.selectinload(PostComment.page),
+        so.selectinload(PostComment.episode)).order_by(
         PostComment.timestamp.desc(), PostComment.id.desc())
     if status != 'all':
         query = query.where(PostComment.status == status)
@@ -123,9 +130,11 @@ def comments():
         PostComment.status, sa.func.count()).group_by(PostComment.status)).all())
     pending = counts.get('pending', 0)
     approved = counts.get('approved', 0)
+    listing = db.paginate(query, page=request.args.get('page', 1, type=int),
+                          per_page=COMMENTS_PER_PAGE, error_out=False)
     return render_template(
         'admin/comments/list.html',
-        post_comments=db.session.scalars(query).all(), status=status,
+        post_comments=listing.items, listing=listing, status=status,
         search=search, target=target,
         tab_counts={'pending': pending, 'approved': approved,
                     'all': pending + approved},
