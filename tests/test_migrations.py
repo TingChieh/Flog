@@ -281,7 +281,7 @@ def test_post_like_emoji_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'a9c3e7f2d514']
+        'c4d8e2f6a913']
 
 
 def test_draft_generation_migration_preserves_existing_sequence():

@@ -32,6 +32,7 @@ from app.post_views import (
     attach_view_cookie, has_recent_view, record_view, view_cookie_name,
 )
 from app.authorization import owned_post_or_404
+from app import throttle
 from app.images import (VARIANT_FOLDER, ImageUploadError, make_variant,
                         save_uploaded_image)
 from app.admin.forms import CategoryAdminForm
@@ -116,9 +117,15 @@ def login():
         return redirect(url_for('index'))
     form = LoginForm()
     if form.validate_on_submit():
+        if throttle.blocked(throttle.LOGIN):
+            flash(_('Too many failed sign-ins. Please try again in 15 minutes.'))
+            return render_template('user/login.html', title=_('Sign In'),
+                                   form=form), 429
         user = db.session.scalar(
             sa.select(User).where(User.username == form.username.data))
         if user is None or not user.check_password(form.password.data):
+            throttle.note(throttle.LOGIN)
+            db.session.commit()
             flash(_('Invalid username or password'))
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
@@ -165,6 +172,11 @@ def reset_password_request():
             flash(_('Password reset by email is not available right now. '
                     'Please contact the site administrator.'))
             return redirect(url_for('login'))
+        if throttle.blocked(throttle.RESET, form.email.data):
+            flash(_('Too many reset requests. Please try again in an hour.'))
+            return redirect(url_for('login'))
+        throttle.note(throttle.RESET, form.email.data)
+        db.session.commit()
         user = db.session.scalar(
             sa.select(User).where(User.email == form.email.data))
         if user:

@@ -629,3 +629,11 @@ msgstr "思考"
 #: app/templates/post/post.html
 msgid "React to this post"
 msgstr "给这篇文章留个表情"
+
+#: app/routes.py
+msgid "Too many failed sign-ins. Please try again in 15 minutes."
+msgstr "登录失败次数过多，请 15 分钟后再试。"
+
+#: app/routes.py
+msgid "Too many reset requests. Please try again in an hour."
+msgstr "重置密码请求过多，请一小时后再试。"

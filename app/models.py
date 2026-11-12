@@ -97,6 +97,23 @@ class User(UserMixin, db.Model):
 def load_user(id):
     return db.session.get(User, int(id))
 
+class AuthAttempt(db.Model):
+    """A failed sign-in or a reset request, kept for a day to slow down guessing.
+
+    Only keyed hashes are stored: of the network address, and of the email
+    address a reset was asked for.
+    """
+    __table_args__ = (
+        sa.Index('ix_auth_attempt_lookup', 'action', 'key_hash', 'created_at'),
+    )
+
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    action: so.Mapped[str] = so.mapped_column(sa.String(16), nullable=False)
+    key_hash: so.Mapped[str] = so.mapped_column(sa.String(64), nullable=False)
+    created_at: so.Mapped[datetime] = so.mapped_column(
+        nullable=False, index=True, default=lambda: datetime.now(timezone.utc))
+
+
 class Category(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(120), unique=True, nullable=False)
