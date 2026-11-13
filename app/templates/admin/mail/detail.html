@@ -16,7 +16,7 @@
   {% if item.status %}<dt>状态</dt><dd>{{ item.status }}</dd>{% endif %}
   {% if item.authentication %}
   <dt>发件验证</dt>
-  <dd>{% for name in ('spf', 'dkim', 'dmarc') %}{% if item.authentication.get(name) %}{{ name|upper }} {{ item.authentication[name] }}{% if not loop.last %} · {% endif %}{% endif %}{% endfor %}</dd>
+  <dd>{% for name in ('spf', 'dkim', 'dmarc') %}{% if item.authentication.get(name) %}{{ name|upper }} {{ item.authentication[name] }}{% if not loop.last %}，{% endif %}{% endif %}{% endfor %}</dd>
   {% endif %}
 </dl>
 
@@ -24,7 +24,7 @@
 <h3 class="mail-heading">附件</h3>
 <ul class="mail-attachments">
   {% for attachment in item.attachments %}
-  <li>{{ attachment.filename }}{% if attachment.content_type %} · {{ attachment.content_type }}{% endif %}{% if attachment.size is not none %} · {{ attachment.size|filesize }}{% endif %}</li>
+  <li>{{ attachment.filename }}{% if attachment.content_type %}（{{ attachment.content_type }}）{% endif %}{% if attachment.size is not none %}，{{ attachment.size|filesize }}{% endif %}</li>
   {% endfor %}
 </ul>
 {% endif %}

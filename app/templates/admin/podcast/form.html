@@ -19,7 +19,7 @@
   <div class="form-field">
     {{ form.audio.label(class="form-label") }}
     {% if episode %}
-    <p class="form-text">当前：{{ episode.audio_duration|duration }} · {{ '%.1f' % (episode.audio_size / 1048576) }} MB。不选文件则保持不变；换文件会改变订阅源里的音频地址。</p>
+    <p class="form-text">当前：{{ episode.audio_duration|duration }}，{{ '%.1f' % (episode.audio_size / 1048576) }} MB。不选文件则保持不变；换文件会改变订阅源里的音频地址。</p>
     <audio controls preload="none" src="{{ url_for('uploaded_files', filename='audio/' ~ episode.audio_filename) }}"></audio>
     {% endif %}
     {{ form.audio(class="form-control" + (' is-invalid' if form.audio.errors else ''), accept=".mp3,.m4a,audio/mpeg,audio/mp4") }}

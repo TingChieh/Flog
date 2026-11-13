@@ -39,7 +39,11 @@
   <article class="admin-list__row">
     <div class="admin-list__main">
       <a href="{{ url_for('admin.edit_episode', episode_id=episode.id) }}"><strong>EP-{{ '%03d' % episode.number }} {{ episode.title }}</strong></a>
-      <span>{{ episode.published_at|dateformat('medium') }} · {{ episode.audio_duration|duration }} · {{ '%.1f' % (episode.audio_size / 1048576) }} MB</span>
+      <div class="admin-list__subline">
+        <span>{{ episode.published_at|dateformat('medium') }}</span>
+        <span>{{ episode.audio_duration|duration }}</span>
+        <span>{{ '%.1f' % (episode.audio_size / 1048576) }} MB</span>
+      </div>
     </div>
     <div class="admin-list__meta">
       <span>{{ '已发布' if episode.is_published else '未发布' }}</span>

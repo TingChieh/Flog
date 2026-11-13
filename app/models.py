@@ -422,6 +422,8 @@ class PodcastShow(db.Model):
         sa.Boolean, nullable=False, default=False, server_default=sa.false())
     show_in_nav: so.Mapped[bool] = so.mapped_column(
         sa.Boolean, nullable=False, default=True, server_default=sa.true())
+    nav_order: so.Mapped[int] = so.mapped_column(
+        nullable=False, default=100, server_default=sa.text('100'))
     title: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
     description: so.Mapped[Optional[str]] = so.mapped_column(sa.Text)
     author: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))

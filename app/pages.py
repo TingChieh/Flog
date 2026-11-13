@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import re
 import unicodedata
 
@@ -6,7 +7,7 @@ import sqlalchemy.orm as so
 
 from app import db
 from app.content import normalize_body_format, prepare_content_source
-from app.models import Page, PageRedirect
+from app.models import Page, PageRedirect, PodcastShow, get_podcast_show
 
 
 PAGE_CONTENT = 'content'
@@ -137,6 +138,20 @@ def page_for_public_slug(slug):
     return redirect.page, True
 
 
+@dataclass(frozen=True)
+class NavigationEntry:
+    kind: str
+    title: str
+    slug: str | None
+    nav_order: int
+    sort_id: int
+
+
+def nav_sort_key(kind, nav_order, title, sort_id):
+    """Order custom pages and built-in modules together in the site menu."""
+    return (nav_order, 0 if kind == 'page' else 1, title or '', sort_id or 0)
+
+
 def visible_navigation_pages():
     # The menu only needs titles and slugs, not every page's full body.
     return db.session.scalars(sa.select(Page).options(so.defer(Page.body)).where(
@@ -144,21 +159,51 @@ def visible_navigation_pages():
     ).order_by(Page.nav_order, Page.title, Page.id)).all()
 
 
-def move_page(page, direction):
-    """Move a page one place up or down the navigation order.
+def visible_navigation_items():
+    """Return visible pages and enabled built-in navigation links in menu order."""
+    items = [
+        NavigationEntry('page', page.title, page.slug, page.nav_order, page.id)
+        for page in visible_navigation_pages()
+    ]
+    show = db.session.get(PodcastShow, 1)
+    if show is not None and show.enabled and show.show_in_nav:
+        items.append(NavigationEntry('podcast', '播客', None, show.nav_order, show.id))
+    items.sort(key=lambda item: nav_sort_key(
+        item.kind, item.nav_order, item.title, item.sort_id))
+    return items
 
-    Pages often share the same nav_order, so the whole order is first
+
+def move_nav_item(kind, target_id, direction):
+    """Move a page or built-in module one place up or down the navigation order.
+
+    Items often share the same nav_order, so the whole order is first
     renumbered 0..n-1 in the order it is shown, then neighbours are swapped.
-    Returns False when the page is already at that end.
+    Returns False when the item is already at that end.
     """
     pages = db.session.scalars(sa.select(Page).order_by(
         Page.nav_order, Page.title, Page.id)).all()
-    index = next(i for i, item in enumerate(pages) if item.id == page.id)
+    show = get_podcast_show()
+    db.session.flush()
+    items = [
+        ('page', item, nav_sort_key('page', item.nav_order, item.title, item.id))
+        for item in pages
+    ] + [
+        ('podcast', show, nav_sort_key('podcast', show.nav_order, '播客', show.id))
+    ]
+    items.sort(key=lambda entry: entry[2])
+    index = next(
+        i for i, (item_kind, obj, _) in enumerate(items)
+        if item_kind == kind and (kind == 'podcast' or obj.id == target_id)
+    )
     target = index - 1 if direction == 'up' else index + 1
-    if not 0 <= target < len(pages):
+    if not 0 <= target < len(items):
         return False
-    pages[index], pages[target] = pages[target], pages[index]
-    for position, item in enumerate(pages):
-        if item.nav_order != position:
-            item.nav_order = position
+    items[index], items[target] = items[target], items[index]
+    for position, (_, obj, _) in enumerate(items):
+        if obj.nav_order != position:
+            obj.nav_order = position
     return True
+
+
+def move_page(page, direction):
+    return move_nav_item('page', page.id, direction)
