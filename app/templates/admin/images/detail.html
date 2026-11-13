@@ -42,7 +42,7 @@
       </dd>
       <dt>原始文件名</dt><dd>{{ image.original_name }}</dd>
       <dt>大小</dt><dd>{{ image.size|filesize }}</dd>
-      <dt>上传</dt><dd>{{ (image.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% if image.uploader %} · {{ image.uploader.username }}{% endif %}</dd>
+      <dt>上传</dt><dd>{{ (image.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% if image.uploader %}（{{ image.uploader.username }}）{% endif %}</dd>
     </dl>
 
     <section>

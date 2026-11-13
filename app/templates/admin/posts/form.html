@@ -90,17 +90,20 @@
 </form>
 {% if post %}
 {% if revisions %}
-<section class="admin-list" aria-label="Revision timeline">
+<section class="admin-list" aria-label="历史版本">
   {% for revision in revisions %}
   <article class="admin-list__row">
     <div class="admin-list__main">
-      <strong>{{ revision.title or 'Untitled draft' }}</strong>
-      <span>{{ (revision.created_at|localtime).strftime('%Y-%m-%d %H:%M') }} · {{ revision.body[:120] }}</span>
+      <strong>{{ revision.title or '无标题草稿' }}</strong>
+      <div class="admin-list__subline">
+        <span>{{ (revision.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}</span>
+        <span>{{ revision.body[:120] }}</span>
+      </div>
     </div>
     <div class="admin-list__actions">
       <form method="post" data-draft-leave-action action="{{ url_for('admin.restore_post_revision', post_id=post.id, revision_id=revision.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="button button--quiet" type="submit">Restore</button>
+        <button class="button button--quiet" type="submit">恢复</button>
       </form>
     </div>
   </article>

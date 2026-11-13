@@ -6,7 +6,7 @@
   <input id="comment-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="搜索昵称、邮箱或内容">
   {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
   {% if target %}<input type="hidden" name="target" value="{{ target }}">{% endif %}
-  <button class="button button--quiet" type="submit">搜索</button>
+  <button class="button admin-search__submit" type="submit">搜索</button>
   {% if target %}<a href="{{ url_for('admin.comments', status=status if status != 'all' else None, q=search or None) }}">清除位置筛选</a>{% endif %}
 </form>
 <nav class="admin-filters" data-comment-tabs aria-label="评论状态">
@@ -33,11 +33,16 @@
     <label class="admin-comment-row__select"><input type="checkbox" name="ids" value="{{ comment.id }}" form="bulk-comments" aria-label="选择这条评论"></label>
     <div class="admin-list__main">
       <strong class="comment-author">{{ comment.name }}</strong>
-      <span>{{ comment.email }} · {{ '待审核' if comment.status == 'pending' else '已通过' }}{% if comment.user_id %} · 站长{% endif %}{% if comment.parent_id %} · 回复 #{{ comment.parent_id }}{% endif %}</span>
-      <span>
+      <div class="admin-list__subline">
+        <span>{{ comment.email }}</span>
+        <span>{{ '待审核' if comment.status == 'pending' else '已通过' }}</span>
+        {% if comment.user_id %}<span>站长</span>{% endif %}
+        {% if comment.parent_id %}<span>回复 #{{ comment.parent_id }}</span>{% endif %}
+      </div>
+      <div class="admin-list__subline">
         <a data-comment-target href="{{ owner_url }}">{{ owner.title }}</a>
-        · <a href="{{ url_for('admin.comments', status=status if status != 'all' else None, target=owner_key) }}">只看这里</a>
-      </span>
+        <a href="{{ url_for('admin.comments', status=status if status != 'all' else None, target=owner_key) }}">只看这里</a>
+      </div>
       <div class="admin-comment-row__body">{{ comment.body|comment_markdown }}</div>
     </div>
     <div class="admin-list__actions">

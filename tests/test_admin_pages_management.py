@@ -217,8 +217,175 @@ def test_page_list_offers_move_buttons_only_on_the_full_list(
     add_page(application, slug='b', title='b')
     login(client, 'admin')
     full = lxml_html.fromstring(client.get('/admin/pages').get_data(as_text=True))
-    assert len(full.xpath('//button[@name="direction"]')) == 4
+    assert len(full.xpath('//button[@name="direction"]')) == 6
     assert len(full.xpath('//button[@name="direction"][@disabled]')) == 2
     filtered = lxml_html.fromstring(client.get(
         '/admin/pages?filter=published').get_data(as_text=True))
     assert not filtered.xpath('//button[@name="direction"]')
+
+
+def test_podcast_row_in_page_management_filters_and_toggles(
+        client, application, users):
+    from app.models import get_podcast_show
+
+    add_page(application, slug='about', title='关于')
+    login(client, 'admin')
+
+    with application.app_context():
+        initial = get_podcast_show()
+        db.session.flush()
+        assert initial.enabled is False
+        assert initial.show_in_nav is True
+
+    all_html = client.get('/admin/pages').get_data(as_text=True)
+    assert '播客' in all_html
+    assert '未开启' in all_html
+    assert '/podcast/' in all_html
+
+    unpublished_html = client.get(
+        '/admin/pages?filter=unpublished').get_data(as_text=True)
+    assert '/podcast/' in unpublished_html
+
+    published_html = client.get(
+        '/admin/pages?filter=published').get_data(as_text=True)
+    assert '/podcast/' not in published_html
+
+    search_html = client.get('/admin/pages?q=podcast').get_data(as_text=True)
+    assert '/podcast/' in search_html
+
+    resp = client.post('/admin/pages/podcast/publish?filter=unpublished',
+                       follow_redirects=False)
+    assert resp.status_code == 302
+    assert 'filter=unpublished' in resp.headers['Location']
+
+    resp = client.post('/admin/pages/podcast/nav?q=podcast',
+                       follow_redirects=False)
+    assert resp.status_code == 302
+    assert 'q=podcast' in resp.headers['Location']
+
+    with application.app_context():
+        show = get_podcast_show()
+        assert show.enabled is True
+        assert show.show_in_nav is False
+
+    published_after = client.get(
+        '/admin/pages?filter=published').get_data(as_text=True)
+    assert '/podcast/' in published_after
+    assert '导航隐藏' in published_after
+
+    resp = client.post('/admin/pages/podcast/publish')
+    assert resp.status_code == 302
+    resp = client.post('/admin/pages/podcast/nav')
+    assert resp.status_code == 302
+    with application.app_context():
+        show = get_podcast_show()
+        assert show.enabled is False
+        assert show.show_in_nav is True
+
+
+def test_podcast_actions_require_admin_and_post(client, application, users):
+    for endpoint in ('publish', 'nav', 'move'):
+        resp = client.post(
+            f'/admin/pages/podcast/{endpoint}',
+            data={'direction': 'up'} if endpoint == 'move' else {},
+        )
+        assert resp.status_code in (302, 401, 403)
+
+    login(client, 'other')
+    for endpoint in ('publish', 'nav', 'move'):
+        resp = client.post(
+            f'/admin/pages/podcast/{endpoint}',
+            data={'direction': 'up'} if endpoint == 'move' else {},
+        )
+        assert resp.status_code == 403
+
+    client.post('/logout')
+    login(client, 'admin')
+    for endpoint in ('publish', 'nav', 'move'):
+        assert client.get(
+            f'/admin/pages/podcast/{endpoint}'
+        ).status_code == 405
+
+    assert client.post(
+        '/admin/pages/podcast/move', data={'direction': 'sideways'}
+    ).status_code == 400
+
+
+def test_move_podcast_reorders_admin_pages_and_public_nav(
+        client, application, users):
+    from app.models import get_podcast_show
+
+    add_page(application, slug='about', title='关于')
+    add_page(application, slug='links', title='友链')
+    with application.app_context():
+        for idx, slug in enumerate(('about', 'links')):
+            page = db.session.scalar(db.select(Page).filter_by(slug=slug))
+            page.is_published = True
+            page.show_in_nav = True
+            page.nav_order = idx
+        show = get_podcast_show()
+        show.enabled = True
+        show.show_in_nav = True
+        db.session.commit()
+
+    def public_nav_hrefs():
+        doc = lxml_html.fromstring(client.get('/').get_data(as_text=True))
+        hrefs = doc.xpath('//ul[contains(@class, "site-nav__links")]//a/@href')
+        return [h for h in hrefs if h in ('/about', '/links', '/podcast/')]
+
+    def admin_row_titles():
+        doc = lxml_html.fromstring(
+            client.get('/admin/pages').get_data(as_text=True))
+        return [
+            ' '.join(el.text_content().split())
+            for el in doc.xpath(
+                '//div[contains(@class, "admin-list__main")]//strong'
+            )
+        ]
+
+    login(client, 'admin')
+    assert admin_row_titles() == ['关于', '友链', '播客']
+    assert public_nav_hrefs() == ['/about', '/links', '/podcast/']
+
+    resp = client.post('/admin/pages/podcast/move', data={'direction': 'up'})
+    assert resp.status_code == 302
+    assert admin_row_titles() == ['关于', '播客', '友链']
+    assert public_nav_hrefs() == ['/about', '/podcast/', '/links']
+
+    client.post('/admin/pages/podcast/move', data={'direction': 'up'})
+    assert admin_row_titles() == ['播客', '关于', '友链']
+    assert public_nav_hrefs() == ['/podcast/', '/about', '/links']
+
+    client.post('/admin/pages/podcast/move', data={'direction': 'down'})
+    assert admin_row_titles() == ['关于', '播客', '友链']
+    assert public_nav_hrefs() == ['/about', '/podcast/', '/links']
+
+
+def test_admin_pages_ui_cleanup_matches_editorial_audit(
+        client, application, users):
+    add_page(application, slug='about', title='About')
+    login(client, 'admin')
+
+    dash_html = client.get('/admin/').get_data(as_text=True)
+    assert 'admin-workspace__eyebrow' not in dash_html
+
+    pages_html = client.get('/admin/pages').get_data(as_text=True)
+    assert 'admin-workspace__eyebrow' not in pages_html
+    assert '按标题或路径搜索' in pages_html
+    assert 'slug' not in pages_html.lower()
+    assert '·' not in pages_html
+
+    doc = lxml_html.fromstring(pages_html)
+    assert doc.xpath('//button[contains(@class, "admin-search__submit")]')
+    assert doc.xpath('//button[contains(@class, "admin-order-btn")]')
+    status_texts = [
+        el.text_content().strip()
+        for el in doc.xpath('//*[contains(@class, "admin-status")]')
+    ]
+    assert status_texts == ['已发布', '未开启']
+    state_texts = [
+        el.text_content().strip()
+        for el in doc.xpath('//*[contains(@class, "admin-list__state")]')
+    ]
+    assert all('100' not in text for text in state_texts)
+

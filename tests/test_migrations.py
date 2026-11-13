@@ -281,7 +281,80 @@ def test_post_like_emoji_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        '478e950345ef']
+        'c9f1a3b8d204']
+
+
+def test_podcast_nav_order_migration_round_trip(tmp_path, monkeypatch):
+    from alembic import command
+    from alembic.config import Config
+    from flask import Flask
+    from flask_migrate import Migrate
+    from flask_sqlalchemy import SQLAlchemy
+    import sqlalchemy as sa
+
+    # Avoid alembic env.py's fileConfig(..., disable_existing_loggers=True)
+    # muting app.logger for later tests in the session.
+    monkeypatch.setattr('logging.config.fileConfig', lambda *a, **kw: None)
+
+    db_path = tmp_path / 'mig_podcast_nav_order.db'
+    url = f'sqlite:///{db_path}'
+    migrations = Path(__file__).parents[1] / 'migrations'
+
+    mig_app = Flask('mig_podcast_nav_order')
+    mig_app.config['SQLALCHEMY_DATABASE_URI'] = url
+    mig_db = SQLAlchemy(mig_app)
+    Migrate(mig_app, mig_db, directory=str(migrations))
+
+    config = Config(str(migrations / 'alembic.ini'))
+    config.set_main_option('script_location', str(migrations))
+
+    engine = sa.create_engine(url)
+    try:
+        with mig_app.app_context():
+            command.upgrade(config, '478e950345ef')
+            with engine.begin() as conn:
+                podcast_table = sa.Table(
+                    'podcast_show', sa.MetaData(), autoload_with=conn
+                )
+                assert 'nav_order' not in podcast_table.c
+                values = {}
+                for col in podcast_table.c:
+                    if col.name == 'id':
+                        values[col.name] = 1
+                    elif isinstance(col.type, sa.Boolean):
+                        values[col.name] = True
+                    elif isinstance(col.type, sa.Integer):
+                        values[col.name] = 0
+                    elif isinstance(col.type, sa.DateTime):
+                        from datetime import datetime, timezone
+                        values[col.name] = datetime(2026, 1, 1, tzinfo=timezone.utc)
+                    elif not col.nullable:
+                        values[col.name] = 'My Pod' if col.name == 'title' else ''
+                conn.execute(podcast_table.insert().values(**values))
+
+            command.upgrade(config, 'c9f1a3b8d204')
+            with engine.begin() as conn:
+                cols_after = {
+                    col['name']
+                    for col in sa.inspect(conn).get_columns('podcast_show')
+                }
+                assert 'nav_order' in cols_after
+                row = conn.execute(
+                    sa.text('SELECT nav_order FROM podcast_show WHERE id = 1')
+                ).one()
+                assert row[0] == 100
+
+            command.downgrade(config, '478e950345ef')
+            with engine.begin() as conn:
+                cols_down = {
+                    col['name']
+                    for col in sa.inspect(conn).get_columns('podcast_show')
+                }
+                assert 'nav_order' not in cols_down
+    finally:
+        with mig_app.app_context():
+            mig_db.engine.dispose()
+        engine.dispose()
 
 
 def test_draft_generation_migration_preserves_existing_sequence():

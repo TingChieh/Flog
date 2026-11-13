@@ -22,8 +22,12 @@
   <article class="admin-list__row" data-mail-row{% if item.id in stray %} data-mail-stray{% endif %}>
     <div class="admin-list__main">
       <strong><a href="{{ url_for('admin.mail_detail', box=box, email_id=item.id) }}">{{ item.subject or '（无主题）' }}</a></strong>
-      <span>{{ item.sender }} → {{ item.to|join('，') }}</span>
-      <span>{% if item.created_at %}{{ (item.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}{% endif %}{% if item.status %} · {{ item.status }}{% endif %}{% if item.id in stray %} · 发给了不常用的地址{% endif %}</span>
+      <span>{{ item.sender }} 发给 {{ item.to|join('，') }}</span>
+      <div class="admin-list__subline">
+        {% if item.created_at %}<span>{{ (item.created_at|localtime).strftime('%Y-%m-%d %H:%M') }}</span>{% endif %}
+        {% if item.status %}<span>{{ item.status }}</span>{% endif %}
+        {% if item.id in stray %}<span>发给了不常用的地址</span>{% endif %}
+      </div>
     </div>
   </article>
   {% else %}

@@ -9,9 +9,9 @@
 {% block admin_content %}
 <form class="admin-search" method="get" action="{{ url_for('admin.pages') }}" role="search">
   <label class="visually-hidden" for="page-search">搜索页面</label>
-  <input id="page-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="按标题或 slug 搜索">
+  <input id="page-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="按标题或路径搜索">
   {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
-  <button class="button button--quiet" type="submit">搜索</button>
+  <button class="button admin-search__submit" type="submit">搜索</button>
 </form>
 <nav class="admin-filters" aria-label="页面筛选">
   {% for value, label in [('all', '全部'), ('published', '已发布'), ('unpublished', '未发布')] %}
@@ -20,40 +20,74 @@
   {% endfor %}
 </nav>
 {% set can_reorder = active_filter == 'all' and not search %}
+{% set filter_arg = active_filter if active_filter != 'all' else None %}
 <div class="admin-list admin-page-list">
-  {% for page in pages %}
-  <article class="admin-list__row">
+  {% for item in pages %}
+  {% set is_podcast = item.kind == 'podcast' %}
+  <article class="admin-list__row" data-page-kind="{{ item.kind }}">
+    {% if can_reorder %}
+    {% set move_url = url_for('admin.move_podcast_order') if is_podcast else url_for('admin.move_page_order', page_id=item.id) %}
+    <form class="admin-list__order" method="post" action="{{ move_url }}">
+      {{ toggle_form.hidden_tag() }}
+      <button class="admin-order-btn" type="submit" name="direction" value="up" aria-label="上移 {{ item.title }}" title="上移"{% if loop.first %} disabled{% endif %}>↑</button>
+      <button class="admin-order-btn" type="submit" name="direction" value="down" aria-label="下移 {{ item.title }}" title="下移"{% if loop.last %} disabled{% endif %}>↓</button>
+    </form>
+    {% endif %}
     <div class="admin-list__main">
-      <a href="{{ url_for('admin.edit_page', page_id=page.id) }}"><strong>{{ page.title }}</strong></a>
-      <span>/{{ page.slug }} · 更新于 {{ (page.updated_at|localtime).strftime('%Y-%m-%d') }}</span>
+      {% if is_podcast %}
+      <a href="{{ url_for('admin.podcast') }}"><strong>{{ item.title }}</strong></a>
+      <div class="admin-list__subline">
+        <span>/podcast/</span>
+        <span>{% if item.custom_title %}{{ item.custom_title }}{% else %}内置播客页{% endif %}</span>
+      </div>
+      {% else %}
+      <a href="{{ url_for('admin.edit_page', page_id=item.id) }}"><strong>{{ item.title }}</strong></a>
+      <div class="admin-list__subline">
+        <span>/{{ item.slug }}</span>
+        <span>更新于 {{ (item.updated_at|localtime).strftime('%Y-%m-%d') }}</span>
+      </div>
+      {% endif %}
     </div>
     <div class="admin-list__meta">
-      <span>{{ '已发布' if page.is_published else '未发布' }}</span>
-      <span>{{ '导航可见' if page.show_in_nav else '导航隐藏' }} · {{ page.nav_order }}</span>
+      {% if is_podcast %}
+      <span class="admin-status{% if item.is_published %} admin-status--active{% endif %}">{{ '已开启' if item.is_published else '未开启' }}</span>
+      <span>{% if item.is_published %}{{ '导航可见' if item.show_in_nav else '导航隐藏' }}{% else %}开启后可显示在导航{% endif %}</span>
+      {% else %}
+      <span class="admin-status{% if item.is_published %} admin-status--active{% endif %}">{{ '已发布' if item.is_published else '未发布' }}</span>
+      <span>{{ '导航可见' if item.show_in_nav else '导航隐藏' }}</span>
+      {% endif %}
     </div>
     <div class="admin-list__actions">
-      {% if can_reorder %}
-      <form class="admin-list__order" method="post" action="{{ url_for('admin.move_page_order', page_id=page.id) }}">
+      {% if is_podcast %}
+      <form method="post" action="{{ url_for('admin.toggle_podcast_from_pages', q=search or None, filter=filter_arg) }}">
         {{ toggle_form.hidden_tag() }}
-        <button class="button button--quiet" type="submit" name="direction" value="up" aria-label="上移 {{ page.title }}" title="上移"{% if loop.first %} disabled{% endif %}>↑</button>
-        <button class="button button--quiet" type="submit" name="direction" value="down" aria-label="下移 {{ page.title }}" title="下移"{% if loop.last %} disabled{% endif %}>↓</button>
+        <button class="button button--quiet" type="submit">{{ '关闭播客' if item.is_published else '开启播客' }}</button>
       </form>
+      {% if item.is_published %}
+      <form method="post" action="{{ url_for('admin.toggle_podcast_nav_from_pages', q=search or None, filter=filter_arg) }}">
+        {{ toggle_form.hidden_tag() }}
+        <button class="button button--quiet" type="submit">{{ '隐藏导航' if item.show_in_nav else '显示导航' }}</button>
+      </form>
+      <a href="{{ url_for('podcast_index') }}">查看</a>
       {% endif %}
-      <form method="post" action="{{ url_for('admin.toggle_page_publication', page_id=page.id, q=search or None, filter=active_filter if active_filter != 'all' else None) }}">
+      <a href="{{ url_for('admin.podcast') }}">管理</a>
+      {% else %}
+      <form method="post" action="{{ url_for('admin.toggle_page_publication', page_id=item.id, q=search or None, filter=filter_arg) }}">
         {{ toggle_form.hidden_tag() }}
-        <button class="button button--quiet" type="submit">{{ '取消发布' if page.is_published else '发布' }}</button>
+        <button class="button button--quiet" type="submit">{{ '取消发布' if item.is_published else '发布' }}</button>
       </form>
-      <form method="post" action="{{ url_for('admin.toggle_page_navigation', page_id=page.id, q=search or None, filter=active_filter if active_filter != 'all' else None) }}">
+      <form method="post" action="{{ url_for('admin.toggle_page_navigation', page_id=item.id, q=search or None, filter=filter_arg) }}">
         {{ toggle_form.hidden_tag() }}
-        <button class="button button--quiet" type="submit">{{ '隐藏导航' if page.show_in_nav else '显示导航' }}</button>
+        <button class="button button--quiet" type="submit">{{ '隐藏导航' if item.show_in_nav else '显示导航' }}</button>
       </form>
-      <a href="{{ url_for('admin.preview_page', page_id=page.id) }}">预览</a>
-      <a href="{{ url_for('admin.edit_page', page_id=page.id) }}">编辑</a>
-      <form method="post" action="{{ url_for('admin.delete_page', page_id=page.id) }}">
+      <a href="{{ url_for('admin.preview_page', page_id=item.id) }}">预览</a>
+      <a href="{{ url_for('admin.edit_page', page_id=item.id) }}">编辑</a>
+      <form method="post" action="{{ url_for('admin.delete_page', page_id=item.id) }}">
         {{ delete_form.hidden_tag() }}
         <input type="hidden" name="confirm" value="y">
         <button class="button button--quiet button--danger" type="submit" onclick="return confirm('确定删除此页面？');">删除</button>
       </form>
+      {% endif %}
     </div>
   </article>
   {% else %}

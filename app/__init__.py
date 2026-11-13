@@ -55,15 +55,18 @@ csrf = CSRFProtect(app)
 def inject_navigation_pages():
     # Admin pages override the public site navigation bar and never render this.
     if request.blueprint == 'admin':
-        return {'navigation_pages': []}
+        return {'navigation_pages': [], 'navigation_items': []}
     from sqlalchemy.exc import SQLAlchemyError
-    from app.pages import visible_navigation_pages
+    from app.pages import visible_navigation_items, visible_navigation_pages
 
     try:
-        return {'navigation_pages': visible_navigation_pages()}
+        return {
+            'navigation_pages': visible_navigation_pages(),
+            'navigation_items': visible_navigation_items(),
+        }
     except SQLAlchemyError:
         db.session.rollback()
-        return {'navigation_pages': []}
+        return {'navigation_pages': [], 'navigation_items': []}
 
 @app.context_processor
 def inject_site_text():
