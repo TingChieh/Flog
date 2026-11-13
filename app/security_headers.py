@@ -5,6 +5,7 @@
   trick clicks on it.
 - ``strict-origin-when-cross-origin``: other sites learn where a visitor came
   from, never the full address (search terms, reset and unsubscribe links).
+- ``Permissions-Policy``: disable camera, microphone and geolocation APIs.
 
 A header a view set itself is left alone.
 """
@@ -14,6 +15,7 @@ HEADERS = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'SAMEORIGIN',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 }
 
 

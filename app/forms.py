@@ -11,42 +11,54 @@ from app import db
 from app.models import Category, User
 
 
+def _strip(value):
+    return value.strip() if isinstance(value, str) else value
+
+
 class LoginForm(FlaskForm):
-    username = StringField(_l('Username'), validators=[DataRequired()])
+    username = StringField(
+        _l('Username'), validators=[DataRequired()], filters=[_strip])
     password = PasswordField(_l('Password'), validators=[DataRequired()])
     remember_me = BooleanField(_l('Remember Me'))
     submit = SubmitField(_l('Sign In'))
 
 
 class RegistrationForm(FlaskForm):
-    username = StringField(_l('Username'), validators=[DataRequired()])
-    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
-    password = PasswordField(_l('Password'), validators=[DataRequired()])
+    username = StringField(
+        _l('Username'), validators=[DataRequired()], filters=[_strip])
+    email = StringField(
+        _l('Email'), validators=[DataRequired(), Email()], filters=[_strip])
+    password = PasswordField(
+        _l('Password'), validators=[DataRequired(), Length(min=8, max=128)])
     password2 = PasswordField(
         _l('Repeat Password'), validators=[DataRequired(),
                                            EqualTo('password')])
     submit = SubmitField(_l('Register'))
 
     def validate_username(self, username):
+        candidate = (username.data or '').strip()
         user = db.session.scalar(sa.select(User).where(
-            User.username == username.data))
+            User.username == candidate))
         if user is not None:
             raise ValidationError(_('Please use a different username.'))
 
     def validate_email(self, email):
+        candidate = (email.data or '').strip().lower()
         user = db.session.scalar(sa.select(User).where(
-            User.email == email.data))
+            sa.func.lower(User.email) == candidate))
         if user is not None:
             raise ValidationError(_('Please use a different email address.'))
 
 
 class ResetPasswordRequestForm(FlaskForm):
-    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
+    email = StringField(
+        _l('Email'), validators=[DataRequired(), Email()], filters=[_strip])
     submit = SubmitField(_l('Request Password Reset'))
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField(_l('Password'), validators=[DataRequired()])
+    password = PasswordField(
+        _l('Password'), validators=[DataRequired(), Length(min=8, max=128)])
     password2 = PasswordField(
         _l('Repeat Password'), validators=[DataRequired(),
                                            EqualTo('password')])

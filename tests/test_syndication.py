@@ -112,3 +112,28 @@ def test_feed_carries_only_the_latest_posts_under_the_site_name(client, applicat
     root = etree.fromstring(client.get('/feed.xml').data)
     assert root.findtext('./channel/title') == 'My Notes'
     assert len(root.findall('./channel/item')) == FEED_POST_LIMIT
+
+
+def test_feed_supports_etag_conditional_requests(client, application):
+    with application.app_context():
+        author = User(username='etagwriter', email='etagwriter@example.com')
+        db.session.add(author)
+        db.session.flush()
+        db.session.add(Post(
+            title='Timed', body='body', author=author, is_published=True,
+            timestamp=datetime(2024, 3, 4, 5, 6)))
+        db.session.commit()
+
+    first = client.get('/feed.xml')
+    assert first.status_code == 200
+    assert first.headers.get('ETag')
+    assert 'max-age=300' in first.headers.get('Cache-Control', '')
+
+    again = client.get('/feed.xml', headers={'If-None-Match': first.headers['ETag']})
+    assert again.status_code == 304
+
+    sitemap = etree.fromstring(client.get('/sitemap.xml').data)
+    ns = {'s': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+    lastmods = [el.text for el in sitemap.findall('.//s:lastmod', namespaces=ns)]
+    assert lastmods
+    assert all(datetime.fromisoformat(value) for value in lastmods)

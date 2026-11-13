@@ -1,6 +1,16 @@
 import os
+import subprocess
+import sys
+
 import click
 from app import app
+
+
+def _run_pybabel(*args):
+    subprocess.run(
+        [sys.executable, '-m', 'babel.messages.frontend', *args],
+        check=True,
+    )
 
 
 @app.cli.group()
@@ -13,29 +23,29 @@ def translate():
 @click.argument('lang')
 def init(lang):
     """Initialize a new language."""
-    if os.system('pybabel extract -F babel.cfg -k _l -o messages.pot .'):
-        raise RuntimeError('extract command failed')
-    if os.system(
-            'pybabel init -i messages.pot -d app/translations -l ' + lang):
-        raise RuntimeError('init command failed')
-    os.remove('messages.pot')
+    try:
+        _run_pybabel('extract', '-F', 'babel.cfg', '-k', '_l', '-o', 'messages.pot', '.')
+        _run_pybabel('init', '-i', 'messages.pot', '-d', 'app/translations', '-l', lang)
+    finally:
+        if os.path.exists('messages.pot'):
+            os.remove('messages.pot')
 
 
 @translate.command()
 def update():
     """Update all languages."""
-    if os.system('pybabel extract -F babel.cfg -k _l -o messages.pot .'):
-        raise RuntimeError('extract command failed')
-    if os.system('pybabel update -i messages.pot -d app/translations'):
-        raise RuntimeError('update command failed')
-    os.remove('messages.pot')
+    try:
+        _run_pybabel('extract', '-F', 'babel.cfg', '-k', '_l', '-o', 'messages.pot', '.')
+        _run_pybabel('update', '-i', 'messages.pot', '-d', 'app/translations')
+    finally:
+        if os.path.exists('messages.pot'):
+            os.remove('messages.pot')
 
 
 @translate.command()
 def compile():
     """Compile all languages."""
-    if os.system('pybabel compile -d app/translations'):
-        raise RuntimeError('compile command failed')
+    _run_pybabel('compile', '-d', 'app/translations')
 
 @app.cli.command('rebuild-search-index')
 def rebuild_search():

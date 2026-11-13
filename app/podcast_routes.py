@@ -23,6 +23,8 @@ PUBLIC_ENDPOINTS = frozenset({'podcast_index', 'podcast_episode', 'podcast_feed'
 @app.context_processor
 def inject_podcast_link():
     """The blog menu links to the podcast while it is on."""
+    if request.blueprint == 'admin':
+        return {'podcast_nav': False}
     try:
         return {'podcast_nav': podcast_in_nav()}
     except SQLAlchemyError:

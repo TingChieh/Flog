@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 import sqlalchemy as sa
 
 from app import db
-from app.models import AuthAttempt
-from app.throttle import LIMITS, LOGIN, RESET
+from app.models import AuthAttempt, get_site_settings
+from app.throttle import LIMITS, LOGIN, REGISTER, RESET
 
 
 def sign_in(client, password, address='10.0.0.1'):
@@ -47,3 +47,27 @@ def test_old_attempts_are_forgotten(client, users):
     sign_in(client, 'wrong')
     assert db.session.scalar(sa.select(sa.func.count()).select_from(AuthAttempt).where(
         AuthAttempt.created_at < datetime.now() - timedelta(days=2))) == 0
+
+
+def test_registration_attempts_are_throttled(client, application):
+    with application.app_context():
+        get_site_settings().registration_open = True
+        db.session.commit()
+    limit, _ = LIMITS[REGISTER]
+    for number in range(limit):
+        response = client.post('/register', data={
+            'username': f'user{number}',
+            'email': f'user{number}@example.com',
+            'password': 'password',
+            'password2': 'password',
+        }, environ_base={'REMOTE_ADDR': '10.0.2.1'})
+        assert response.status_code == 302
+
+    blocked = client.post('/register', data={
+        'username': 'extra-user',
+        'email': 'extra@example.com',
+        'password': 'password',
+        'password2': 'password',
+    }, environ_base={'REMOTE_ADDR': '10.0.2.1'})
+    assert blocked.status_code == 429
+    assert '注册请求过多' in blocked.get_data(as_text=True)

@@ -15,7 +15,7 @@ from app.forms import LoginForm, RegistrationForm, \
 from app.comment_mail import (email_from_unsubscribe_token,
                               notify_comment_pending,
                               notify_comment_published, stop_notifications)
-from app.models import Category, User, Post, Page, PostComment, get_site_settings
+from app.models import Category, Episode, User, Post, Page, PostComment, get_site_settings
 from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
 
@@ -121,8 +121,9 @@ def login():
             flash(_('Too many failed sign-ins. Please try again in 15 minutes.'))
             return render_template('user/login.html', title=_('Sign In'),
                                    form=form), 429
+        username = (form.username.data or '').strip()
         user = db.session.scalar(
-            sa.select(User).where(User.username == form.username.data))
+            sa.select(User).where(User.username == username))
         if user is None or not user.check_password(form.password.data):
             throttle.note(throttle.LOGIN)
             db.session.commit()
@@ -153,7 +154,13 @@ def register():
     if form.validate_on_submit():
         if not get_site_settings().registration_open:
             abort(403)
-        user = User(username=form.username.data, email=form.email.data)
+        email = (form.email.data or '').strip().lower()
+        if throttle.blocked(throttle.REGISTER, email):
+            flash(_('Too many registration attempts. Please try again in an hour.'))
+            return render_template('user/register.html', title=_('Register'),
+                                   form=form), 429
+        throttle.note(throttle.REGISTER, email)
+        user = User(username=(form.username.data or '').strip(), email=email)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -172,13 +179,14 @@ def reset_password_request():
             flash(_('Password reset by email is not available right now. '
                     'Please contact the site administrator.'))
             return redirect(url_for('login'))
-        if throttle.blocked(throttle.RESET, form.email.data):
+        email = (form.email.data or '').strip().lower()
+        if throttle.blocked(throttle.RESET, email):
             flash(_('Too many reset requests. Please try again in an hour.'))
             return redirect(url_for('login'))
-        throttle.note(throttle.RESET, form.email.data)
+        throttle.note(throttle.RESET, email)
         db.session.commit()
         user = db.session.scalar(
-            sa.select(User).where(User.email == form.email.data))
+            sa.select(User).where(sa.func.lower(User.email) == email))
         if user:
             send_password_reset_email(user)
         flash(
@@ -545,7 +553,12 @@ def feed():
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=timezone.utc)
         entry.pubDate(timestamp)
-    return app.response_class(fg.rss_str(), content_type='application/rss+xml; charset=utf-8')
+    response = app.response_class(
+        fg.rss_str(), content_type='application/rss+xml; charset=utf-8')
+    response.add_etag()
+    response.cache_control.public = True
+    response.cache_control.max_age = 300
+    return response.make_conditional(request)
 
 
 @app.route('/sitemap.xml')
@@ -562,14 +575,21 @@ def sitemap():
 
     add_url(request.url_root)
     add_url(url_for('archive', _external=True))
-    for post in db.session.scalars(listed_post_statement()):
+    for post in db.session.scalars(
+            published_post_statement().options(
+                so.load_only(Post.id, Post.updated_at, Post.timestamp))):
         add_url(url_for('post', post_id=post.id, _external=True),
                 post.updated_at or post.timestamp)
-    for page in db.session.scalars(sa.select(Page).where(Page.is_published.is_(True))):
+    for page in db.session.scalars(
+            sa.select(Page).options(
+                so.load_only(Page.slug, Page.updated_at)
+            ).where(Page.is_published.is_(True))):
         add_url(url_for('public_page', slug=page.slug, _external=True), page.updated_at)
     if podcast_enabled():
         add_url(url_for('podcast_index', _external=True))
-        for episode in db.session.scalars(published_episodes()):
+        for episode in db.session.scalars(
+                published_episodes().options(
+                    so.load_only(Episode.number, Episode.published_at))):
             add_url(url_for('podcast_episode', number=episode.number,
                             _external=True), episode.published_at)
     return app.response_class(ET.tostring(root, encoding='utf-8', xml_declaration=True),

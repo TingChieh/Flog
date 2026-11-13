@@ -54,3 +54,13 @@ def test_pages_this_hook_skips_keep_the_blocking_font_sheet(client):
 
 def test_unicode_ranges_merge_neighbouring_characters():
     assert font_preload._unicode_range([0x4e00, 0x4e01, 0x4e02, 0x4e10]) == 'U+4e00-4e02,U+4e10'
+
+
+def test_admin_pages_skip_article_font_preloading(client, users):
+    from tests.conftest import login
+
+    login(client, 'admin')
+    head = client.get('/admin').get_data(as_text=True).split('</head>', 1)[0]
+    assert '<style>@font-face' not in head
+    assert 'noto-serif-sc-' not in head
+    assert "onload=\"this.media='all'\"" not in head

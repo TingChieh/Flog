@@ -13,11 +13,12 @@ from app import db
 from app.likes import _digest, hash_address
 from app.models import AuthAttempt
 
-LOGIN, RESET = 'login', 'reset'
+LOGIN, RESET, REGISTER = 'login', 'reset', 'register'
 # action -> (attempts allowed, within this many seconds)
 LIMITS = {
     LOGIN: (10, 15 * 60),
     RESET: (5, 60 * 60),
+    REGISTER: (5, 60 * 60),
 }
 KEEP = timedelta(days=1)
 

@@ -36,7 +36,6 @@ class User(UserMixin, db.Model):
     avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(64))
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc))
-    last_message_read_time: so.Mapped[Optional[datetime]]
     posts: so.WriteOnlyMapped['Post'] = so.relationship(
         back_populates='author')
     post_likes: so.WriteOnlyMapped['PostLike'] = so.relationship(
@@ -269,7 +268,7 @@ class PostComment(db.Model):
     parent_id: so.Mapped[Optional[int]] = so.mapped_column(
         sa.ForeignKey('post_comment.id', ondelete='CASCADE'), index=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64))
-    email: so.Mapped[str] = so.mapped_column(sa.String(120))
+    email: so.Mapped[str] = so.mapped_column(sa.String(120), index=True)
     body: so.Mapped[str] = so.mapped_column(sa.Text)
     status: so.Mapped[str] = so.mapped_column(
         sa.String(10), nullable=False, default='approved',
