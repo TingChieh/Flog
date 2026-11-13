@@ -19,11 +19,11 @@ jobs:
     name: Node.js tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Run frontend tests
         run: node --test tests/*.test.js
@@ -32,7 +32,7 @@ jobs:
     name: Python tests (SQLite + migrations)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install system dependencies
         run: |
@@ -40,7 +40,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends ffmpeg
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
           cache-dependency-glob: requirements*.txt
@@ -85,7 +85,7 @@ jobs:
           --health-retries=10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install system dependencies
         run: |
@@ -93,7 +93,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends ffmpeg
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
           cache-dependency-glob: requirements*.txt
