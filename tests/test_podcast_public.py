@@ -324,10 +324,11 @@ def test_deleting_an_episode_deletes_its_comments(application):
 
 def test_a_comment_must_belong_to_exactly_one_thing(application):
     import pytest
-    from sqlalchemy.exc import IntegrityError
+    from sqlalchemy.exc import IntegrityError, OperationalError
     with application.app_context():
         db.session.add(PostComment(name='a', email='a@example.com', body='x'))
-        with pytest.raises(IntegrityError):
+        # SQLite raises IntegrityError for CHECK failures; MariaDB raises OperationalError (4025).
+        with pytest.raises((IntegrityError, OperationalError)):
             db.session.commit()
         db.session.rollback()
 

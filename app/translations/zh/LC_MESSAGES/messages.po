@@ -637,3 +637,7 @@ msgstr "登录失败次数过多，请 15 分钟后再试。"
 #: app/routes.py
 msgid "Too many reset requests. Please try again in an hour."
 msgstr "重置密码请求过多，请一小时后再试。"
+
+#: app/routes.py
+msgid "Too many registration attempts. Please try again in an hour."
+msgstr "注册请求过多，请一小时后再试。"

@@ -207,20 +207,28 @@ def save_uploaded_image(file, user, video=None):
     folder = upload_folder()
     folder.mkdir(parents=True, exist_ok=True)
     filename = f'{uuid4().hex}{processed.extension}'
+    written = [folder / filename]
     (folder / filename).write_bytes(processed.data)
     clip_name = None
-    if clip:
-        clip_name = video_filename(Path(filename).stem)
-        (folder / clip_name).write_bytes(clip)
+    try:
+        if clip:
+            clip_name = video_filename(Path(filename).stem)
+            written.append(folder / clip_name)
+            (folder / clip_name).write_bytes(clip)
 
-    image = Image(
-        filename=filename, original_name=original_name or filename,
-        title=(Path(original_name).stem or filename)[:120],
-        size=len(processed.data), width=processed.width,
-        height=processed.height, video_filename=clip_name,
-        user_id=user.id if user else None)
-    db.session.add(image)
-    db.session.commit()
+        image = Image(
+            filename=filename, original_name=original_name or filename,
+            title=(Path(original_name).stem or filename)[:120],
+            size=len(processed.data), width=processed.width,
+            height=processed.height, video_filename=clip_name,
+            user_id=user.id if user else None)
+        db.session.add(image)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        for path in written:
+            path.unlink(missing_ok=True)
+        raise
     return image
 
 
@@ -401,6 +409,8 @@ def sync_untracked_images():
 def image_usage(filenames):
     """Map each filename to the posts, drafts and pages that embed it."""
     wanted = set(filenames)
+    if not wanted:
+        return {}
     usage = {name: [] for name in wanted}
 
     def collect(kind, rows):
@@ -409,12 +419,15 @@ def image_usage(filenames):
                 usage[name].append(Usage(kind, source_id, title))
 
     collect('post', db.session.execute(
-        sa.select(Post.id, Post.title, Post.body).order_by(Post.id)))
+        sa.select(Post.id, Post.title, Post.body)
+        .where(Post.body.contains('/files/')).order_by(Post.id)))
     collect('draft', db.session.execute(
         sa.select(PostDraft.post_id, Post.title, PostDraft.body)
-        .join(Post, Post.id == PostDraft.post_id).order_by(Post.id)))
+        .join(Post, Post.id == PostDraft.post_id)
+        .where(PostDraft.body.contains('/files/')).order_by(Post.id)))
     collect('page', db.session.execute(
-        sa.select(Page.id, Page.title, Page.body).order_by(Page.id)))
+        sa.select(Page.id, Page.title, Page.body)
+        .where(Page.body.contains('/files/')).order_by(Page.id)))
     return usage
 
 

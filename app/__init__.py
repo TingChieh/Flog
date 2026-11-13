@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from app.email_handler import SMTP_SSLHandler
 import os
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -22,7 +22,9 @@ app = Flask(__name__)
 app.config.from_object(Config)
 if app.config['TRUSTED_PROXY_HOPS']:
     from werkzeug.middleware.proxy_fix import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=app.config['TRUSTED_PROXY_HOPS'])
+    hops = app.config['TRUSTED_PROXY_HOPS']
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops)
 
 
 @app.context_processor
@@ -51,6 +53,9 @@ csrf = CSRFProtect(app)
 
 @app.context_processor
 def inject_navigation_pages():
+    # Admin pages override the public site navigation bar and never render this.
+    if request.blueprint == 'admin':
+        return {'navigation_pages': []}
     from sqlalchemy.exc import SQLAlchemyError
     from app.pages import visible_navigation_pages
 

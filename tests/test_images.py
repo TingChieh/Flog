@@ -163,3 +163,34 @@ def test_visible_images_depends_on_the_role(application, users):
         own = db.session.scalars(visible_images(author)).all()
         assert len(everything) == 3
         assert [i.user_id for i in own] == [users['author']]
+
+
+def test_usage_returns_empty_mapping_when_given_no_filenames(application):
+    with application.app_context():
+        assert image_usage([]) == {}
+
+
+def test_save_uploaded_image_cleans_up_files_on_commit_error(
+        application, users, monkeypatch):
+    from pathlib import Path
+    from werkzeug.datastructures import FileStorage
+    from app.images import save_uploaded_image
+
+    with application.app_context():
+        owner = db.session.get(User, users['author'])
+        upload = FileStorage(stream=io.BytesIO(PNG), filename='broken.png',
+                             content_type='image/png')
+
+        def fail_commit():
+            raise RuntimeError('simulated commit failure')
+
+        monkeypatch.setattr(db.session, 'commit', fail_commit)
+        try:
+            save_uploaded_image(upload, owner)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError('expected commit error')
+
+        folder = Path(application.config['UPLOAD_FOLDER'])
+        assert not folder.exists() or list(folder.iterdir()) == []

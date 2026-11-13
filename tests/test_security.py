@@ -161,6 +161,8 @@ def test_responses_carry_security_headers(client):
     assert response.headers['X-Content-Type-Options'] == 'nosniff'
     assert response.headers['X-Frame-Options'] == 'SAMEORIGIN'
     assert response.headers['Referrer-Policy'] == 'strict-origin-when-cross-origin'
+    assert response.headers['Permissions-Policy'] == (
+        'camera=(), microphone=(), geolocation=()')
 
 
 def test_https_site_url_makes_sign_in_cookies_secure(monkeypatch):
@@ -201,3 +203,47 @@ def test_user_without_a_password_cannot_sign_in(client, application, users):
         db.session.commit()
     response = client.post('/login', data={'username': 'author', 'password': 'guess'})
     assert response.status_code == 302 and response.headers['Location'] == '/login'
+
+
+def test_login_strips_surrounding_whitespace_from_username(client, users):
+    response = client.post('/login', data={
+        'username': '  author  ', 'password': 'password',
+    })
+    assert response.status_code == 302
+    assert response.headers['Location'] == '/index'
+
+
+def test_registration_and_reset_reject_short_passwords(client, application, users):
+    from app.models import User, get_site_settings
+    with application.app_context():
+        get_site_settings().registration_open = True
+        db.session.commit()
+        token = db.session.get(User, users['author']).get_reset_password_token()
+
+    reg = client.post('/register', data={
+        'username': 'shortpw',
+        'email': 'shortpw@example.com',
+        'password': 'abc',
+        'password2': 'abc',
+    })
+    assert reg.status_code == 200
+    with application.app_context():
+        assert db.session.scalar(
+            db.select(User).where(User.username == 'shortpw')
+        ) is None
+
+    reset = client.post(f'/reset_password/{token}', data={
+        'password': 'abc',
+        'password2': 'abc',
+    })
+    assert reset.status_code == 200
+    with application.app_context():
+        assert db.session.get(User, users['author']).check_password('password')
+
+
+def test_reset_password_request_normalizes_email_case(client, users, outbox):
+    response = client.post('/reset_password_request', data={
+        'email': '  AUTHOR@Example.COM  ',
+    })
+    assert response.status_code == 302
+    assert len(outbox) == 1

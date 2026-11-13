@@ -18,7 +18,8 @@ def _set_last_seen(application, user_id, value):
 
 def test_last_seen_is_written_at_most_every_few_minutes(client, application, users):
     login(client, 'author')
-    recent = datetime.now(timezone.utc) - timedelta(minutes=1)
+    # MariaDB DATETIME drops microseconds, so compare at whole-second precision.
+    recent = (datetime.now(timezone.utc) - timedelta(minutes=1)).replace(microsecond=0)
     _set_last_seen(application, users['author'], recent)
     client.get('/')
     assert _last_seen(application, users['author']).replace(tzinfo=None) == recent.replace(tzinfo=None)
@@ -30,7 +31,7 @@ def test_last_seen_is_written_at_most_every_few_minutes(client, application, use
 
 def test_static_files_do_not_touch_last_seen(client, application, users):
     login(client, 'author')
-    stale = datetime.now(timezone.utc) - timedelta(days=1)
+    stale = (datetime.now(timezone.utc) - timedelta(days=1)).replace(microsecond=0)
     _set_last_seen(application, users['author'], stale)
     assert client.get('/static/site.js').status_code == 200
     assert _last_seen(application, users['author']).replace(tzinfo=None) == stale.replace(tzinfo=None)

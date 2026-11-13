@@ -26,7 +26,7 @@ from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 
-from flask import url_for
+from flask import request, url_for
 
 from app import app
 
@@ -127,7 +127,8 @@ def _load_later(match):
 
 @app.after_request
 def preload_article_fonts(response):
-    if (response.status_code != 200 or response.mimetype != 'text/html'
+    if (request.blueprint == 'admin' or response.status_code != 200
+            or response.mimetype != 'text/html'
             or response.direct_passthrough or response.is_streamed):
         return response
     markup = response.get_data(as_text=True)

@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Node.js tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run frontend tests
+        run: node --test tests/*.test.js
+
+  python-sqlite:
+    name: Python tests (SQLite + migrations)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: requirements*.txt
+
+      - name: Create virtualenv and install dependencies
+        run: |
+          uv venv --python 3.14 .venv
+          uv pip install --python .venv/bin/python -r requirements-dev.txt
+
+      - name: Check compiled translations
+        run: |
+          .venv/bin/pybabel compile -d app/translations
+          git diff --exit-code app/translations/
+
+      - name: Check fresh database migration
+        env:
+          FLASK_APP: flog.py
+          SECRET_KEY: ci-migration-check-secret
+          DATABASE_URL: sqlite:///${{ runner.temp }}/flog-ci.sqlite3
+        run: |
+          .venv/bin/flask db upgrade
+          .venv/bin/flask db heads
+
+      - name: Run Python test suite
+        run: .venv/bin/python -m pytest tests -q -ra
+
+  python-mariadb:
+    name: Python tests (MariaDB 11.8)
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: flog_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: requirements*.txt
+
+      - name: Create virtualenv and install dependencies
+        run: |
+          uv venv --python 3.14 .venv
+          uv pip install --python .venv/bin/python -r requirements-dev.txt
+
+      - name: Wait for MariaDB readiness
+        run: |
+          .venv/bin/python -c "
+          import time, pymysql
+          for _ in range(30):
+              try:
+                  conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='root', database='flog_test')
+                  conn.close()
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise SystemExit('MariaDB did not become ready in time')
+          "
+
+      - name: Run Python test suite against MariaDB
+        env:
+          TEST_DATABASE_URL: mysql+pymysql://root:root@127.0.0.1:3306/flog_test
+          DB_ISOLATION_LEVEL: READ COMMITTED
+        run: .venv/bin/python -m pytest tests -q -ra

@@ -281,7 +281,7 @@ def test_post_like_emoji_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'd9e3f7a1b502']
+        '478e950345ef']
 
 
 def test_draft_generation_migration_preserves_existing_sequence():
@@ -1109,3 +1109,40 @@ def test_podcast_switch_migration_adds_the_columns_off_by_default():
 
             assert {c['name'] for c in sa.inspect(connection).get_columns(
                 'podcast_show')} == {'id', 'title'}
+
+
+CLEANUP_INDEX_REVISION_PATH = Path(__file__).parents[1] / 'migrations' / 'versions' / (
+    '478e950345ef_drop_dead_message_read_column_and_index_.py')
+
+
+def test_cleanup_and_comment_email_index_migration_round_trips():
+    spec = importlib.util.spec_from_file_location(
+        'cleanup_and_index', CLEANUP_INDEX_REVISION_PATH)
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    engine = sa.create_engine('sqlite://')
+
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            'CREATE TABLE user (id INTEGER PRIMARY KEY, '
+            'username VARCHAR(64), last_message_read_time DATETIME)'))
+        connection.execute(sa.text(
+            'CREATE TABLE post_comment (id INTEGER PRIMARY KEY, '
+            'email VARCHAR(120) NOT NULL)'))
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            revision.upgrade()
+
+            inspector = sa.inspect(connection)
+            assert 'last_message_read_time' not in {
+                c['name'] for c in inspector.get_columns('user')}
+            assert 'ix_post_comment_email' in {
+                i['name'] for i in inspector.get_indexes('post_comment')}
+
+            revision.downgrade()
+
+            inspector = sa.inspect(connection)
+            assert 'last_message_read_time' in {
+                c['name'] for c in inspector.get_columns('user')}
+            assert 'ix_post_comment_email' not in {
+                i['name'] for i in inspector.get_indexes('post_comment')}
