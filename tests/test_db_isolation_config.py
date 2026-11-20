@@ -5,9 +5,9 @@ import sys
 import pytest
 
 
-def config_for(level):
+def config_for(level, database_url='mysql+pymysql://user:pass@localhost/example'):
     env = os.environ.copy()
-    env['DATABASE_URL'] = 'mysql+pymysql://user:pass@localhost/example'
+    env['DATABASE_URL'] = database_url
     if level is None:
         env.pop('DB_ISOLATION_LEVEL', None)
     else:
@@ -17,9 +17,20 @@ def config_for(level):
         env=env, capture_output=True, text=True)
 
 
+@pytest.mark.parametrize('database_url', [
+    'mysql+pymysql://user:pass@localhost/example',
+    'mariadb+pymysql://user:pass@localhost/example',
+])
 @pytest.mark.parametrize('level', [None, ''])
-def test_isolation_defaults_to_database_setting(level):
-    result = config_for(level)
+def test_mysql_and_mariadb_default_to_read_committed(database_url, level):
+    result = config_for(level, database_url=database_url)
+    assert result.returncode == 0
+    assert result.stdout.strip() == repr({'isolation_level': 'READ COMMITTED'})
+
+
+@pytest.mark.parametrize('level', [None, ''])
+def test_sqlite_defaults_to_database_setting(level):
+    result = config_for(level, database_url='sqlite:///tmp/example.sqlite3')
     assert result.returncode == 0
     assert result.stdout.strip() == '{}'
 

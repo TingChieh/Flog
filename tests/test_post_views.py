@@ -6,7 +6,7 @@ from flask import Response
 from itsdangerous import TimestampSigner
 import sqlalchemy as sa
 from sqlalchemy import event
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app import db
 from app.models import Category, Post, User
@@ -143,6 +143,85 @@ def test_record_view_logs_captured_post_id_after_rollback(
         assert record_view(PostReference()) is False
         assert log_calls == [(
             'Failed to increment view count for post %s', post_id)]
+
+
+def _mysql_operational_error(errno, message):
+    return OperationalError(
+        'UPDATE post SET view_count=(post.view_count + 1) WHERE post.id = 1',
+        {},
+        RuntimeError(errno, message),
+    )
+
+
+@pytest.mark.parametrize('errno,message', [
+    (1020, "Record has changed since last read in table 'post'"),
+    (1213, 'Deadlock found when trying to get lock'),
+])
+def test_record_view_retries_once_on_transient_mysql_concurrency_error(
+        application, users, monkeypatch, errno, message):
+    with application.app_context():
+        post = db.session.get(Post, users['post'])
+        original_execute = db.session.execute
+        attempts = []
+        log_calls = []
+
+        def flaky_execute(*args, **kwargs):
+            attempts.append(True)
+            if len(attempts) == 1:
+                raise _mysql_operational_error(errno, message)
+            return original_execute(*args, **kwargs)
+
+        monkeypatch.setattr(db.session, 'execute', flaky_execute)
+        monkeypatch.setattr(application.logger, 'exception',
+                            lambda *args, **kwargs: log_calls.append(args))
+
+        assert record_view(post) is True
+        assert len(attempts) == 2
+        assert log_calls == []
+        assert post.view_count == 1
+        assert _view_count(application, users['post']) == 1
+
+
+def test_record_view_logs_after_retryable_concurrency_error_exhausts_retries(
+        application, users, monkeypatch):
+    with application.app_context():
+        post = db.session.get(Post, users['post'])
+        attempts = []
+        log_calls = []
+
+        def always_conflict(*args, **kwargs):
+            attempts.append(True)
+            raise _mysql_operational_error(
+                1020, "Record has changed since last read in table 'post'")
+
+        monkeypatch.setattr(db.session, 'execute', always_conflict)
+        monkeypatch.setattr(application.logger, 'exception',
+                            lambda *args, **kwargs: log_calls.append(args))
+
+        assert record_view(post) is False
+        assert len(attempts) == 2
+        assert len(log_calls) == 1
+        assert _view_count(application, users['post']) == 0
+
+
+def test_record_view_does_not_retry_non_concurrency_operational_error(
+        application, users, monkeypatch):
+    with application.app_context():
+        post = db.session.get(Post, users['post'])
+        attempts = []
+        log_calls = []
+
+        def connection_lost(*args, **kwargs):
+            attempts.append(True)
+            raise _mysql_operational_error(2006, 'MySQL server has gone away')
+
+        monkeypatch.setattr(db.session, 'execute', connection_lost)
+        monkeypatch.setattr(application.logger, 'exception',
+                            lambda *args, **kwargs: log_calls.append(args))
+
+        assert record_view(post) is False
+        assert len(attempts) == 1
+        assert len(log_calls) == 1
 
 
 def test_new_post_defaults_view_count_to_zero(application):

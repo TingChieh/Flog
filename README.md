@@ -121,6 +121,7 @@ flask run                            # http://127.0.0.1:5000
 | --- | --- | --- |
 | `SECRET_KEY` | 是 | Session、CSRF 与令牌签名密钥 |
 | `DATABASE_URL` | 否 | 数据库连接；未设置时使用 SQLite |
+| `DB_ISOLATION_LEVEL` | 否 | 数据库事务隔离级别（`READ COMMITTED`、`READ UNCOMMITTED`、`REPEATABLE READ`、`SERIALIZABLE`、`AUTOCOMMIT`）；MySQL/MariaDB 未设置时默认使用 `READ COMMITTED`，SQLite 沿用自身默认 |
 | `ADMIN_EMAILS` | 建议 | 出错通知和新评论通知的收件人，多个地址用逗号分隔；没设 `MAIL_FROM` 且 `MAIL_USERNAME` 不是邮箱地址时，其中第一个也作为邮件的发件人 |
 | `MAIL_SERVER` | 邮件功能需要 | SMTP 服务器 |
 | `MAIL_PORT` | 否 | SMTP 端口，默认 `465` |
@@ -149,7 +150,7 @@ node --test tests/*.test.js  # 前端测试（需要较新的 Node.js）
 
 完整测试约一千个、两分钟左右；改动时先用 `pytest -q -k <关键字>` 跑相关部分。
 
-**MySQL / MariaDB**：把 `TEST_DATABASE_URL` 设为本机专用测试库的 SQLAlchemy URL（例如通过环境变量注入凭据），再运行 `pytest -q -ra`。测试会反复创建和删除该库中的表，所以只允许本机地址且库名以 `test` 结尾。SQLite FTS5 专属测试在 MySQL 上跳过。默认使用数据库自己的隔离级别，可用 `DB_ISOLATION_LEVEL` 显式指定（`READ COMMITTED`、`READ UNCOMMITTED`、`REPEATABLE READ`、`SERIALIZABLE` 或 `AUTOCOMMIT`）。在 MySQL/MariaDB 上请设为 `READ COMMITTED`，以支持 MariaDB 11.8 的并发草稿写入；该隔离级别下，同一事务内的重复读取可能看到其他事务新提交的数据。
+**MySQL / MariaDB**：把 `TEST_DATABASE_URL` 设为本机专用测试库的 SQLAlchemy URL（例如通过环境变量注入凭据），再运行 `pytest -q -ra`。测试会反复创建和删除该库中的表，所以只允许本机地址且库名以 `test` 结尾。SQLite FTS5 专属测试在 MySQL 上跳过。MySQL/MariaDB 未设置 `DB_ISOLATION_LEVEL` 时默认使用 `READ COMMITTED`，以避免 MariaDB 11.4+ 在 `REPEATABLE READ` 下因 `innodb_snapshot_isolation` 触发并发写入 1020 错误（如文章浏览量、登录活跃时间、并发草稿写入）；也可用 `DB_ISOLATION_LEVEL` 显式指定（`READ COMMITTED`、`READ UNCOMMITTED`、`REPEATABLE READ`、`SERIALIZABLE` 或 `AUTOCOMMIT`）。在 `READ COMMITTED` 下，同一事务内的重复读取可能看到其他事务新提交的数据。
 
 **浏览器端到端**（Live Photo 首次自动播放与 LIVE 按钮、灯箱、后台成对上传；需要 Node.js 和 ffmpeg，首次运行 `npx` 会下载 Playwright CLI，使用临时数据库和上传目录，不会动 `instance/`）：
 

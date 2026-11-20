@@ -4,6 +4,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
+from sqlalchemy.engine import make_url
 
 
 basedir = Path(__file__).resolve().parent
@@ -47,17 +48,34 @@ def trusted_proxy_hops():
     return int(value) if value.isdigit() and int(value) <= 5 else 1
 
 
+SUPPORTED_ISOLATION_LEVELS = frozenset({
+    'READ COMMITTED', 'READ UNCOMMITTED', 'REPEATABLE READ',
+    'SERIALIZABLE', 'AUTOCOMMIT',
+})
+
+
+def db_engine_options(database_url):
+    """Engine options for SQLAlchemy, defaulting MySQL/MariaDB to READ COMMITTED.
+
+    MariaDB 11.4+ enables innodb_snapshot_isolation under REPEATABLE READ,
+    which raises error 1020 on concurrent read-then-update paths (post views,
+    last_seen, draft saves). SQLite keeps its own default.
+    """
+    level = os.environ.get('DB_ISOLATION_LEVEL', '').strip()
+    if level:
+        if level not in SUPPORTED_ISOLATION_LEVELS:
+            raise ValueError('Invalid DB_ISOLATION_LEVEL')
+        return {'isolation_level': level}
+    if make_url(database_url).get_backend_name() in ('mysql', 'mariadb'):
+        return {'isolation_level': 'READ COMMITTED'}
+    return {}
+
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL', f'sqlite:///{basedir / "instance" / "flog.sqlite3"}')
-    _isolation_level = os.environ.get('DB_ISOLATION_LEVEL', '').strip()
-    if _isolation_level and _isolation_level not in {
-            'READ COMMITTED', 'READ UNCOMMITTED', 'REPEATABLE READ',
-            'SERIALIZABLE', 'AUTOCOMMIT'}:
-        raise ValueError('Invalid DB_ISOLATION_LEVEL')
-    SQLALCHEMY_ENGINE_OPTIONS = (
-        {'isolation_level': _isolation_level} if _isolation_level else {})
+    SQLALCHEMY_ENGINE_OPTIONS = db_engine_options(SQLALCHEMY_DATABASE_URI)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', '465'))
