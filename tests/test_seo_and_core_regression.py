@@ -195,8 +195,13 @@ def test_full_text_search_fts5_and_unicode_edge_cases(client, application, users
         db.session.commit()
         rebuilt = rebuild_search_index(db.session.connection())
         db.session.commit()
-        assert rebuilt is True
-        assert search_index_available(db.session.connection()) is True
+        connection = db.session.connection()
+        if connection.dialect.name == 'sqlite':
+            assert rebuilt is True
+            assert search_index_available(connection) is True
+        else:
+            assert rebuilt is False
+            assert search_index_available(connection) is False
 
     # Title match ranks before body-only match even when body match is newer; draft excluded.
     api = client.get('/api/search', query_string={'q': '中文全文检索'}).get_json()
