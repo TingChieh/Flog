@@ -5,6 +5,12 @@ from flask_login import current_user, login_required
 from app import db
 from app.admin import bp
 from app.models import Page, Post, PostComment, User
+from app.version import version_info
+
+
+@bp.context_processor
+def inject_app_version():
+    return {'app_version': version_info()}
 
 
 def _count(model, *conditions):

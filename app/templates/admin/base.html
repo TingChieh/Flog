@@ -25,6 +25,7 @@
   {{ nav_link('admin.users', '用户与角色', ('admin.users',)) }}
   {{ nav_link('admin.settings', '网站设置', ('admin.settings',)) }}
   {% endif %}
+  <p class="admin-nav__version" data-app-version>Flog {{ app_version.label }}</p>
 </nav>
 {% endmacro %}
 

@@ -1,3 +1,7 @@
+[project]
+name = "flog"
+version = "1.0.0"
+
 [tool.ruff]
 target-version = "py314"
 extend-exclude = ["migrations/versions", "app/static/vendor"]
