@@ -1,7 +1,6 @@
 # Direct runtime dependencies. Edit this file, then regenerate the pinned
 # requirements.txt with: ./scripts/bootstrap.sh --upgrade
 alembic
-bleach
 cryptography
 email-validator
 feedgen
@@ -17,6 +16,7 @@ langdetect
 lxml
 Markdown
 mutagen
+nh3
 Pillow
 pillow-heif
 Pygments

@@ -1,7 +1,6 @@
 from xml.etree import ElementTree
 
 import pytest
-import sqlalchemy as sa
 
 from app import db
 from app.models import Page, PageRedirect, Post
@@ -115,7 +114,7 @@ def test_public_lookup_hides_unpublished_pages_and_resolves_redirects(
         application):
     with application.app_context():
         published = add_content_page('published')
-        draft = add_content_page('draft', is_published=False)
+        add_content_page('draft', is_published=False)
         db.session.commit()
         save_page(published, {'title': published.title, 'slug': 'canonical'})
         db.session.commit()
@@ -231,7 +230,7 @@ def test_admin_page_edit_preserves_legacy_format_and_sanitizes_html(
     assert response.status_code == 302
     with application.app_context():
         page = db.session.get(Page, page_id)
-        assert page.body == '<p>Updated</p>alert(1)'
+        assert page.body == '<p>Updated</p>'
         assert page.body_format == 'html'
 
 

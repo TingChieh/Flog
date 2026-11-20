@@ -43,6 +43,15 @@ def test_links_are_marked_untrusted_and_open_elsewhere():
 def test_bare_urls_become_links_but_not_inside_code():
     assert 'href="https://example.com"' in str(render_comment('see https://example.com now'))
     assert '<a' not in str(render_comment('`https://example.com`'))
+    assert '<a' not in str(render_comment('```\nhttps://example.com\n```'))
+
+
+def test_bare_urls_trim_trailing_punctuation_and_preserve_balanced_parens():
+    punct = str(render_comment('参考 https://example.com/a，以及 (https://example.com/b).'))
+    assert 'href="https://example.com/a"' in punct
+    assert 'href="https://example.com/b"' in punct
+    wiki = str(render_comment('https://example.com/wiki/Python_(lang).'))
+    assert 'href="https://example.com/wiki/Python_(lang)"' in wiki
 
 
 def test_dangerous_link_protocols_lose_their_href():

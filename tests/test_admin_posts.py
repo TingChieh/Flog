@@ -455,7 +455,7 @@ def test_admin_post_edit_preserves_legacy_format_and_sanitizes_html(
     with application.app_context():
         post = db.session.get(Post, post_id)
         assert post.body == '<p>Legacy</p>'
-        assert post.draft.body == '<p>Updated</p>alert(1)'
+        assert post.draft.body == '<p>Updated</p>'
         assert post.body_format == 'html'
 
 
@@ -481,7 +481,7 @@ def test_legacy_post_edit_preserves_legacy_format_and_sanitizes_html(
     assert response.status_code == 302
     with application.app_context():
         post = db.session.get(Post, post_id)
-        assert post.body == '<p>Updated</p>alert(1)'
+        assert post.body == '<p>Updated</p>'
         assert post.body_format == 'html'
 
 
@@ -508,7 +508,7 @@ def test_admin_post_edit_normalizes_invalid_format_without_publication(
     with application.app_context():
         post = db.session.get(Post, post_id)
         assert post.body == '# Legacy source'
-        assert post.draft.body == '<p>Updated</p>alert(1)'
+        assert post.draft.body == '<p>Updated</p>'
         assert post.body_format == 'html'
 
 
@@ -534,7 +534,7 @@ def test_legacy_post_edit_normalizes_invalid_format_and_publishes(
     assert response.status_code == 302
     with application.app_context():
         post = db.session.get(Post, post_id)
-        assert post.body == '<p>Updated</p>alert(1)'
+        assert post.body == '<p>Updated</p>'
         assert post.draft is None
         assert post.body_format == 'html'
 
@@ -837,7 +837,7 @@ def test_draft_html_is_sanitized_using_legacy_post_format(application, users):
         save_draft(actor, post, DraftValues(
             'Edited', '<p>Safe</p><script>alert(1)</script>', 1))
 
-        assert post.draft.body == '<p>Safe</p>alert(1)'
+        assert post.draft.body == '<p>Safe</p>'
 
 
 def test_saved_draft_persists_when_the_caller_commits(application, users):
@@ -911,7 +911,6 @@ def test_snapshot_without_a_draft_returns_none(application, users):
 
 def test_global_trim_prunes_each_post_to_the_given_limit(application, users):
     with application.app_context():
-        actor = db.session.get(User, users['author'])
         post = db.session.get(Post, users['post'])
         other = db.session.get(User, users['other'])
         other_post = Post(title='Other', body='other', author=other)

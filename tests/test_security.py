@@ -19,7 +19,7 @@ def test_sanitize_html_removes_scripts_and_event_handlers():
 
     assert '<script' not in cleaned
     assert 'onclick' not in cleaned
-    assert '<p>helloalert(1)</p>' == cleaned
+    assert '<p>hello</p>' == cleaned
 
 
 def test_render_content_supports_markdown_and_sanitizes_raw_html(application):
