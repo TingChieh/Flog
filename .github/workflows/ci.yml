@@ -15,6 +15,33 @@ permissions:
   contents: read
 
 jobs:
+  quality:
+    name: Static checks (Ruff, mypy, JS syntax)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: requirements*.txt
+
+      - name: Create virtualenv and install dependencies
+        run: |
+          uv venv --python 3.14 .venv
+          uv pip install --python .venv/bin/python -r requirements-dev.txt
+
+      - name: Lint Python and check JS syntax
+        run: make lint
+
+      - name: Typecheck Python
+        run: make typecheck
+
   frontend:
     name: Node.js tests
     runs-on: ubuntu-latest
@@ -26,7 +53,7 @@ jobs:
           node-version: '24'
 
       - name: Run frontend tests
-        run: node --test tests/*.test.js
+        run: make test-js
 
   python-sqlite:
     name: Python tests (SQLite + migrations)
@@ -65,7 +92,30 @@ jobs:
           .venv/bin/flask db heads
 
       - name: Run Python test suite
-        run: .venv/bin/python -m pytest tests -q -ra
+        run: .venv/bin/python -m pytest tests -q -ra -m "not browser"
+
+  browser:
+    name: Browser E2E tests (Playwright Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: requirements*.txt
+
+      - name: Create virtualenv and install dependencies
+        run: |
+          uv venv --python 3.14 .venv
+          uv pip install --python .venv/bin/python -r requirements-dev.txt
+
+      - name: Install Chromium for Playwright
+        run: .venv/bin/playwright install --with-deps chromium
+
+      - name: Run Playwright browser suite
+        run: make test-browser
 
   python-mariadb:
     name: Python tests (MariaDB 11.8)
@@ -122,4 +172,4 @@ jobs:
         env:
           TEST_DATABASE_URL: mysql+pymysql://root:root@127.0.0.1:3306/flog_test
           DB_ISOLATION_LEVEL: READ COMMITTED
-        run: .venv/bin/python -m pytest tests -q -ra
+        run: .venv/bin/python -m pytest tests -q -ra -m "not browser"
