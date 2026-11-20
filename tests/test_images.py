@@ -1,9 +1,12 @@
 import io
+import os
+import uuid
 
 import sqlalchemy as sa
 
 from app import db
-from app.models import Image
+from app.images import image_usage, sync_untracked_images, visible_images
+from app.models import Image, Page, Post, PostDraft, PostRevision, User
 from tests.conftest import login, make_image
 
 PNG = make_image()
@@ -56,12 +59,6 @@ def test_upload_requires_login(client):
 
 
 # --- sync, usage and visibility -------------------------------------------
-
-import os
-import uuid
-
-from app.images import (image_usage, sync_untracked_images, visible_images)
-from app.models import Page, Post, PostDraft, PostRevision, User
 
 
 def make_file(application, name=None, data=PNG, ext='.png'):

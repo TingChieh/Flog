@@ -30,7 +30,7 @@ from flask import request, url_for
 
 from app import app
 
-FONTS = Path(app.static_folder) / 'fonts'
+FONTS = Path(app.static_folder or '') / 'fonts'
 MAX_PRELOADED = 32
 FACE_RE = re.compile(r'@font-face\s*\{([^}]+)\}')
 STYLESHEET_RE = re.compile(r'<link rel="stylesheet" href="([^"]*/fonts/article-fonts\.css[^"]*)">')
@@ -60,11 +60,18 @@ def _pieces():
 def _faces():
     """The pieces as _pieces() gives them, plus the Source Serif rules as CSS."""
     css = (FONTS / 'article-fonts.css').read_text()
-    noto, latin, serif = {}, set(), []
+    noto: dict[int, str] = {}
+    latin: set[int] = set()
+    serif: list[str] = []
     for face in FACE_RE.findall(css):
-        family = re.search(r"font-family:\s*'([^']+)'", face).group(1)
-        points = _codepoints(re.search(r'unicode-range:\s*([^;]+);', face).group(1))
-        filename = re.search(r"url\('([^']+)'\)", face).group(1)
+        family_match = re.search(r"font-family:\s*'([^']+)'", face)
+        range_match = re.search(r'unicode-range:\s*([^;]+);', face)
+        file_match = re.search(r"url\('([^']+)'\)", face)
+        if not (family_match and range_match and file_match):
+            continue
+        family = family_match.group(1)
+        points = _codepoints(range_match.group(1))
+        filename = file_match.group(1)
         if family == 'Noto Serif SC':
             for point in points:
                 noto.setdefault(point, filename)
@@ -79,8 +86,8 @@ def _characters(markup):
     noto, latin = _pieces()
     text = html.unescape(INVISIBLE_RE.sub(' ', markup))
     # Weigh each file by how much text it covers, not by how many glyphs.
-    weights = Counter()
-    points = {}
+    weights: Counter[str] = Counter()
+    points: dict[str, set[int]] = {}
     for char in text:
         point = ord(char)
         if point > 0x7F and point not in latin and point in noto:
@@ -96,7 +103,7 @@ def needed_files(markup):
 
 def _unicode_range(points):
     """U+ ranges covering exactly ``points`` (sorted), consecutive ones merged."""
-    runs = []
+    runs: list[list[int]] = []
     for point in points:
         if runs and point == runs[-1][1] + 1:
             runs[-1][1] = point

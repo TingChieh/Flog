@@ -100,7 +100,7 @@ def save_editor_draft(actor, post, values, sequence, session_key=None, generatio
         draft_sequence=sequence if sequence is not None else Post.draft_sequence + 1
     ).execution_options(synchronize_session=False))
     db.session.refresh(post)
-    if not result.rowcount:
+    if not getattr(result, 'rowcount', 0):
         return post, False
     post = save_draft(actor, post, values)
     post.draft.last_editor_sequence = post.draft_sequence

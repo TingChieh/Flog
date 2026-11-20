@@ -34,7 +34,7 @@ def pair_uploads(uploads):
     Returns ``(still, video)`` pairs (``video`` may be None) and the videos
     left without a still.
     """
-    groups = {}
+    groups: dict[str, list] = {}
     for file in uploads:
         groups.setdefault(Path(file.filename).stem.lower(), []).append(file)
     pairs, orphans = [], []
@@ -111,7 +111,8 @@ def upload_images():
             abort(400)
         flash('请选择要上传的图片。')
         return redirect(url_for('admin.images'))
-    saved, failed = 0, []
+    saved = 0
+    failed: list[str] = []
     pairs, orphans = pair_uploads(uploads)
     failed.extend(f'{file.filename}：{NO_STILL}' for file in orphans)
     for still, video in pairs:

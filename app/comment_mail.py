@@ -49,7 +49,7 @@ def stop_notifications(email):
             sa.func.lower(PostComment.email) == email.strip().lower(),
             PostComment.notify_replies.is_(True),
         ).values(notify_replies=False))
-    return result.rowcount
+    return int(getattr(result, 'rowcount', 0) or 0)
 
 
 def _excerpt(body):

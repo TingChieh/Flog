@@ -158,7 +158,7 @@ def test_markdown_editor_assets_are_scoped_to_markdown_admin_forms(
             assert gone not in editor.lower(), gone
     assert '/static/vendor/vditor/' not in public
     post_page = lxml_html.fromstring(post_editor)
-    assert [l.text_content() for l in post_page.xpath('//label[@for="post"]')] == ['正文']
+    assert [label.text_content() for label in post_page.xpath('//label[@for="post"]')] == ['正文']
     assert 'data-image-upload-url' not in public
     assert 'CKEDITOR' not in page_editor + post_editor + public
 

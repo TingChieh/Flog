@@ -19,7 +19,7 @@ from app.timezones import from_display, to_display
 
 def _uploaded(form_field):
     file = form_field.data
-    return file if file is not None and getattr(file, 'filename', '') else None
+    return file if file is not None and bool(getattr(file, 'filename', '')) else None
 
 
 def _save_cover(form, target):

@@ -1,5 +1,3 @@
-import logging, logging.handlers
-
 from logging.handlers import SMTPHandler
 
 
@@ -9,7 +7,7 @@ class SMTP_SSLHandler(SMTPHandler):
     Kudos to: user193661
     """
     def __init__(self, mailhost, fromaddr, toaddrs, subject, credentials=None, secure=None):
-        super(SMTP_SSLHandler, self).__init__(mailhost, fromaddr, toaddrs, subject, credentials, secure)
+        super().__init__(mailhost, fromaddr, toaddrs, subject, credentials, secure)
 
 
     def emit(self, record):
@@ -34,5 +32,5 @@ class SMTP_SSLHandler(SMTPHandler):
             smtp.quit()
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception:
             self.handleError(record)

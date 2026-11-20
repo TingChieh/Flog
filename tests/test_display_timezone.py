@@ -4,7 +4,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pytest
 import sqlalchemy as sa
 from lxml import html as lxml_html
 

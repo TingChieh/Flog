@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from hashlib import md5
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 import hmac
 import logging
 import sqlalchemy as sa
@@ -13,11 +13,16 @@ from time import time
 import jwt
 from app import app
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import DeclarativeBase as BaseModel
+else:
+    BaseModel = db.Model
+
 # Seconds a password reset link stays valid.
 RESET_TOKEN_LIFETIME = 600
 
 
-class User(UserMixin, db.Model):
+class User(UserMixin, BaseModel):
     __table_args__ = (
         sa.CheckConstraint("role IN ('user', 'admin')", name='ck_user_role'),
     )
@@ -50,7 +55,7 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return bool(self.password_hash) and check_password_hash(
-            self.password_hash, password)
+            self.password_hash or '', password)
 
     @property
     def is_admin(self):
@@ -62,8 +67,6 @@ class User(UserMixin, db.Model):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return f'https://cravatar.cn/avatar/{digest}?d=identicon&s={size}'
 
-        
-        
     def _password_fingerprint(self):
         """Changes whenever the password does, so a used token stops working."""
         return hmac.new(app.config['SECRET_KEY'].encode(),
@@ -96,7 +99,7 @@ class User(UserMixin, db.Model):
 def load_user(id):
     return db.session.get(User, int(id))
 
-class AuthAttempt(db.Model):
+class AuthAttempt(BaseModel):
     """A failed sign-in or a reset request, kept for a day to slow down guessing.
 
     Only keyed hashes are stored: of the network address, and of the email
@@ -113,14 +116,14 @@ class AuthAttempt(db.Model):
         nullable=False, index=True, default=lambda: datetime.now(timezone.utc))
 
 
-class Category(db.Model):
+class Category(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(120), unique=True, nullable=False)
     # Relationship with Post
-    posts: so.Mapped[list["Post"]] = so.relationship('Post', back_populates='category', lazy='dynamic')    
+    posts: so.Mapped[list["Post"]] = so.relationship('Post', back_populates='category', lazy='dynamic')
 
 
-class SiteSettings(db.Model):
+class SiteSettings(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True, default=1)
     registration_open: so.Mapped[bool] = so.mapped_column(
         sa.Boolean, nullable=False, default=False, server_default=sa.false())
@@ -144,7 +147,7 @@ def get_site_settings():
     return settings
 
 
-class Post(db.Model):
+class Post(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     # Address of the post on the old blog (/archives/<legacy_id>/), if any.
     legacy_id: so.Mapped[Optional[int]] = so.mapped_column(
@@ -214,7 +217,7 @@ class Post(db.Model):
         return '<Post {}>'.format(self.title)
 
 
-class PostDraft(db.Model):
+class PostDraft(BaseModel):
     post_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey('post.id', ondelete='CASCADE'), primary_key=True)
     title: so.Mapped[str] = so.mapped_column(sa.String(120), nullable=False)
@@ -231,7 +234,7 @@ class PostDraft(db.Model):
     post: so.Mapped[Post] = so.relationship(back_populates='draft')
 
 
-class PostRevision(db.Model):
+class PostRevision(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     post_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey('post.id', ondelete='CASCADE'), nullable=False, index=True)
@@ -246,7 +249,7 @@ class PostRevision(db.Model):
     post: so.Mapped[Post] = so.relationship(back_populates='revisions')
 
 
-class PostComment(db.Model):
+class PostComment(BaseModel):
     __table_args__ = (
         sa.CheckConstraint(
             '(post_id IS NOT NULL) + (page_id IS NOT NULL) '
@@ -310,7 +313,7 @@ class PostComment(db.Model):
         return f'https://cravatar.cn/avatar/{digest}?d=identicon&s={size}'
 
 
-class PostLike(db.Model):
+class PostLike(BaseModel):
     """A reaction from a browser (``visitor_id``) and, if they were signed in, a user."""
     __table_args__ = (
         sa.UniqueConstraint('post_id', 'user_id', name='uq_post_like'),
@@ -335,7 +338,7 @@ class PostLike(db.Model):
     user: so.Mapped[Optional[User]] = so.relationship(back_populates='post_likes')
 
 
-class Page(db.Model):
+class Page(BaseModel):
     __table_args__ = (
         sa.CheckConstraint(
             "kind IN ('content', 'module')", name='ck_page_kind'),
@@ -382,7 +385,7 @@ class Page(db.Model):
         order_by='PostComment.timestamp')
 
 
-class PageRedirect(db.Model):
+class PageRedirect(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     slug: so.Mapped[str] = so.mapped_column(
         sa.String(120), nullable=False, unique=True, index=True)
@@ -392,7 +395,7 @@ class PageRedirect(db.Model):
     page: so.Mapped[Page] = so.relationship(back_populates='redirects')
 
 
-class Image(db.Model):
+class Image(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     filename: so.Mapped[str] = so.mapped_column(
         sa.String(80), unique=True, index=True)
@@ -413,7 +416,7 @@ class Image(db.Model):
     uploader: so.Mapped[Optional[User]] = so.relationship()
 
 
-class PodcastShow(db.Model):
+class PodcastShow(BaseModel):
     """The podcast's own wording and artwork; blank fields use the defaults."""
     id: so.Mapped[int] = so.mapped_column(primary_key=True, default=1)
     # The podcast is off until an admin switches it on; while off its pages,
@@ -444,7 +447,7 @@ def get_podcast_show():
     return show
 
 
-class Episode(db.Model):
+class Episode(BaseModel):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     # The public address is /podcast/<number>, so it is unique and never reused.
     number: so.Mapped[int] = so.mapped_column(

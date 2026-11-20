@@ -1,0 +1,25 @@
+[tool.ruff]
+target-version = "py314"
+extend-exclude = ["migrations/versions", "app/static/vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/__init__.py" = ["E402", "F401"]
+"app/admin/__init__.py" = ["E402", "F401"]
+"tests/test_admin_mail_compose.py" = ["F811"]
+
+[tool.mypy]
+python_version = "3.14"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+files = ["app", "config.py", "flog.py"]
+
+[tool.pytest.ini_options]
+markers = [
+    "browser: end-to-end tests running in a real Chromium browser via Playwright",
+]

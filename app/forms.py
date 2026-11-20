@@ -76,7 +76,7 @@ class PostForm(FlaskForm):
     post = TextAreaField(_l('Say something'), validators=[
         DataRequired()])
     submit = SubmitField(_l('Submit'))
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         categories = db.session.execute(sa.select(Category).order_by(Category.name)).scalars()
@@ -100,19 +100,19 @@ class PostCommentForm(FlaskForm):
     website = StringField()
     form_token = HiddenField()
     submit = SubmitField(_l('Publish comment'))
-    
-    
-    
+
+
+
 class SearchForm(FlaskForm):
     query = StringField('Search', validators=[Optional()])
     submit = SubmitField('Search')
-    
-    
+
+
 class CategoryForm(FlaskForm):
     name = StringField(_l('Name'), validators=[DataRequired(), Length(1, 128)])
     submit = SubmitField(_l('Submit'))
-    
+
     def validate_name(self, field):
         if db.session.execute(sa.select(Category).filter_by(name=field.data)).scalar():
             raise ValidationError('Name already in use.')
-        
+

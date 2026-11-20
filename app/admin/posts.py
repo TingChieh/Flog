@@ -42,7 +42,7 @@ def draft_values_from_json(payload):
 
 def editor_request_metadata():
     session_key = request.headers.get('X-Draft-Key')
-    sequence = request.headers.get('X-Draft-Sequence')
+    raw_sequence = request.headers.get('X-Draft-Sequence')
     try:
         generation = int(request.headers.get('X-Draft-Generation', '0'))
     except ValueError:
@@ -51,10 +51,10 @@ def editor_request_metadata():
         abort(400)
     if session_key is not None and (not session_key or len(session_key) > 64):
         abort(400)
-    if sequence is None:
+    if raw_sequence is None:
         return session_key, None, generation
     try:
-        sequence = int(sequence)
+        sequence = int(raw_sequence)
     except ValueError:
         abort(400)
     if sequence < 1:

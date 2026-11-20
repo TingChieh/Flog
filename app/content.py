@@ -72,10 +72,10 @@ def split_hard_breaks(source):
     for paragraph in root.findall('p'):
         if paragraph.get('class') or paragraph.find('br') is None:
             continue
-        parts = [[paragraph.text or '', []]]
+        parts: list[tuple[str, list]] = [(paragraph.text or '', [])]
         for child in list(paragraph):
             if child.tag == 'br':
-                parts.append([(child.tail or '').lstrip(), []])
+                parts.append(((child.tail or '').lstrip(), []))
             else:
                 parts[-1][1].append(child)
         parts = [part for part in parts if part[0].strip() or part[1]]

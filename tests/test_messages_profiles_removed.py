@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from lxml import html as lxml_html
 
@@ -30,9 +32,6 @@ def test_base_template_has_no_popover_or_notification_scripts(client, users):
     for fragment in ('initialize_popovers', 'initialize_notifications',
                      'message_count', '/notifications', '-progress'):
         assert fragment not in body, fragment
-
-
-from pathlib import Path
 
 
 def test_removed_models_and_user_methods_are_gone():

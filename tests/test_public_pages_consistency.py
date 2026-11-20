@@ -3,6 +3,9 @@ from pathlib import Path
 
 from lxml import html as lxml_html
 
+from app import db
+from app.models import User
+
 STYLESHEET = Path(__file__).resolve().parents[1] / 'app' / 'static' / 'style.css'
 SERIF_STACK = "'Source Serif 4', 'Noto Serif SC', 'Songti SC', Georgia, serif"
 
@@ -45,10 +48,6 @@ def test_desktop_breakpoint_shows_links_inline():
     assert 'display: flex !important;' in block
 
 
-from app import db
-from app.models import User
-
-
 def assert_public_form(page, label):
     assert not page.xpath('//header[contains(@class, "hero--page")]')
     assert page.xpath('//section[contains(@class, "form-shell") and contains(@class, "public-page")]')
@@ -84,7 +83,6 @@ def test_category_page_is_laid_out_like_the_archive(client, users):
     assert page.xpath('//ul[contains(@class, "archive-list")]//a[contains(@class, "archive-entry__title")]')
 
 
-from app.models import Post
 
 
 def test_500_page_matches_the_404_structure(application):

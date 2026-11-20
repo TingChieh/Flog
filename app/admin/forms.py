@@ -196,7 +196,7 @@ class MailComposeForm(FlaskForm):
     references = HiddenField()
     submit = SubmitField('发送')
 
-    recipients = ()
+    recipients: list[str] = []
 
     def validate_to(self, field):
         parts = [p for p in re.split(r'[,;\s]+', field.data or '') if p]
@@ -209,8 +209,8 @@ class MailComposeForm(FlaskForm):
             try:
                 recipients.append(validate_email(
                     part, check_deliverability=False).normalized)
-            except EmailNotValidError:
-                raise ValidationError(f'收件人地址无效：{part}')
+            except EmailNotValidError as exc:
+                raise ValidationError(f'收件人地址无效：{part}') from exc
         self.recipients = recipients
 
     def validate_subject(self, field):

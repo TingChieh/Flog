@@ -44,10 +44,11 @@ def _like_pattern(text):
 
 
 def _pages_redirect():
-    return redirect(url_for('admin.pages', **{
-        key: value for key, value in (
-            ('q', request.args.get('q')),
-            ('filter', request.args.get('filter'))) if value}))
+    return redirect(url_for(
+        'admin.pages',
+        q=request.args.get('q') or None,
+        filter=request.args.get('filter') or None,
+    ))
 
 
 def _podcast_matches(show, active_filter, search):

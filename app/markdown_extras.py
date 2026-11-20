@@ -75,7 +75,9 @@ class ListIndentPreprocessor(Preprocessor):
     """
 
     def run(self, lines):
-        out, items, fence_delta = [], [], None
+        out: list[str] = []
+        items: list[int] = []
+        fence_delta = None
         blank_before = False
         in_block = False  # last line is a continuation block of a list item
         for line in lines:
@@ -145,11 +147,13 @@ class TaskListTreeprocessor(Treeprocessor):
             holder = item[0]
         else:
             return False
-        marker = TASK_MARKER.match(holder.text)
+        marker = TASK_MARKER.match(holder.text or '')
+        if marker is None:
+            return False
         box = etree.Element('input', {'type': 'checkbox', 'disabled': 'disabled'})
         if marker.group(1) in 'xX':
             box.set('checked', 'checked')
-        box.tail = ' ' + holder.text[marker.end():]
+        box.tail = ' ' + (holder.text or '')[marker.end():]
         holder.text = None
         holder.insert(0, box)
         item.set('class', 'task-list-item')

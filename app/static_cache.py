@@ -21,9 +21,9 @@ from app import app
 LONG_LIVED = re.compile(
     r'^(fonts/.+\.(woff2|ttf)|vendor/(bootstrap|katex|mermaid|vditor)/\d[\w.]*/.+)$')
 ONE_YEAR = 'public, max-age=31536000, immutable'
-STATIC = Path(app.static_folder).resolve()
+STATIC = Path(app.static_folder or '').resolve()
 # (filename, mtime, size) -> fingerprint; a changed file gets a new key.
-_fingerprints = {}
+_fingerprints: dict[tuple[str, int, int], str] = {}
 
 
 def fingerprint(filename):
@@ -54,7 +54,7 @@ def fingerprint_static_urls(endpoint, values):
 def cache_versioned_static_files(response):
     if request.endpoint != 'static' or response.status_code not in (200, 304):
         return response
-    filename = request.view_args.get('filename', '')
+    filename = (request.view_args or {}).get('filename', '')
     version = request.args.get('v')
     if LONG_LIVED.match(filename) or (version and version == fingerprint(filename)):
         response.headers['Cache-Control'] = ONE_YEAR

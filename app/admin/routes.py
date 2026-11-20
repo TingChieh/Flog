@@ -15,7 +15,7 @@ def _count(model, *conditions):
 @bp.route('/', methods=['GET'], strict_slashes=False)
 @login_required
 def dashboard():
-    metrics = [{'label': '我的文章', 'endpoint': 'admin.posts', 'scope': 'mine',
+    metrics: list[dict[str, object]] = [{'label': '我的文章', 'endpoint': 'admin.posts', 'scope': 'mine',
                 'value': str(_count(Post, Post.user_id == current_user.id))}]
     if current_user.is_admin:
         published = _count(Page, Page.is_published.is_(True))

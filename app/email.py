@@ -21,7 +21,7 @@ def mail_sender():
 
 def mail_senders():
     """Addresses the admin page may send from: MAIL_SENDERS, then the default."""
-    result = []
+    result: list[str] = []
     for address in [*current_app.config['MAIL_SENDERS'], mail_sender() or '']:
         address = address.strip()
         if '@' in address and address.lower() not in [a.lower() for a in result]:
@@ -54,7 +54,7 @@ def send_email(subject, sender, recipients, text_body, html_body,
         mail.send(msg)
     else:
         Thread(target=send_async_email,
-               args=(current_app._get_current_object(), msg)).start()
+               args=(current_app._get_current_object(), msg)).start()  # type: ignore[attr-defined]
 
 
 def send_password_reset_email(user: User):

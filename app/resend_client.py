@@ -33,7 +33,7 @@ STATUS_LABELS = {
 
 _UUID = re.compile(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
                    r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
-_cache = {}
+_cache: dict[tuple[str, str, str], tuple[float, object]] = {}
 
 
 class ResendError(Exception):

@@ -40,7 +40,7 @@ def blocked(action, *emails):
         used = db.session.scalar(sa.select(sa.func.count()).select_from(
             AuthAttempt).where(
                 AuthAttempt.action == action, AuthAttempt.key_hash == key,
-                AuthAttempt.created_at >= since))
+                AuthAttempt.created_at >= since)) or 0
         if used >= limit:
             return True
     return False

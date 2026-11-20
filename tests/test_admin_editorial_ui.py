@@ -2,6 +2,8 @@ from pathlib import Path
 
 from lxml import html as lxml_html
 
+from app import db
+from app.models import Page, Post, PostComment
 from tests.conftest import login
 
 STYLESHEET = Path(__file__).resolve().parents[1] / 'app' / 'static' / 'style.css'
@@ -47,10 +49,6 @@ def test_shell_css_section_defines_the_editorial_navigation():
     assert '.admin-nav__link[aria-current="page"]' in block
     assert '.admin-sidebar { padding: 0; background: transparent; border: 0; }' in block
     assert '@media (width <= 768px)' in block
-
-
-from app import db
-from app.models import Category, Page, Post, PostComment
 
 
 def rule_bodies(css, selector):

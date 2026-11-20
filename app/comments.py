@@ -175,7 +175,7 @@ def approved_threads(target):
     rows = db.session.scalars(sa.select(PostComment).where(
         _target_filter(target), PostComment.status == APPROVED).order_by(
             PostComment.timestamp, PostComment.id)).all()
-    replies = {}
+    replies: dict[int, list[PostComment]] = {}
     for comment in rows:
         if comment.parent_id is not None:
             replies.setdefault(comment.parent_id, []).append(comment)

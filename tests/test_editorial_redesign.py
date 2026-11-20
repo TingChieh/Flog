@@ -1,5 +1,4 @@
 from lxml import html
-import pytest
 
 from app import db
 from app.models import Post

@@ -411,7 +411,7 @@ def image_usage(filenames):
     wanted = set(filenames)
     if not wanted:
         return {}
-    usage = {name: [] for name in wanted}
+    usage: dict[str, list[Usage]] = {name: [] for name in wanted}
 
     def collect(kind, rows):
         for source_id, title, body in rows:

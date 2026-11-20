@@ -200,41 +200,41 @@ def scenarios(t):
     t.check('clip is the transcoded 960px one', auto['during']['w'] == 960, auto)
     t.check('it plays only once on its own', not auto['again'], auto)
 
-    manual = t.run(head + GOTO_POST + f"""
+    manual = t.run(head + GOTO_POST + """
       const box = page.locator('.live-photo');
       await box.scrollIntoViewIfNeeded();
-      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
-      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {timeout: 8000});
+      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {timeout: 8000});
       const state = () => page.evaluate(() => document.querySelector('.live-photo').classList.contains('is-playing'));
-      const out = {{}};
+      const out = {};
       await box.hover();
       await page.waitForTimeout(700);
       out.hoverPlays = await state();
-      await page.evaluate(async () => {{
+      await page.evaluate(async () => {
         const b = document.querySelector('.live-photo');
-        b.dispatchEvent(new Event('touchstart', {{bubbles: true}}));
+        b.dispatchEvent(new Event('touchstart', {bubbles: true}));
         await new Promise((r) => setTimeout(r, 700));
-        b.dispatchEvent(new Event('touchend', {{bubbles: true}}));
-      }});
+        b.dispatchEvent(new Event('touchend', {bubbles: true}));
+      });
       out.longPressPlays = await state();
       await page.click('.live-photo__badge');
-      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {timeout: 8000});
       out.buttonPlays = true;
       await page.waitForTimeout(400);
-      out.badge = await page.evaluate(() => {{
+      out.badge = await page.evaluate(() => {
         const badge = document.querySelector('.live-photo__badge');
-        return {{pressed: badge.getAttribute('aria-pressed'), light: getComputedStyle(badge).backgroundColor}};
-      }});
+        return {pressed: badge.getAttribute('aria-pressed'), light: getComputedStyle(badge).backgroundColor};
+      });
       await page.click('.live-photo__badge');
       await page.waitForTimeout(300);
       out.secondClickStops = !(await state());
       out.lightboxOpened = !!(await page.$('.pswp--open'));
       await page.click('.live-photo__badge');
-      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
-      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {{timeout: 8000}});
+      await page.waitForFunction(() => document.querySelector('.live-photo').classList.contains('is-playing'), null, {timeout: 8000});
+      await page.waitForFunction(() => !document.querySelector('.live-photo').classList.contains('is-playing'), null, {timeout: 8000});
       out.endsByItself = true;
       return out;
-    }}""")
+    }""")
     t.check('hover does not play it', not manual['hoverPlays'], manual)
     t.check('long press does not play it', not manual['longPressPlays'], manual)
     t.check('the LIVE button plays it again', manual['buttonPlays'] and manual['badge']['pressed'] == 'true', manual)

@@ -92,9 +92,9 @@ def add_episode(number, title, audio_path, published, summary, notes_path,
 
     try:
         release = from_display(datetime.fromisoformat(published))
-    except ValueError:
+    except ValueError as exc:
         raise click.BadParameter(
-            'use a form like "2022-01-29 16:04"', param_hint='--published')
+            'use a form like "2022-01-29 16:04"', param_hint='--published') from exc
     body = None
     if notes_path:
         with open(notes_path, encoding='utf-8') as notes:
@@ -107,7 +107,7 @@ def add_episode(number, title, audio_path, published, summary, notes_path,
             feed_guid=feed_guid, is_published=not draft)
         db.session.commit()
     except AudioUploadError as exc:
-        raise click.ClickException(str(exc))
+        raise click.ClickException(str(exc)) from exc
     click.echo(f'Added EP-{episode.number:03d} {episode.title} '
                f'({episode.audio_duration} s, {episode.audio_size} bytes).')
 
