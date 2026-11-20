@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from app import app
 
 ROOT = Path(__file__).resolve().parents[1]
 # Built from pieces so this file does not contain the IDs it looks for.
@@ -35,7 +34,7 @@ def test_no_personal_analytics_ids_are_committed():
 
 
 def test_docs_and_code_carry_no_local_machine_paths():
-    markers = ('/Users/', '/private/tmp', 'claude-501')
+    markers = ('/Users/', '/home/', '/private/tmp', 'claude-501')
     hits = [name for name, path in tracked_text_files()
             if name != 'tests/test_public_repo_hygiene.py'
             and any(m in path.read_text(errors='ignore') for m in markers)]
