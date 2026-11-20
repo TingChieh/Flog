@@ -2,8 +2,9 @@
 
 {% block page_hero %}{% endblock %}
 
+{% block robots %}noindex, nofollow{% endblock %}
+
 {% block page_styles %}
-<meta name="robots" content="noindex, nofollow">
 {# Only the lightbox uses it, and that needs the script anyway: no need to wait for it. #}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/photoswipe/photoswipe.css') }}" media="print" onload="this.media='all'">
 {% endblock %}

@@ -12,7 +12,7 @@ from app.admin.pages import _like_pattern
 from app.comment_mail import notify_comment_published, notify_comments_approved
 from app.comments import CommentRejected, CommentsClosed, submit_comment
 from app.models import Category, Post, PostComment
-from app.security import admin_required
+from app.security import admin_required, is_local_path
 
 
 COMMENTS_PER_PAGE = 50
@@ -94,7 +94,7 @@ def _comment_target(raw):
 def _comments_back():
     """Return to the list the admin came from, filters and all."""
     target = request.form.get('next', '')
-    if target.startswith('/admin/comments'):
+    if is_local_path(target) and target.startswith('/admin/comments'):
         return redirect(target)
     return redirect(url_for('admin.comments'))
 

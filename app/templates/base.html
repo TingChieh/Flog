@@ -4,15 +4,27 @@
     <meta charset="utf-8">
     <link rel="alternate" type="application/rss+xml" title="{{ _('Subscribe via RSS') }}" href="{{ url_for('feed') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{% block description %}{{ site_text.site_name }}：思考、记录，以及日常生活。{% endblock %}">
-    <script src="{{ url_for('static', filename='theme.js') }}"></script>
-    {% if title %}
-    <title>{{ title }} - {{ site_text.site_name }}</title>
-    {% elif request.endpoint == 'index' %}
-    <title>{{ site_text.home_tab_title }}</title>
-    {% else %}
-    <title>{{ site_text.site_name }}</title>
+    {% set page_title %}{% if title %}{{ title }} - {{ site_text.site_name }}{% elif request.endpoint == 'index' %}{{ site_text.home_tab_title }}{% else %}{{ site_text.site_name }}{% endif %}{% endset %}
+    {% set page_description %}{% block description %}{{ site_text.site_name }}：思考、记录，以及日常生活。{% endblock %}{% endset %}
+    {% set robots_content %}{% block robots %}{{ seo.robots or '' }}{% endblock %}{% endset %}
+    <meta name="description" content="{{ page_description|trim }}">
+    {% if robots_content|trim %}
+    <meta name="robots" content="{{ robots_content|trim }}">
     {% endif %}
+    {% if seo.canonical_url %}
+    <link rel="canonical" href="{{ seo.canonical_url }}">
+    {% endif %}
+    {% if request.blueprint != 'admin' %}
+    <meta property="og:site_name" content="{{ site_text.site_name }}">
+    <meta property="og:type" content="{{ seo.og_type }}">
+    <meta property="og:title" content="{{ page_title }}">
+    <meta property="og:description" content="{{ page_description|trim }}">
+    {% if seo.canonical_url %}
+    <meta property="og:url" content="{{ seo.canonical_url }}">
+    {% endif %}
+    {% endif %}
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <title>{{ page_title }}</title>
     {% if config.GTM_ID %}
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

@@ -1,35 +1,20 @@
 """Public pages of the podcast, its feed, and the old podcast domain's redirect."""
 from flask import abort, redirect, render_template, request, url_for
-from flask_login import current_user
-from sqlalchemy.exc import SQLAlchemyError
 
 from app import app, db
 from app.comments import comment_context
-from app.forms import PostCommentForm
 from app.models import Episode
 from app.podcast import (UploadRequest, audio_url, build_feed, cover_url, format_duration,
                          latest_episodes, legacy_redirect_target,
-                         podcast_enabled, podcast_in_nav,
+                         podcast_enabled,
                          public_episode_or_404, show_text)
-from app.routes import _take_comment
+from app.routes import handle_comment_request
 
 app.jinja_env.filters['duration'] = format_duration
 app.request_class = UploadRequest
 
 
 PUBLIC_ENDPOINTS = frozenset({'podcast_index', 'podcast_episode', 'podcast_feed'})
-
-
-@app.context_processor
-def inject_podcast_link():
-    """The blog menu links to the podcast while it is on."""
-    if request.blueprint == 'admin':
-        return {'podcast_nav': False}
-    try:
-        return {'podcast_nav': podcast_in_nav()}
-    except SQLAlchemyError:
-        db.session.rollback()
-        return {'podcast_nav': False}
 
 
 @app.before_request
@@ -41,7 +26,7 @@ def podcast_switch():
 
 @app.before_request
 def redirect_old_podcast_domain():
-    """podcast.aisaka.cc used to be its own site; send it to the podcast here."""
+    """Redirect configured legacy podcast hostnames to the integrated podcast."""
     hosts = app.config['PODCAST_REDIRECT_HOSTS']
     base = app.config['SITE_URL']
     if not hosts or not base or request.host.split(':')[0].lower() not in hosts:
@@ -62,17 +47,12 @@ def podcast_index():
 @app.route('/podcast/<int:number>', methods=['GET', 'POST'])
 def podcast_episode(number):
     episode = public_episode_or_404(number)
-    form = PostCommentForm()
-    if current_user.is_authenticated and request.method == 'GET':
-        form.name.data = current_user.username
-        form.email.data = current_user.email
-    if request.method == 'POST':
-        taken = _take_comment(
-            episode, form,
-            lambda anchor: url_for('podcast_episode', number=episode.number,
-                                   _anchor=anchor))
-        if taken is not None:
-            return taken
+    form, taken = handle_comment_request(
+        episode,
+        lambda anchor: url_for('podcast_episode', number=episode.number,
+                               _anchor=anchor))
+    if taken is not None:
+        return taken
 
     show = show_text()
     newer = db.session.scalar(latest_episodes().where(

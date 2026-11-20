@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree as ET
-from urllib.parse import urlsplit
 from flask import abort, render_template, flash, redirect, send_from_directory, url_for, request, g, make_response, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_babel import _, ngettext, get_locale
@@ -19,7 +18,8 @@ from app.models import Category, Episode, User, Post, Page, PostComment, get_sit
 from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
 
-from app.security import admin_required
+from app.security import admin_required, is_local_path
+from app.seo import public_base_url, public_url
 from app.content import normalize_body_format, render_content, render_article
 from app.post_drafts import DraftValues, publish_draft, save_draft
 from app.likes import (CHANGED, DEFAULT_REACTION, LIKED, LIMITED, REACTION_EMOJI, REACTIONS,
@@ -54,7 +54,8 @@ def listed_post_statement():
 
 def public_post_or_404(post_id):
     return db.first_or_404(
-        published_post_statement().where(Post.id == post_id))
+        published_post_statement().options(
+            so.selectinload(Post.author)).where(Post.id == post_id))
 
 
 # How stale last_seen may get; otherwise every signed-in request writes the user row.
@@ -98,19 +99,6 @@ def index():
                            prev_url=prev_url)
 
 
-def _is_local_path(target):
-    """Whether ``target`` is a path on this site, safe to redirect to after sign-in.
-
-    Browsers read ``//host`` and ``/\\host`` as other sites, and drop tabs and
-    line breaks before they look.
-    """
-    if (not target or not target.startswith('/') or '\\' in target
-            or any(ord(char) < 0x20 for char in target)):
-        return False
-    parts = urlsplit(target)
-    return not parts.scheme and not parts.netloc and not target.startswith('//')
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -130,8 +118,8 @@ def login():
             flash(_('Invalid username or password'))
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not _is_local_path(next_page):
+        next_page = request.args.get('next') or ''
+        if not is_local_path(next_page):
             next_page = url_for('index')
         return redirect(next_page)
     return render_template('user/login.html', title=_('Sign In'), form=form)
@@ -241,10 +229,6 @@ def delete_post(post_id):
     return redirect(url_for('admin.posts'))
 
 
-    
-        
-
-
 def _search_query():
     query = request.args.get('q', '').strip()
     if len(query) > app.config['SEARCH_QUERY_MAX_LENGTH']:
@@ -261,7 +245,8 @@ def search():
     posts = search_posts(query, per_page + 1, (page - 1) * per_page)
     results = [result_data(post, query) for post in posts[:per_page]]
     return render_template('post/search_results.html', title=_('Search'),
-                           query=query, results=results, items=zip(posts[:per_page], results), highlight=highlight,
+                           query=query, results=results,
+                           items=zip(posts[:per_page], results, strict=True), highlight=highlight,
                            result_count=search_posts(query, count=True), ngettext=ngettext,
                            next_url=url_for('search', q=query, page=page + 1) if len(posts) > per_page else None,
                            prev_url=url_for('search', q=query, page=page - 1) if page > 1 else None)
@@ -363,15 +348,10 @@ def edit_category(category_id):
 
 @app.route('/category/<int:category_id>', methods=['GET'])
 def posts_by_category(category_id):
-    # Query for the category by its ID
     category = db.get_or_404(Category, category_id)
-    
-    # Get all posts that belong to this category
     posts = db.session.scalars(listed_post_statement().where(
         Post.category_id == category.id
     ).order_by(Post.timestamp.desc(), Post.id.desc())).all()
-
-    # Render the posts in the category using a template
     return render_template(
         'post/posts_by_category.html', title=category.name, category=category, posts=posts)
 
@@ -398,12 +378,18 @@ def comment_unsubscribe(token):
                            title='退订评论邮件', form=form, email=email)
 
 
-def _take_comment(target, form, destination):
-    """Handle a posted comment. Returns a redirect, or None to show the form again."""
+def handle_comment_request(target, destination):
+    """Prepare the comment form and handle POST submissions for any commentable target."""
+    form = PostCommentForm()
+    if current_user.is_authenticated and request.method == 'GET':
+        form.name.data = current_user.username
+        form.email.data = current_user.email
+    if request.method != 'POST':
+        return form, None
     if not target.comments_enabled:
         abort(403)
     if not form.validate_on_submit():
-        return None
+        return form, None
     try:
         result = submit_comment(
             target, name=form.name.data, email=form.email.data,
@@ -415,31 +401,25 @@ def _take_comment(target, form, destination):
         abort(403)
     except CommentRejected as exc:
         form.body.errors.append(str(exc))
-        return None
+        return form, None
     db.session.commit()
     if result.outcome == APPROVED:
         notify_comment_published(result.comment)
         flash('你的评论已发布。')
-        return redirect(destination(f'comment-{result.comment.id}'))
+        return form, redirect(destination(f'comment-{result.comment.id}'))
     if result.outcome == PENDING:
         notify_comment_pending(result.comment)
     flash('评论已提交，审核通过后显示。')
-    return redirect(destination('comments'))
+    return form, redirect(destination('comments'))
 
 
 @app.route('/post/<int:post_id>', methods=['GET', 'POST'])
 def post(post_id):
     post = public_post_or_404(post_id)
-    form = PostCommentForm()
-    if current_user.is_authenticated and request.method == 'GET':
-        form.name.data = current_user.username
-        form.email.data = current_user.email
-    if request.method == 'POST':
-        taken = _take_comment(
-            post, form,
-            lambda anchor: url_for('post', post_id=post.id, _anchor=anchor))
-        if taken is not None:
-            return taken
+    form, taken = handle_comment_request(
+        post, lambda anchor: url_for('post', post_id=post.id, _anchor=anchor))
+    if taken is not None:
+        return taken
 
     counted = False
     if request.method == 'GET':
@@ -472,16 +452,16 @@ def toggle_post_like(post_id):
     db.session.commit()
     best = request.accept_mimetypes.best_match(['text/html', 'application/json'])
     if best == 'application/json':
-        response = jsonify(
+        response = make_response(jsonify(
             liked=result in (LIKED, CHANGED), count=post.likes_count(),
             reaction=emoji if result in (LIKED, CHANGED) else None,
-            counts=reaction_counts(post))
+            counts=reaction_counts(post)))
         if result == LIMITED:
             response.status_code = 429
     else:
         if result == LIMITED:
             flash(_('Too many likes have come from your network for this post.'))
-        response = redirect(url_for('post', post_id=post.id))
+        response = make_response(redirect(url_for('post', post_id=post.id)))
     if issued:
         attach_visitor_cookie(response, issued)
     return response
@@ -517,11 +497,6 @@ def edit_post(post_id):
         flash(_('Your post has been updated!'))
         return redirect(url_for('admin.posts'))
 
-    # Populate form with the current post data
-    form.title.data = post.title
-    form.post.data = post.body
-    form.category.data = post.category_id
-
     return redirect(url_for('admin.edit_post', post_id=post.id))
 
 @app.route('/rss')
@@ -534,9 +509,9 @@ def feed():
     site_name = site_text()['site_name']
     fg = FeedGenerator()
     fg.title(site_name)
-    fg.link(href=url_for('feed', _external=True), rel='self')
+    fg.link(href=public_url('feed'), rel='self')
     # feedgen uses the last registered link for the RSS channel link.
-    fg.link(href=request.url_root, rel='alternate')
+    fg.link(href=f'{public_base_url()}/', rel='alternate')
     fg.description(site_name)
     posts = db.session.scalars(
         published_post_statement().order_by(Post.timestamp.desc(), Post.id.desc())
@@ -544,7 +519,7 @@ def feed():
     ).all()
     for post in posts:
         entry = fg.add_entry(order='append')
-        permalink = url_for('post', post_id=post.id, _external=True)
+        permalink = public_url('post', post_id=post.id)
         entry.title(post.title)
         entry.link(href=permalink)
         entry.guid(permalink, permalink=True)
@@ -573,25 +548,25 @@ def sitemap():
         if modified is not None:
             ET.SubElement(item, f'{{{namespace}}}lastmod').text = modified.isoformat()
 
-    add_url(request.url_root)
-    add_url(url_for('archive', _external=True))
+    add_url(f'{public_base_url()}/')
+    add_url(public_url('archive'))
     for post in db.session.scalars(
             published_post_statement().options(
                 so.load_only(Post.id, Post.updated_at, Post.timestamp))):
-        add_url(url_for('post', post_id=post.id, _external=True),
+        add_url(public_url('post', post_id=post.id),
                 post.updated_at or post.timestamp)
     for page in db.session.scalars(
             sa.select(Page).options(
                 so.load_only(Page.slug, Page.updated_at)
             ).where(Page.is_published.is_(True))):
-        add_url(url_for('public_page', slug=page.slug, _external=True), page.updated_at)
+        add_url(public_url('public_page', slug=page.slug), page.updated_at)
     if podcast_enabled():
-        add_url(url_for('podcast_index', _external=True))
+        add_url(public_url('podcast_index'))
         for episode in db.session.scalars(
                 published_episodes().options(
                     so.load_only(Episode.number, Episode.published_at))):
-            add_url(url_for('podcast_episode', number=episode.number,
-                            _external=True), episode.published_at)
+            add_url(public_url('podcast_episode', number=episode.number),
+                    episode.published_at)
     return app.response_class(ET.tostring(root, encoding='utf-8', xml_declaration=True),
                               content_type='application/xml; charset=utf-8')
 
@@ -606,7 +581,7 @@ def robots():
                               'Disallow: /reset_password_request\n'
                               'Disallow: /reset_password/\n'
                               'Disallow: /comments/unsubscribe/\n'
-                              f'Sitemap: {url_for("sitemap", _external=True)}\n',
+                              f'Sitemap: {public_url("sitemap")}\n',
                               content_type='text/plain; charset=utf-8')
 
 
@@ -622,16 +597,10 @@ def public_page(slug):
         return _redirect_to_public_page(page)
     if page.kind != PAGE_CONTENT:
         abort(404)
-    form = PostCommentForm()
-    if current_user.is_authenticated and request.method == 'GET':
-        form.name.data = current_user.username
-        form.email.data = current_user.email
-    if request.method == 'POST':
-        taken = _take_comment(
-            page, form,
-            lambda anchor: url_for('public_page', slug=page.slug, _anchor=anchor))
-        if taken is not None:
-            return taken
+    form, taken = handle_comment_request(
+        page, lambda anchor: url_for('public_page', slug=page.slug, _anchor=anchor))
+    if taken is not None:
+        return taken
     return render_template(
         'page/content.html', title=page.title, page=page, form=form,
         **comment_context(page, form))

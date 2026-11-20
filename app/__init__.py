@@ -23,7 +23,7 @@ app.config.from_object(Config)
 if app.config['TRUSTED_PROXY_HOPS']:
     from werkzeug.middleware.proxy_fix import ProxyFix
     hops = app.config['TRUSTED_PROXY_HOPS']
-    app.wsgi_app = ProxyFix(
+    app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
         app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops)
 
 
@@ -43,7 +43,7 @@ app.jinja_env.filters['localtime'] = to_display
 app.jinja_env.filters['ago'] = time_ago
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-login = LoginManager(app)
+login: LoginManager = LoginManager(app)
 login.login_view = 'login'
 login.login_message = _l('Please log in to access this page.')
 mail = Mail(app)
@@ -55,18 +55,22 @@ csrf = CSRFProtect(app)
 def inject_navigation_pages():
     # Admin pages override the public site navigation bar and never render this.
     if request.blueprint == 'admin':
-        return {'navigation_pages': [], 'navigation_items': []}
+        return {'navigation_items': []}
     from sqlalchemy.exc import SQLAlchemyError
-    from app.pages import visible_navigation_items, visible_navigation_pages
+    from app.pages import visible_navigation_items
 
     try:
-        return {
-            'navigation_pages': visible_navigation_pages(),
-            'navigation_items': visible_navigation_items(),
-        }
+        return {'navigation_items': visible_navigation_items()}
     except SQLAlchemyError:
         db.session.rollback()
-        return {'navigation_pages': [], 'navigation_items': []}
+        return {'navigation_items': []}
+
+
+@app.context_processor
+def inject_seo():
+    from app.seo import seo_context
+
+    return {'seo': seo_context()}
 
 @app.context_processor
 def inject_site_text():
