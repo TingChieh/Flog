@@ -22,6 +22,16 @@
     {% if seo.canonical_url %}
     <meta property="og:url" content="{{ seo.canonical_url }}">
     {% endif %}
+    {% if seo.image %}
+    <meta property="og:image" content="{{ seo.image.url }}">
+    {% if seo.image.width %}<meta property="og:image:width" content="{{ seo.image.width }}">{% endif %}
+    {% if seo.image.height %}<meta property="og:image:height" content="{{ seo.image.height }}">{% endif %}
+    {% if seo.image.alt %}<meta property="og:image:alt" content="{{ seo.image.alt }}">{% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ seo.image.url }}">
+    {% if seo.image.alt %}<meta name="twitter:image:alt" content="{{ seo.image.alt }}">{% endif %}
+    {% endif %}
+    {% if seo.structured_data %}<script type="application/ld+json">{{ seo.structured_data|tojson }}</script>{% endif %}
     {% endif %}
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
     <title>{{ page_title }}</title>

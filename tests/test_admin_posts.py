@@ -805,6 +805,36 @@ def test_save_draft_rejects_other_actor_for_unpersisted_post(
         assert post.draft is None
 
 
+def test_publish_validates_current_editor_values_and_preserves_them(client, application, users):
+    post_id = users['post']
+    login(client, 'author')
+    url = f'/admin/posts/{post_id}/publish'
+    with application.app_context():
+        post = db.session.get(Post, post_id)
+        post.body_format = 'markdown'
+        actor = db.session.get(User, users['author'])
+        save_draft(actor, post, DraftValues('Older title', 'Older text', 1))
+        db.session.commit()
+
+    missing = '![Missing](/files/' + 'a' * 32 + '.png)'
+    response = client.post(url, data={'title': 'Newest title', 'post': missing, 'category': 1})
+    assert response.status_code == 400
+    assert b'name="post"' in response.data
+    assert b'invalid-feedback' in response.data
+    assert missing.encode() in response.data
+    with application.app_context():
+        post = db.session.get(Post, post_id)
+        assert post.title == 'Test'
+        assert post.draft.body == 'Older text'
+
+    response = client.post(url, data={'title': 'Newest title', 'post': '**Newest text**', 'category': 1})
+    assert response.status_code == 302
+    public = client.get(f'/post/{post_id}')
+    assert b'<strong>Newest text</strong>' in public.data
+    assert b'Newest title' in public.data
+    assert b'Older text' not in public.data
+
+
 def test_publishing_rejects_blank_draft_fields_and_unknown_category(
         application, users):
     with application.app_context():

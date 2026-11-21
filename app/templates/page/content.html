@@ -4,9 +4,10 @@
 
 {% block description %}{{ page.summary or page.body|excerpt(page.body_format, page.title, 150) }}{% endblock %}
 
-{% block page_scripts %}<script src="{{ url_for('static', filename='live-photo.js') }}" defer></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% include "_rich_content_script.html" %}{% endblock %}
+{% block page_scripts %}<script src="{{ url_for('static', filename='live-photo.js') }}" defer></script><script src="{{ url_for('static', filename='code-blocks.js') }}" defer></script>{% if is_preview %}<script src="{{ url_for('static', filename='post-preview-bar.js') }}" defer></script>{% endif %}{% include "_rich_content_script.html" %}{% endblock %}
 
 {% block content %}
+{% if is_preview %}{% include '_preview_bar.html' %}{% endif %}
 <article class="content-section public-page reading-layout">
   <header class="page-heading">
     <h1>{{ page.title }}</h1>
@@ -15,5 +16,5 @@
   <div class="page-body">{{ page.body|render_content(page.body_format) }}</div>
 </article>
 
-{% include '_comments.html' %}
+{% if not is_preview %}{% include '_comments.html' %}{% endif %}
 {% endblock %}

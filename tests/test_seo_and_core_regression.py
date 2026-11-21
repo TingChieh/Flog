@@ -1,12 +1,14 @@
 """Core regression suite for SEO metadata, articles, and full-text search."""
 from datetime import datetime, timezone
+import json
+from pathlib import Path
 
 from lxml import etree, html as lxml_html
 
 from app import db
-from app.models import Category, Page, Post, User
+from app.models import Category, Image, Page, Post, PostDraft, User
 from app.search_index import rebuild_search_index, search_index_available
-from tests.conftest import login
+from tests.conftest import login, make_image
 
 
 def _parse_html(response):
@@ -24,6 +26,89 @@ def _meta(doc, *, name=None, prop=None):
 def _canonical(doc):
     nodes = doc.xpath('//link[@rel="canonical"]/@href')
     return nodes
+
+
+def test_post_cover_and_structured_data_use_only_published_content(client, application, users):
+    application.config['SITE_URL'] = 'https://canonical.example.org'
+    filename = 'a' * 32 + '.png'
+    uploads = Path(application.config['UPLOAD_FOLDER'])
+    uploads.mkdir()
+    (uploads / filename).write_bytes(make_image(size=(1200, 630)))
+    post_id = users['post']
+    headline = 'Same & </script><script>alert(1)</script>'
+    with application.app_context():
+        post = db.session.get(Post, post_id)
+        post.title = headline
+        post.body_format = 'markdown'
+        post.body = f'![People & place](/files/{filename})'
+        post.timestamp = datetime(2025, 2, 1, tzinfo=timezone.utc)
+        post.updated_at = datetime(2025, 2, 5, tzinfo=timezone.utc)
+        post.draft = PostDraft(title='Private title', body='![Private](https://private.example/a.png)')
+        db.session.add(Image(filename=filename, original_name='cover.png', title='Cover',
+                             size=100, width=1200, height=630))
+        duplicate = Post(title=headline, author=post.author, body='Different article',
+                         category=post.category, is_published=True)
+        db.session.add(duplicate)
+        db.session.commit()
+        duplicate_id = duplicate.id
+
+    response = client.get(f'/post/{post_id}?utm_campaign=example')
+    doc = _parse_html(response)
+    canonical = f'https://canonical.example.org/post/{post_id}'
+    image = f'https://canonical.example.org/files/{filename}'
+    assert _canonical(doc) == [canonical]
+    assert doc.xpath('//meta[@property="og:image"]/@content') == [image]
+    assert _meta(doc, name='twitter:image') == image
+    assert _meta(doc, prop='og:image:width') == '1200'
+    assert _meta(doc, prop='og:image:height') == '630'
+    assert _meta(doc, prop='og:image:alt') == 'People & place'
+    [raw] = doc.xpath('//script[@type="application/ld+json"]/text()')
+    assert '</script>' not in raw
+    data = json.loads(raw)
+    assert data['@type'] == 'BlogPosting'
+    assert data['headline'] == headline
+    assert data['image'] == image
+    assert data['url'] == data['mainEntityOfPage']['@id'] == canonical
+    assert data['datePublished'] == '2025-02-01T00:00:00+00:00'
+    assert data['dateModified'] == '2025-02-05T00:00:00+00:00'
+    assert data['author']['name'] == 'author'
+    assert data['publisher']['name'] == _meta(doc, prop='og:site_name')
+    assert b'Private title' not in response.data
+
+    other = _parse_html(client.get(f'/post/{duplicate_id}'))
+    assert _canonical(other) == [f'https://canonical.example.org/post/{duplicate_id}']
+    home = _parse_html(client.get('/'))
+    fallback = _meta(home, prop='og:image')
+    assert fallback and fallback.startswith('https://canonical.example.org/static/')
+    assert _meta(other, prop='og:image') == fallback
+    assert not home.xpath('//script[@type="application/ld+json"]')
+
+    with application.app_context():
+        db.session.get(Post, post_id).is_published = False
+        db.session.commit()
+    assert not _parse_html(client.get(f'/post/{post_id}')).xpath('//script[@type="application/ld+json"]')
+    login(client, 'author')
+    preview = client.get(f'/admin/posts/{post_id}/preview')
+    assert not _parse_html(preview).xpath('//script[@type="application/ld+json"] | //meta[@property="og:image"]')
+
+
+def test_page_alias_and_out_of_range_pagination_do_not_create_canonical_pages(client, application, users):
+    with application.app_context():
+        db.session.add(Page(title='Example', slug='example', body='Body', is_published=True))
+        db.session.commit()
+
+    alias = client.get('/Example?utm_source=x')
+    assert alias.status_code == 301
+    assert alias.location == '/example?utm_source=x'
+    assert _canonical(_parse_html(client.get(alias.location))) == ['http://localhost/example']
+    for path in ('/?page=2', '/index?page=9999999999999999999999'):
+        response = client.get(path)
+        assert response.status_code == 404
+        assert _canonical(_parse_html(response)) == []
+    assert _canonical(_parse_html(client.get('/archive?page=99'))) == ['http://localhost/archive']
+    search = _parse_html(client.get('/search?q=Test&page=2'))
+    assert _canonical(search) == []
+    assert _meta(search, name='robots') == 'noindex, nofollow'
 
 
 def test_seo_metadata_canonical_and_open_graph_on_public_pages(client, application, users):

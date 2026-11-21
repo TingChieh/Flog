@@ -6,7 +6,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 
 from app import db
-from app.content import normalize_body_format, prepare_content_source
+from app.content import normalize_body_format, prepare_content_source, publication_body_error
 from app.models import Page, PageRedirect, PodcastShow, get_podcast_show
 
 
@@ -20,7 +20,9 @@ RESERVED_SLUGS = frozenset({
 
 
 class PageValidationError(ValueError):
-    pass
+    def __init__(self, message, field='slug'):
+        super().__init__(message)
+        self.field = field
 
 
 def normalize_slug(value):
@@ -64,9 +66,9 @@ def _validate_slug_available(page, slug):
 def save_page(page, values):
     title = (values.get('title', page.title) or '').strip()
     if not title:
-        raise PageValidationError('Title is required.')
+        raise PageValidationError('Title is required.', 'title')
     if len(title) > 120:
-        raise PageValidationError('Title must be 120 characters or fewer.')
+        raise PageValidationError('Title must be 120 characters or fewer.', 'title')
 
     slug = normalize_slug(values.get('slug', page.slug))
     kind = values.get('kind', page.kind or PAGE_CONTENT)
@@ -77,7 +79,13 @@ def save_page(page, values):
     summary = values.get('summary', page.summary)
     summary = (summary or '').strip() or None
     if summary is not None and len(summary) > 300:
-        raise PageValidationError('Summary must be 300 characters or fewer.')
+        raise PageValidationError('Summary must be 300 characters or fewer.', 'summary')
+
+    is_published = bool(values.get('is_published', page.is_published))
+    body_format = normalize_body_format(values.get('body_format', page.body_format))
+    body = prepare_content_source(values.get('body', page.body), body_format)
+    if is_published and (error := publication_body_error(body, body_format)):
+        raise PageValidationError(error, 'body')
 
     old_slug = page.slug
     if reclaimed_redirect is not None:
@@ -89,8 +97,7 @@ def save_page(page, values):
     page.summary = summary
     page.kind = kind
     page.module_key = module_key
-    page.is_published = bool(values.get(
-        'is_published', page.is_published if page.id is not None else False))
+    page.is_published = is_published
     page.show_in_nav = bool(values.get(
         'show_in_nav', page.show_in_nav if page.id is not None else False))
     page.comments_enabled = bool(values.get(
@@ -98,10 +105,8 @@ def save_page(page, values):
         page.comments_enabled if page.id is not None else False))
     page.nav_order = int(values.get(
         'nav_order', page.nav_order if page.id is not None else 0) or 0)
-    page.body_format = normalize_body_format(
-        values.get('body_format', page.body_format))
-    page.body = prepare_content_source(
-        values.get('body', page.body), page.body_format)
+    page.body_format = body_format
+    page.body = body
 
     db.session.add(page)
     if old_slug and old_slug != slug:

@@ -15,7 +15,7 @@ function runPreview({ missing = false } = {}) {
   const editor = { elements: { title: { value: '标题' }, post: { value: '# 正文' } } };
   const document = {
     addEventListener(name, handler) { assert.equal(name, 'DOMContentLoaded'); readyHandler = handler; },
-    querySelector: (selector) => { assert.equal(selector, '[data-post-preview]'); return missing ? null : button; },
+    querySelector: (selector) => selector === '[data-post-preview]' && !missing ? button : null,
     getElementById: (id) => ({ 'post-preview-form': preview, 'article-editor-form': editor }[id]),
   };
   vm.runInNewContext(read('post-preview.js'), { document });

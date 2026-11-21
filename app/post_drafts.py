@@ -7,7 +7,7 @@ from langdetect import LangDetectException, detect
 
 from app import db
 from app.authorization import owned_post_or_404
-from app.content import BODY_FORMAT_MARKDOWN, prepare_content_source
+from app.content import BODY_FORMAT_MARKDOWN, prepare_content_source, publication_body_error
 from app.models import Category, Post, PostDraft, PostRevision, get_site_settings
 
 
@@ -17,7 +17,9 @@ MAX_POST_REVISION_LIMIT = 100
 
 
 class PostDraftError(ValueError):
-    pass
+    def __init__(self, message, field=None):
+        super().__init__(message)
+        self.field = field
 
 
 @dataclass(frozen=True)
@@ -114,32 +116,38 @@ def invalidate_editor_writes(post):
     db.session.refresh(post)
 
 
-def publish_draft(actor, post_id):
+def _validate_publication(values, body_format):
+    if not values.title.strip():
+        raise PostDraftError('A title is required before publishing.', 'title')
+    if len(values.title.strip()) > 120:
+        raise PostDraftError('Title must be 120 characters or fewer.', 'title')
+    if error := publication_body_error(values.body, body_format):
+        raise PostDraftError(error, 'post')
+    if values.category_id is None or db.session.get(Category, values.category_id) is None:
+        raise PostDraftError('The selected category does not exist.', 'category')
+
+
+def publish_draft(actor, post_id, values=None):
     post = owned_post_or_404(post_id, actor)
     # Validate an unflushed draft before the ordering update triggers autoflush.
     # Otherwise a bad category reaches a database foreign-key constraint first.
     with db.session.no_autoflush:
         pending_draft = post.draft
+        if values is not None:
+            _validate_publication(values, post.body_format)
         if (pending_draft is not None
                 and (pending_draft in db.session.new or pending_draft in db.session.dirty)):
-            if not pending_draft.title.strip():
-                raise PostDraftError('A title is required before publishing.')
-            if not pending_draft.body.strip():
-                raise PostDraftError('A body is required before publishing.')
-            if (pending_draft.category_id is None or db.session.get(
-                    Category, pending_draft.category_id) is None):
-                raise PostDraftError('The selected category does not exist.')
+            _validate_publication(pending_draft, post.body_format)
     invalidate_editor_writes(post)
+    if values is not None:
+        save_draft(actor, post, values)
     draft = post.draft
     if draft is None:
         raise PostDraftError('A draft is required before publishing.')
-    if not draft.title.strip():
-        raise PostDraftError('A title is required before publishing.')
-    if not draft.body.strip():
-        raise PostDraftError('A body is required before publishing.')
-    if draft.category_id is None or db.session.get(
-            Category, draft.category_id) is None:
-        raise PostDraftError('The selected category does not exist.')
+    if values is None:
+        _validate_publication(draft, post.body_format)
+    category_id = draft.category_id
+    assert category_id is not None
 
     now = datetime.now(timezone.utc)
     if not post.is_published:
@@ -150,7 +158,7 @@ def publish_draft(actor, post_id):
         post.updated_at = now
     post.title = draft.title
     post.body = draft.body
-    post.category_id = draft.category_id
+    post.category_id = category_id
     post.language = draft.language
     post.is_published = True
     post.draft = None

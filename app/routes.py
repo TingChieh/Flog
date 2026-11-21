@@ -19,9 +19,9 @@ from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
 
 from app.security import admin_required, is_local_path
-from app.seo import public_base_url, public_url
+from app.seo import public_base_url, public_url, set_post_seo
 from app.content import normalize_body_format, render_content, render_article
-from app.post_drafts import DraftValues, publish_draft, save_draft
+from app.post_drafts import DraftValues, PostDraftError, publish_draft
 from app.likes import (CHANGED, DEFAULT_REACTION, LIKED, LIMITED, REACTION_EMOJI, REACTIONS,
                        attach_visitor_cookie, new_visitor_token, own_reaction,
                        react, read_visitor_token, reaction_counts)
@@ -36,7 +36,9 @@ from app import throttle
 from app.images import (VARIANT_FOLDER, ImageUploadError, make_variant,
                         save_uploaded_image)
 from app.admin.forms import CategoryAdminForm
+from app.admin.posts import render_editor
 from app.podcast import podcast_enabled, published_episodes
+from app.version import version_info
 
 
 def published_post_statement():
@@ -79,11 +81,15 @@ def before_request():
 @app.route('/')
 @app.route('/index')
 def index():
-    page = request.args.get('page', 1, type=int)
+    page = max(1, request.args.get('page', 1, type=int))
+    if page > 2**31 - 1:
+        abort(404)
     query = published_post_statement().options(
-        so.selectinload(Post.category)).order_by(Post.timestamp.desc())
+        so.selectinload(Post.category)).order_by(Post.timestamp.desc(), Post.id.desc())
     posts = db.paginate(query, page=page,
                         per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    if page > 1 and not posts.items:
+        abort(404)
     next_url = url_for('index', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('index', page=posts.prev_num) \
@@ -428,8 +434,11 @@ def post(post_id):
             counted = record_view(post)
 
     article_html, article_toc = render_article(post.body, post.body_format)
+    title = post.title or _('Untitled')
+    set_post_seo(post, article_html, title)
     response = make_response(render_template(
-        'post/post.html', article_html=article_html, article_toc=article_toc, title=post.title or _('Untitled'), post=post, form=form,
+        'post/post.html', article_html=article_html, article_toc=article_toc,
+        title=title, post=post, form=form,
         reaction=own_reaction(post, read_visitor_token()),
         reactions=REACTIONS,
         reaction_counts=reaction_counts(post),
@@ -489,10 +498,13 @@ def edit_post(post_id):
 
     if form.validate_on_submit():
         post.body_format = normalize_body_format(post.body_format)
-        save_draft(
-            current_user, post,
-            DraftValues(form.title.data, form.post.data, form.category.data))
-        publish_draft(current_user, post.id)
+        values = DraftValues(form.title.data, form.post.data, form.category.data)
+        try:
+            publish_draft(current_user, post.id, values)
+        except PostDraftError as exc:
+            db.session.rollback()
+            form[exc.field or 'post'].errors = [_(str(exc))]
+            return render_editor(post, form, 400, app_version=version_info())
         db.session.commit()
         flash(_('Your post has been updated!'))
         return redirect(url_for('admin.posts'))
@@ -594,6 +606,8 @@ def public_page(slug):
     if is_redirect:
         if request.method == 'POST':
             abort(404)
+        return _redirect_to_public_page(page)
+    if slug != page.slug and request.method in ('GET', 'HEAD'):
         return _redirect_to_public_page(page)
     if page.kind != PAGE_CONTENT:
         abort(404)

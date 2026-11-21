@@ -2,15 +2,17 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
+from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.admin import bp
 from app.admin.forms import DeleteForm, EpisodeForm, PodcastShowForm, ToggleForm
-from app.images import ImageUploadError, save_uploaded_image
+from app.content import BODY_FORMAT_MARKDOWN, publication_body_error
+from app.images import IMAGE_NAME_RE, ImageUploadError, save_uploaded_image, upload_folder
 from app.models import Episode, get_podcast_show
-from app.podcast import (AudioUploadError, apply_audio, delete_episode,
+from app.podcast import (AUDIO_NAME_RE, AudioUploadError, apply_audio, audio_path, delete_episode,
                          feed_problems, next_episode_number,
                          remove_audio, save_uploaded_audio, show_text)
 from app.security import admin_required
@@ -110,6 +112,25 @@ def _episode_form_page(form, episode, status=200):
                            episode=episode), status
 
 
+def _validate_episode_media(form, episode):
+    valid = True
+    if episode is not None:
+        filename = episode.audio_filename
+        if not _uploaded(form.audio) and (
+                not AUDIO_NAME_RE.fullmatch(filename) or not audio_path(filename).is_file()):
+            form.audio.errors = [_('Upload a replacement for the missing audio file.')]
+            valid = False
+        cover = episode.cover_filename
+        if cover and not _uploaded(form.cover) and (
+                not IMAGE_NAME_RE.fullmatch(cover) or not (upload_folder() / cover).is_file()):
+            form.cover.errors = [_('Upload a replacement for the missing cover image.')]
+            valid = False
+    if error := publication_body_error(form.body.data, BODY_FORMAT_MARKDOWN, required=False):
+        form.body.errors = [_(error)]
+        valid = False
+    return valid
+
+
 @bp.route('/podcast/new', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -121,6 +142,8 @@ def new_episode():
             datetime.now(timezone.utc)).replace(tzinfo=None, second=0, microsecond=0)
         form.comments_enabled.data = True
     if form.validate_on_submit():
+        if form.is_published.data and not _validate_episode_media(form, None):
+            return _episode_form_page(form, None, 400)
         audio = _uploaded(form.audio)
         if audio is None:
             form.audio.errors.append('请选择音频文件。')
@@ -169,6 +192,8 @@ def edit_episode(episode_id):
         form.published_at.data = to_display(
             episode.published_at).replace(tzinfo=None)
     if form.validate_on_submit():
+        if form.is_published.data and not _validate_episode_media(form, episode):
+            return _episode_form_page(form, episode, 400)
         new_info = None
         audio = _uploaded(form.audio)
         if audio is not None:
@@ -207,6 +232,15 @@ def toggle_episode_publication(episode_id):
     if not ToggleForm().validate_on_submit():
         abort(400)
     episode = db.get_or_404(Episode, episode_id)
+    if not episode.is_published:
+        form = EpisodeForm(episode=episode, obj=episode, formdata=None)
+        form.published_at.data = to_display(episode.published_at).replace(tzinfo=None)
+        form.is_published.data = True
+        media_valid = _validate_episode_media(form, episode)
+        if not episode.title.strip():
+            form.title.errors = [_('A title is required before publishing.')]
+        if not media_valid or form.title.errors:
+            return _episode_form_page(form, episode, 400)
     episode.is_published = not episode.is_published
     try:
         db.session.commit()

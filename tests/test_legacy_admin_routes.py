@@ -68,6 +68,18 @@ def test_legacy_post_submit_rejects_empty_publish_fields(
         assert post.draft is None
 
 
+def test_legacy_post_submit_rejects_content_empty_after_sanitization(client, users):
+    login(client, 'author')
+    response = client.post(f'/post/{users["post"]}/edit', data={
+        'title': 'Still editing', 'category': '1', 'post': '<!-- no body -->',
+    })
+    assert response.status_code == 400
+    assert b'Still editing' in response.data
+    assert b'name="post"' in response.data
+    assert b'invalid-feedback' in response.data
+    assert b'<p>safe</p>' in client.get(f'/post/{users["post"]}').data
+
+
 def test_anonymous_legacy_editor_redirects_to_login_with_next(client, users):
     response = client.get(f'/post/{users["post"]}/edit')
     assert response.status_code == 302

@@ -372,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saved.sequence !== sequence) throw new Error('draft save was superseded');
     if (!state.postId && Number.isInteger(saved.post_id)) {
       state.postId = saved.post_id;
+      state.form.dataset.postId = String(state.postId);
       state.draftUrl = state.draftUrl.replace(
         /\/draft$/, `/${state.postId}/draft`);
       state.leaveUrl = state.draftUrl.replace(/\/draft$/, '/leave');

@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import sqlalchemy as sa
-from flask import (abort, flash, make_response, redirect, render_template,
+from flask import (abort, flash, redirect, render_template,
                    request, url_for)
+from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -14,8 +15,9 @@ from app.admin.forms import ToggleForm
 from app.authorization import owned_post_or_404
 from app.content import (BODY_FORMAT_MARKDOWN, normalize_body_format,
                          render_article)
-from app.forms import PostDraftForm
+from app.forms import PostDraftForm, PostForm
 from app.models import Category, Post, PostRevision
+from app.seo import preview_response
 from app.timezones import later_update, to_display
 from app.post_drafts import (DraftValues, PostDraftError, discard_draft,
                              invalidate_editor_writes, publish_draft,
@@ -217,13 +219,17 @@ def edit_post(post_id):
         form.title.data = editable.title
         form.post.data = editable.body
         form.category.data = editable.category_id
+    return render_editor(post, form)
+
+
+def render_editor(post, form, status=200, **context):
     legacy_html = normalize_body_format(post.body_format) != BODY_FORMAT_MARKDOWN
     return render_template(
         'admin/posts/form.html', form=form, post=post,
         legacy_html=legacy_html, revisions=_post_revisions(post),
         editor_session_key=None,
         editor_sequence=post.draft_sequence,
-        draft_generation=post.draft_generation)
+        draft_generation=post.draft_generation, **context), status
 
 
 @bp.route('/posts/preview', methods=['POST'])
@@ -266,12 +272,9 @@ def _render_preview(existing, title, body):
         local_timestamp=to_display(timestamp),
         local_updated_at=later_update(timestamp, now) if live else None,
         view_count=existing.view_count if existing else 0)
-    response = make_response(render_template(
+    return preview_response(render_template(
         'post/preview.html', post=preview, article_html=article_html,
         article_toc=article_toc, title=preview.title))
-    response.headers['Cache-Control'] = 'no-store'
-    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
-    return response
 
 
 def _after_publication_change(post_id):
@@ -284,11 +287,28 @@ def _after_publication_change(post_id):
 @bp.route('/posts/<int:post_id>/publish', methods=['POST'])
 @login_required
 def publish_post(post_id):
+    post = owned_post_or_404(post_id, current_user)
+    submitted_editor = any(name in request.form for name in ('title', 'post', 'category'))
+    values = None
+    if submitted_editor:
+        form = PostForm()
+        if not form.validate_on_submit():
+            return render_editor(post, form, 400)
+        values = DraftValues(form.title.data, form.post.data, form.category.data)
     try:
-        publish_draft(current_user, post_id)
+        publish_draft(current_user, post_id, values)
     except PostDraftError as exc:
-        flash(str(exc))
-        return _after_publication_change(post_id)
+        db.session.rollback()
+        if exc.field is None:
+            flash(_(str(exc)))
+            return _after_publication_change(post_id)
+        if not submitted_editor:
+            editable = post.draft or post
+            form = PostDraftForm(data={
+                'title': editable.title, 'post': editable.body, 'category': editable.category_id,
+            }, formdata=None)
+        form[exc.field].errors = [_(str(exc))]
+        return render_editor(post, form, 400)
     _commit_post_change('文章发布失败，请重试。')
     flash('文章已发布。')
     return _after_publication_change(post_id)

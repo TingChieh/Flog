@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Error, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -274,3 +274,101 @@ def test_search_modal_and_responsive_mobile_navigation(browser, live_server):
         assert m_failed == []
     finally:
         mobile.close()
+
+
+def _close_preview_with_keyboard(page):
+    close = page.locator('[data-preview-close]')
+    close.focus()
+    assert close.evaluate("(el) => el.matches(':focus-visible')")
+    with page.expect_event('close'):
+        try:
+            close.press('Enter')
+        except Error:
+            if not page.is_closed():
+                raise
+
+
+@pytest.mark.parametrize('width', [375, 1280])
+@pytest.mark.parametrize('theme', ['light', 'dark'])
+def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_path, width, theme):
+    context = browser.new_context(viewport={'width': width, 'height': 850}, color_scheme=theme)
+    page = context.new_page()
+    errors, _ = _attach_guards(page)
+    console_errors = []
+    context.on('console', lambda message: console_errors.append(message.text)
+               if message.type == 'error' else None)
+    try:
+        page.goto(f'{live_server}/login')
+        page.locator('#username').fill('admin')
+        page.locator('#password').fill('password')
+        page.locator('form button[type=submit], form input[type=submit]').first.click()
+        page.wait_for_url(lambda url: not url.endswith('/login'))
+        page.goto(f'{live_server}/admin/posts/new')
+        page.wait_for_function("document.querySelector('.vditor-ir [contenteditable=true]')")
+
+        with page.expect_popup() as empty_info:
+            page.locator('[data-post-preview]').press('Enter')
+        empty = empty_info.value
+        assert empty.locator('.article-body h1').inner_text() == '无标题'
+        _close_preview_with_keyboard(empty)
+
+        field = page.locator('.vditor-ir [contenteditable=true]').first
+        initial = '正文段落\n\n' * 32
+        field.fill(initial)
+        page.locator('[data-publish]').wait_for()
+        with page.expect_navigation() as rejected:
+            page.locator('[data-publish]').press('Enter')
+        assert rejected.value.status == 400
+        assert page.locator('#title.is-invalid').is_visible()
+        assert page.locator('#title').evaluate('(field) => field === document.activeElement')
+        assert '正文段落' in page.locator('#post').input_value()
+        page.screenshot(path=tmp_path / 'article-validation.png')
+
+        page.wait_for_function("document.querySelector('.vditor-ir [contenteditable=true]')")
+        title = '一篇包含很长标题且没有封面图片的文章' * 5
+        page.locator('#title').fill(title)
+        page.locator('.vditor-ir [contenteditable=true]').first.fill('最新正文\n\n' + initial)
+        with page.expect_popup() as info:
+            page.locator('[data-post-preview]').press('Enter')
+        preview = info.value
+        preview_errors, preview_failed = _attach_guards(preview)
+        assert preview.locator('.article-body h1').inner_text() == title
+        preview_html = preview.locator('.article-body').inner_html()
+        assert '最新正文' in preview_html
+        assert preview.locator('meta[name="robots"]').get_attribute('content') == 'noindex, nofollow'
+        assert preview.locator('script[type="application/ld+json"]').count() == 0
+        preview.screenshot(path=tmp_path / 'article-preview.png')
+        _close_preview_with_keyboard(preview)
+
+        # A second immediate edit must be published even if autosave is pending.
+        page.locator('.vditor-ir [contenteditable=true]').first.fill('立即发布的正文\n\n' + initial)
+        with page.expect_navigation() as published:
+            page.locator('[data-publish]').press('Enter')
+        assert published.value.status == 200
+        post_id = int(page.url.split('/')[-2])
+        page.goto(f'{live_server}/post/{post_id}')
+        assert page.locator('.article-body h1').inner_text() == title
+        assert '立即发布的正文' in page.locator('.article-body').inner_text()
+        assert page.locator('meta[property="og:image"]').get_attribute('content').startswith(
+            f'{live_server}/static/images/social-cover.png')
+        assert page.locator('script[type="application/ld+json"]').count() == 1
+        assert page.locator('html').get_attribute('data-theme') == theme
+        assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 1
+        page.screenshot(path=tmp_path / 'article-public.png')
+
+        page.goto(f'{live_server}/admin/pages/new')
+        page.wait_for_function("document.querySelector('.vditor-ir [contenteditable=true]')")
+        page.locator('#title').fill('页面草稿')
+        page.locator('.vditor-ir [contenteditable=true]').first.fill('尚未保存的内容')
+        with page.expect_popup() as page_info:
+            page.get_by_role('button', name='预览').press('Enter')
+        page_preview = page_info.value
+        assert page_preview.locator('.public-page h1').inner_text() == '页面草稿'
+        assert page_preview.locator('.page-body').inner_text() == '尚未保存的内容'
+        assert page_preview.locator('link[rel=canonical]').count() == 0
+        assert page_preview.locator('html').get_attribute('data-theme') == theme
+        page_preview.screenshot(path=tmp_path / 'page-preview.png')
+        assert errors == preview_errors == preview_failed == []
+        assert all('400 (BAD REQUEST)' in message for message in console_errors)
+    finally:
+        context.close()

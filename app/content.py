@@ -1,6 +1,7 @@
 import re
 import unicodedata
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 import sqlalchemy as sa
@@ -95,6 +96,29 @@ def split_hard_breaks(source):
 UPLOADED_PATH_RE = re.compile(r'^/files/([0-9a-f]{32}\.(?:png|jpe?g|gif))$')
 
 
+def missing_uploaded_image(src):
+    """Check local image-library URLs without fetching remote media."""
+    try:
+        parts = urlsplit(src)
+    except ValueError:
+        return False
+    if parts.netloc or parts.scheme:
+        return False
+    match = UPLOADED_PATH_RE.fullmatch(parts.path)
+    return match is not None and not (
+        Path(current_app.config['UPLOAD_FOLDER']) / match.group(1)).is_file()
+
+
+def publication_body_error(value, body_format, *, required=True):
+    root = html.fragment_fromstring(_render_html(value, body_format), create_parent='div')
+    images = [image.get('src') for image in root.iter('img') if image.get('src')]
+    if any(missing_uploaded_image(src) for src in images):
+        return 'Replace or remove the missing uploaded image before publishing.'
+    if required and not root.text_content().strip() and not images and root.find('.//hr') is None:
+        return 'A body is required before publishing.'
+    return None
+
+
 def _wrap_live_photo(image, video_src):
     """Put ``image`` in a ``.live-photo`` box that live-photo.js brings to life."""
     box = html.Element('span')
@@ -126,7 +150,11 @@ def optimize_images(rendered):
     images = list(root.iter('img'))
     names = {}
     for image in images:
-        match = UPLOADED_PATH_RE.match(urlsplit(image.get('src', '')).path)
+        try:
+            source = urlsplit(image.get('src', ''))
+        except ValueError:
+            continue
+        match = UPLOADED_PATH_RE.fullmatch(source.path) if not source.netloc and not source.scheme else None
         if match:
             names[image] = match.group(1)
     rows = {}
@@ -145,18 +173,17 @@ def optimize_images(rendered):
         row = rows.get(names.get(image))
         if row is None:
             continue
-        local = not urlsplit(image.get('src')).netloc
         if (row.width and row.height and 'width' not in image.attrib
                 and 'height' not in image.attrib):
             image.set('width', str(row.width))
             image.set('height', str(row.height))
             # Lets the stylesheet work out the final box before the file arrives.
             image.set('style', f'--w:{row.width};--h:{row.height}')
-            srcset = variant_srcset(row.filename, image.get('src'), row.width) if local else ''
+            srcset = variant_srcset(row.filename, image.get('src'), row.width)
             if srcset:
                 image.set('srcset', srcset)
                 image.set('sizes', VARIANT_SIZES)
-        if row.video_filename and local:
+        if row.video_filename:
             _wrap_live_photo(image, f'/files/{row.video_filename}')
     return str(escape(root.text or '')) + ''.join(
         html.tostring(child, encoding='unicode', method='html') for child in root)

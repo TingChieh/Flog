@@ -103,6 +103,20 @@ def test_an_episode_needs_audio(admin, application):
         assert db.session.scalar(db.select(db.func.count()).select_from(Episode)) == 0
 
 
+def test_missing_saved_audio_blocks_episode_publication(admin, application):
+    with application.app_context():
+        episode_id = add_episode(uploads(application), 1, published=False)
+        episode = db.session.get(Episode, episode_id)
+        (uploads(application) / 'audio' / episode.audio_filename).unlink()
+
+    response = admin.post(f'/admin/podcast/{episode_id}/publish')
+    assert response.status_code == 400
+    form = lxml_html.fromstring(response.data)
+    assert form.xpath('//input[@name="audio"]/following-sibling::div[contains(@class,"invalid-feedback")]')
+    with application.app_context():
+        assert not db.session.get(Episode, episode_id).is_published
+
+
 def test_bad_audio_is_refused_with_a_reason(admin, application):
     response = create(admin, audio=(io.BytesIO(b'nope' * 100), 'ep.mp3'))
 
