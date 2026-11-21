@@ -19,7 +19,7 @@ from app.email import mail_configured, send_password_reset_email
 from feedgen.feed import FeedGenerator
 
 from app.security import admin_required, is_local_path
-from app.seo import post_seo, public_base_url, public_url
+from app.seo import public_base_url, public_url, set_post_seo
 from app.content import normalize_body_format, render_content, render_article
 from app.post_drafts import DraftValues, PostDraftError, publish_draft
 from app.likes import (CHANGED, DEFAULT_REACTION, LIKED, LIMITED, REACTION_EMOJI, REACTIONS,
@@ -435,9 +435,10 @@ def post(post_id):
 
     article_html, article_toc = render_article(post.body, post.body_format)
     title = post.title or _('Untitled')
+    set_post_seo(post, article_html, title)
     response = make_response(render_template(
         'post/post.html', article_html=article_html, article_toc=article_toc,
-        title=title, post=post, form=form, seo=post_seo(post, article_html, title),
+        title=title, post=post, form=form,
         reaction=own_reaction(post, read_visitor_token()),
         reactions=REACTIONS,
         reaction_counts=reaction_counts(post),

@@ -67,16 +67,12 @@ def inject_navigation_pages():
 
 
 @app.context_processor
-def inject_seo():
-    from app.seo import seo_context
-
-    return {'seo': seo_context()}
-
-@app.context_processor
 def inject_site_text():
+    from app.seo import seo_context
     from app.site_text import site_text
 
-    return {'site_text': site_text()}
+    text = site_text()
+    return {'site_text': text, 'seo': seo_context(text['site_name'])}
 
 if not app.debug:
     if app.config['MAIL_SERVER']:

@@ -4,12 +4,11 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urljoin, urlsplit
 
-from flask import current_app, make_response, request, url_for
+from flask import current_app, g, make_response, request, url_for
 from lxml import html
 
 from app.content import missing_uploaded_image
 from app.models import Post
-from app.site_text import site_text
 
 NOINDEX = 'noindex, nofollow'
 
@@ -83,18 +82,35 @@ def preview_response(document: str):
     return response
 
 
-def seo_context() -> dict[str, Any]:
+def seo_context(site_name: str) -> dict[str, Any]:
     endpoint = request.endpoint
     canonical = canonical_url()
-    return {
+    seo: dict[str, Any] = {
         'canonical_url': canonical,
         'robots': robots_directive(),
         'og_type': 'article' if endpoint == 'post' else 'website',
         'image': {
             'url': public_url('static', filename='images/social-cover.png'),
-            'alt': site_text()['site_name'], 'width': 1200, 'height': 630,
+            'alt': site_name, 'width': 1200, 'height': 630,
         } if canonical else None,
     }
+    article = g.pop('article_seo', None)
+    if endpoint == 'post' and canonical and article:
+        post, article_html, headline = article
+        seo['image'] = _article_image(article_html, canonical) or seo['image']
+        seo['structured_data'] = {
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            'headline': headline,
+            'image': seo['image']['url'],
+            'datePublished': _utc_iso(post.timestamp),
+            'dateModified': _utc_iso(post.updated_at or post.timestamp),
+            'author': {'@type': 'Person', 'name': post.author.username},
+            'publisher': {'@type': 'Organization', 'name': site_name},
+            'mainEntityOfPage': {'@type': 'WebPage', '@id': canonical},
+            'url': canonical,
+        }
+    return seo
 
 
 def _article_image(article_html: str, canonical: str) -> dict[str, str] | None:
@@ -128,22 +144,6 @@ def _utc_iso(value: datetime) -> str:
             else value.astimezone(timezone.utc)).isoformat()
 
 
-def post_seo(post: Post, article_html: str, headline: str) -> dict[str, Any]:
-    seo = seo_context()
-    canonical = seo['canonical_url']
-    if request.endpoint != 'post' or not post.is_published or not canonical:
-        return seo
-    seo['image'] = _article_image(article_html, canonical) or seo['image']
-    seo['structured_data'] = {
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        'headline': headline,
-        'image': seo['image']['url'],
-        'datePublished': _utc_iso(post.timestamp),
-        'dateModified': _utc_iso(post.updated_at or post.timestamp),
-        'author': {'@type': 'Person', 'name': post.author.username},
-        'publisher': {'@type': 'Organization', 'name': site_text()['site_name']},
-        'mainEntityOfPage': {'@type': 'WebPage', '@id': canonical},
-        'url': canonical,
-    }
-    return seo
+def set_post_seo(post: Post, article_html: str, headline: str) -> None:
+    if post.is_published:
+        g.article_seo = (post, article_html, headline)
