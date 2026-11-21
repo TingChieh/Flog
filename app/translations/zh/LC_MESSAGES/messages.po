@@ -641,3 +641,33 @@ msgstr "重置密码请求过多，请一小时后再试。"
 #: app/routes.py
 msgid "Too many registration attempts. Please try again in an hour."
 msgstr "注册请求过多，请一小时后再试。"
+
+msgid "A body is required before publishing."
+msgstr "请填写正文后再发布。"
+
+msgid "A title is required before publishing."
+msgstr "请填写标题后再发布。"
+
+msgid "A draft is required before publishing."
+msgstr "请先保存草稿。"
+
+msgid "The selected category does not exist."
+msgstr "所选分类已不存在，请重新选择。"
+
+msgid "Title must be 120 characters or fewer."
+msgstr "标题不能超过 120 个字符。"
+
+msgid "Replace or remove the missing uploaded image before publishing."
+msgstr "请替换或删除正文中缺失的上传图片后再发布。"
+
+msgid "Upload a replacement for the missing audio file."
+msgstr "原音频文件已丢失，请重新上传。"
+
+msgid "Upload a replacement for the missing cover image."
+msgstr "原封面图片已丢失，请重新上传。"
+
+msgid "Preview"
+msgstr "预览"
+
+msgid "Close preview"
+msgstr "关闭预览"

@@ -6,6 +6,7 @@
 
 {% block admin_content %}
 <form class="admin-form" method="post" enctype="multipart/form-data" novalidate
+      action="{{ url_for('admin.edit_episode', episode_id=episode.id) if episode else url_for('admin.new_episode') }}"
       data-image-upload-url="{{ url_for('upload') }}"
       data-image-library-url="{{ url_for('admin.image_picker') }}">
   {{ form.hidden_tag() }}
@@ -28,7 +29,7 @@
   <div class="form-field">
     {{ form.cover.label(class="form-label") }}
     {% if episode and episode.cover_filename %}<p><img src="{{ url_for('uploaded_files', filename=episode.cover_filename) }}" width="96" height="96" alt="当前封面"></p>{% endif %}
-    {{ form.cover(class="form-control", accept="image/png,image/jpeg,image/gif") }}
+    {{ form.cover(class="form-control" + (' is-invalid' if form.cover.errors else ''), accept="image/png,image/jpeg,image/gif") }}
     {% for error in form.cover.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
   </div>
   <div class="form-field">

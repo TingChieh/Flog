@@ -264,6 +264,26 @@ def test_unpublished_page_preview_requires_admin(
     response = client.get(f'/admin/pages/{page_id}/preview')
     assert response.status_code == 200
     assert b'<p>Body</p>' in response.data
+    assert b'class="content-section public-page reading-layout"' in response.data
+    assert response.headers['Cache-Control'] == 'no-store'
+    assert response.headers['X-Robots-Tag'] == 'noindex, nofollow'
+    assert b'application/ld+json' not in response.data
+
+
+def test_blank_page_can_be_saved_but_not_published(client, application, users):
+    login(client, 'admin')
+    data = {'title': 'Blank Page', 'slug': 'blank-page', 'nav_order': '0', 'body': '<!-- hidden -->'}
+    assert client.post('/admin/pages/new', data=data).status_code == 302
+    with application.app_context():
+        page = db.session.scalar(db.select(Page).where(Page.slug == 'blank-page'))
+        page_id = page.id
+    for path, form in ((f'/admin/pages/{page_id}/edit', {**data, 'is_published': 'y'}),
+                       (f'/admin/pages/{page_id}/publish', {})):
+        response = client.post(path, data=form)
+        assert response.status_code == 400
+        assert b'name="body"' in response.data
+        assert b'invalid-feedback' in response.data
+        assert client.get('/blank-page').status_code == 404
 
 
 def test_markdown_content_page_preview_renders_without_source_marker(

@@ -1,5 +1,8 @@
+from types import SimpleNamespace
+
 import sqlalchemy as sa
 from flask import abort, flash, redirect, render_template, request, url_for
+from flask_babel import _
 from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -12,6 +15,7 @@ from app.pages import (PAGE_CONTENT, PageValidationError,
                        delete_content_page, move_nav_item, nav_sort_key,
                        save_page)
 from app.security import admin_required
+from app.seo import preview_response
 
 
 PAGE_FILTERS = frozenset({'all', 'published', 'unpublished'})
@@ -148,7 +152,25 @@ def _toggle_page_flag(page_id, attribute, message):
 @login_required
 @admin_required
 def toggle_page_publication(page_id):
-    return _toggle_page_flag(page_id, 'is_published', '页面发布状态已更新。')
+    if not ToggleForm().validate_on_submit():
+        abort(400)
+    page = db.get_or_404(Page, page_id)
+    if page.is_published:
+        page.is_published = False
+    else:
+        try:
+            save_page(page, {'is_published': True})
+        except PageValidationError as exc:
+            db.session.rollback()
+            form = PageForm(page=page, obj=page, formdata=None)
+            form.is_published.data = True
+            form[exc.field].errors = [_(str(exc))]
+            return _render_form(form, page, 400)
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash('页面保存失败，请重试。')
+            return _pages_redirect()
+    return _commit_toggle('页面发布状态已更新。')
 
 
 @bp.route('/pages/<int:page_id>/nav', methods=['POST'])
@@ -223,7 +245,8 @@ def new_page():
             db.session.commit()
         except PageValidationError as exc:
             db.session.rollback()
-            form.slug.errors.append(str(exc))
+            form[exc.field].errors.append(_(str(exc)))
+            return _render_form(form, None, 400)
         except SQLAlchemyError:
             db.session.rollback()
             flash('页面保存失败，请重试。')
@@ -245,7 +268,8 @@ def edit_page(page_id):
             db.session.commit()
         except PageValidationError as exc:
             db.session.rollback()
-            form.slug.errors.append(str(exc))
+            form[exc.field].errors.append(_(str(exc)))
+            return _render_form(form, page, 400)
         except SQLAlchemyError:
             db.session.rollback()
             flash('页面保存失败，请重试。')
@@ -278,9 +302,21 @@ def delete_page(page_id):
     return redirect(url_for('admin.pages'))
 
 
-@bp.route('/pages/<int:page_id>/preview', methods=['GET'])
+@bp.route('/pages/preview', methods=['POST'])
+@bp.route('/pages/<int:page_id>/preview', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def preview_page(page_id):
-    page = db.get_or_404(Page, page_id)
-    return render_template('admin/pages/preview.html', page=page)
+def preview_page(page_id=None):
+    existing = db.get_or_404(Page, page_id) if page_id is not None else None
+    page: Page | SimpleNamespace | None = existing
+    if request.method == 'POST':
+        page = SimpleNamespace(
+            title=request.form.get('title', '').strip()[:120] or _('Untitled'),
+            summary=request.form.get('summary', '').strip()[:300],
+            body=request.form.get('body', ''),
+            body_format=existing.body_format if existing is not None else BODY_FORMAT_MARKDOWN,
+        )
+    if page is None:
+        abort(404)
+    return preview_response(render_template(
+        'page/content.html', title=page.title, page=page, is_preview=True))

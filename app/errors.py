@@ -2,8 +2,9 @@ from flask import render_template
 from flask_babel import _
 
 from app import app, db
+from app.seo import NOINDEX
 
-ERROR_SEO = {'canonical_url': None, 'robots': 'noindex, nofollow', 'og_type': 'website'}
+ERROR_SEO = {'canonical_url': None, 'robots': NOINDEX, 'og_type': 'website'}
 
 
 @app.errorhandler(404)

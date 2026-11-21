@@ -2,8 +2,13 @@
 
 {% block admin_title %}{{ '编辑页面' if page else '新建页面' }}{% endblock %}
 
+{% block admin_actions %}
+<button class="button button--quiet" type="submit" form="page-editor-form" formtarget="_blank"
+        formaction="{{ url_for('admin.preview_page', page_id=page.id) if page else url_for('admin.preview_page') }}">{{ _('Preview') }}</button>
+{% endblock %}
+
 {% block admin_content %}
-<form class="admin-form" method="post" novalidate
+<form class="admin-form" id="page-editor-form" method="post" action="{{ url_for('admin.edit_page', page_id=page.id) if page else url_for('admin.new_page') }}" novalidate
       {% if not legacy_html %}
       data-image-upload-url="{{ url_for('upload') }}"
       data-image-library-url="{{ url_for('admin.image_picker') }}"
