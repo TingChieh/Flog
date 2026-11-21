@@ -9,7 +9,7 @@ from tests.conftest import login
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / 'app' / 'static'
 KATEX = 'vendor/katex/0.19.0'
-MERMAID = 'vendor/mermaid/12.2.0'
+MERMAID = 'vendor/mermaid/12.3.0'
 
 
 def test_vendored_libraries_are_complete():
@@ -27,7 +27,7 @@ def test_vendored_libraries_are_complete():
 
 def test_vendored_versions_are_recorded():
     assert '0.19.0' in (STATIC / KATEX / 'README.md').read_text()
-    assert '12.2.0' in (STATIC / MERMAID / 'README.md').read_text()
+    assert '12.3.0' in (STATIC / MERMAID / 'README.md').read_text()
 
 
 def script_of(document):

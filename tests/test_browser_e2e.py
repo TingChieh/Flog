@@ -66,6 +66,7 @@ with app.app_context():
         + '```python\\ndef hello(name: str) -> str:\\n    return f"hi {name}"\\n```\\n\\n'
         + filler
         + '## 验证闭环\\n\\n'
+        + '```mermaid\\ngraph TD\\n  A[Start] --> B[End]\\n```\\n\\n'
         + filler
     )
     db.session.add(Post(
@@ -170,7 +171,7 @@ def test_article_toc_reading_progress_lightbox_and_code_copy(browser, live_serve
         code_el = page.locator('.article-body pre code.language-python')
         assert code_el.count() == 1
         assert code_el.locator('span').count() > 0
-        copy_btn = page.locator('.article-body pre .code-copy')
+        copy_btn = page.locator('.article-body pre:has(code.language-python) .code-copy')
         copy_btn.wait_for(state='visible')
         copy_btn.click()
         page.wait_for_function(
@@ -178,6 +179,10 @@ def test_article_toc_reading_progress_lightbox_and_code_copy(browser, live_serve
         )
         clipboard_text = page.evaluate('() => navigator.clipboard.readText()')
         assert 'def hello(name: str) -> str:' in clipboard_text
+
+        diagram = page.locator('.article-body .mermaid-diagram svg')
+        diagram.wait_for(state='visible')
+        assert diagram.get_by_text('Start', exact=True).count() == 1
 
         # Reading progress advances as the reader scrolls through the article.
         initial_scale = page.evaluate(
