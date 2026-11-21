@@ -22,6 +22,7 @@ from app.security import admin_required, is_local_path
 from app.seo import public_base_url, public_url, set_post_seo
 from app.content import normalize_body_format, render_content, render_article
 from app.post_drafts import DraftValues, PostDraftError, publish_draft
+from app.post_queries import article_discovery, published_post_statement
 from app.likes import (CHANGED, DEFAULT_REACTION, LIKED, LIMITED, REACTION_EMOJI, REACTIONS,
                        attach_visitor_cookie, new_visitor_token, own_reaction,
                        react, read_visitor_token, reaction_counts)
@@ -41,10 +42,6 @@ from app.podcast import podcast_enabled, published_episodes
 from app.version import version_info
 
 
-def published_post_statement():
-    return sa.select(Post).where(Post.is_published.is_(True))
-
-
 # Feed readers only look at recent entries, and each one carries the whole post.
 FEED_POST_LIMIT = 20
 
@@ -57,7 +54,7 @@ def listed_post_statement():
 def public_post_or_404(post_id):
     return db.first_or_404(
         published_post_statement().options(
-            so.selectinload(Post.author)).where(Post.id == post_id))
+            so.joinedload(Post.author)).where(Post.id == post_id))
 
 
 # How stale last_seen may get; otherwise every signed-in request writes the user row.
@@ -442,6 +439,7 @@ def post(post_id):
         reaction=own_reaction(post, read_visitor_token()),
         reactions=REACTIONS,
         reaction_counts=reaction_counts(post),
+        **article_discovery(post),
         **comment_context(post, form),
     ))
     if counted:

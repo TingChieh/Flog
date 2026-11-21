@@ -37,6 +37,7 @@ def _wait_for(url: str, timeout: float = 20.0) -> None:
 def _seed_database(work_dir: Path, env: dict[str, str]) -> None:
     seed_script = """
 import io
+from datetime import datetime, timedelta, timezone
 from werkzeug.datastructures import FileStorage
 from app import app, db
 from app.images import save_uploaded_image
@@ -69,14 +70,24 @@ with app.app_context():
         + '```mermaid\\ngraph TD\\n  A[Start] --> B[End]\\n```\\n\\n'
         + filler
     )
+    now = datetime.now(timezone.utc)
     db.session.add(Post(
         title='浏览器端到端回归测试文章',
         body=body,
         body_format='markdown',
         author=admin,
         category=category,
+        timestamp=now - timedelta(days=2),
         is_published=True,
     ))
+    for days, title in (
+        (5, '把代码示例放回真实使用场景'),
+        (3, '如何组织一篇带有长代码示例和多级标题的技术文章'),
+        (1, '从本地验证到持续集成'),
+    ):
+        db.session.add(Post(title=title, body='<p>示例正文</p>', author=admin,
+                            category=category, timestamp=now - timedelta(days=days),
+                            is_published=True))
     db.session.commit()
     rebuild_search_index(db.session.connection())
     db.session.commit()
@@ -286,6 +297,49 @@ def _close_preview_with_keyboard(page):
         except Error:
             if not page.is_closed():
                 raise
+
+
+@pytest.mark.parametrize(('width', 'height'), [(1440, 900), (768, 1024), (390, 844)])
+@pytest.mark.parametrize('theme', ['light', 'dark'])
+def test_article_discovery_at_responsive_widths(browser, live_server, tmp_path, width, height, theme):
+    context = browser.new_context(viewport={'width': width, 'height': height}, color_scheme=theme)
+    page = context.new_page()
+    page_errors, failed_requests = _attach_guards(page)
+    console_errors = []
+    page.on('console', lambda message: console_errors.append(message.text)
+            if message.type == 'error' else None)
+    try:
+        page.goto(f'{live_server}/post/1', wait_until='networkidle')
+        assert page.locator('html').get_attribute('data-theme') == theme
+        nav = page.get_by_role('navigation', name='相邻文章')
+        previous = nav.get_by_role('link', name='上一篇 如何组织一篇带有长代码示例和多级标题的技术文章')
+        following = nav.get_by_role('link', name='下一篇 从本地验证到持续集成')
+        related = page.get_by_role('region', name='相关文章').get_by_role('link')
+        assert related.count() == 3
+        assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 1
+
+        page.locator('#post-actions button').last.focus()
+        for link in (previous, following, related.first):
+            page.keyboard.press('Tab')
+            assert link.evaluate('(link) => link === document.activeElement')
+            assert link.evaluate("""(link) => {
+                const style = getComputedStyle(link);
+                return link.matches(':focus-visible') && style.outlineStyle !== 'none'
+                    && parseFloat(style.outlineWidth) >= 2 && link.offsetHeight >= 44
+                    && link.scrollWidth <= link.clientWidth;
+            }""")
+
+        page.keyboard.press('Shift+Tab')
+        nav.evaluate("(nav) => nav.scrollIntoView({ block: 'center', behavior: 'instant' })")
+        assert nav.evaluate('(nav) => nav.getBoundingClientRect().top > 0')
+        page.screenshot(path=tmp_path / f'article-discovery-{width}x{height}-{theme}.png')
+
+        page.keyboard.press('Enter')
+        page.wait_for_url(f'{live_server}/post/4')
+        assert page.locator('.article-body h1').inner_text() == '从本地验证到持续集成'
+        assert page_errors == failed_requests == console_errors == []
+    finally:
+        context.close()
 
 
 @pytest.mark.parametrize('width', [375, 1280])

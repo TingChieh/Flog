@@ -671,3 +671,15 @@ msgstr "预览"
 
 msgid "Close preview"
 msgstr "关闭预览"
+
+msgid "Adjacent articles"
+msgstr "相邻文章"
+
+msgid "Previous article"
+msgstr "上一篇"
+
+msgid "Next article"
+msgstr "下一篇"
+
+msgid "Related articles"
+msgstr "相关文章"

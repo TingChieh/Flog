@@ -854,6 +854,57 @@ code {
     margin: 0;
 }
 
+.article-neighbors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    column-gap: 1.5rem;
+    padding-block: .5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.article-neighbors a,
+.article-related a {
+    display: block;
+    min-height: 44px;
+    padding-block: .65rem;
+    overflow-wrap: anywhere;
+    scroll-margin-block: var(--article-nav-offset, 72px) 1rem;
+}
+
+.article-neighbors a {
+    text-decoration: none;
+}
+
+.article-neighbors__label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: .875rem;
+}
+
+.article-neighbors__title {
+    text-decoration: underline;
+    text-underline-offset: .16em;
+}
+
+.article-neighbors a:hover .article-neighbors__title {
+    text-decoration-thickness: 2px;
+}
+
+.article-related {
+    padding-block: 1.25rem .5rem;
+}
+
+.article-related h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.article-related ul {
+    margin: .25rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
 .comments-section__heading {
     display: flex;
     align-items: baseline;
