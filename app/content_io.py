@@ -40,6 +40,7 @@ from app.timezones import to_display
 EXPORT_FORMAT_VERSION = 1
 
 _SAFE_SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{0,119}$')
+_NATIVE_POST_SLUG_RE = re.compile(r'^post-([1-9]\d*)$')
 _MD_LINK_RE = re.compile(r'(!?\[[^\]]*\]\()([^)\s]+)((?:\s+"[^"]*")?\))')
 _HTML_ATTR_RE = re.compile(
     r'(\b(?:src|href)\s*=\s*)(["\'])([^"\']+)\2',
@@ -614,7 +615,12 @@ def _normalize_dt_seconds(value: datetime | None) -> datetime | None:
 
 
 def _find_existing_post(
-    legacy_id: int | None, title: str, timestamp: datetime
+    legacy_id: int | None,
+    post_id: int | None,
+    title: str,
+    timestamp: datetime,
+    planned_fields: dict[str, Any],
+    claimed_post_ids: set[int],
 ) -> Post | None:
     if legacy_id is not None:
         by_legacy = db.session.scalar(
@@ -624,6 +630,16 @@ def _find_existing_post(
         )
         if by_legacy is not None:
             return by_legacy
+
+    by_id: Post | None = None
+    if post_id is not None:
+        candidate = db.session.scalar(
+            sa.select(Post)
+            .options(so.selectinload(Post.category), so.selectinload(Post.draft))
+            .where(Post.id == post_id)
+        )
+        if candidate is not None and candidate.id not in claimed_post_ids:
+            by_id = candidate
 
     target_ts = _normalize_dt_seconds(timestamp)
     candidates = db.session.scalars(
@@ -635,15 +651,34 @@ def _find_existing_post(
                 Post.draft.has(PostDraft.title == title),
             )
         )
+        .order_by(Post.id.asc())
     ).all()
-    for candidate in candidates:
-        cand_title = (
-            candidate.draft.title
-            if (not candidate.is_published and candidate.draft is not None)
-            else candidate.title
-        )
-        if cand_title == title and _normalize_dt_seconds(candidate.timestamp) == target_ts:
-            return candidate
+    exact_matches = [
+        cand for cand in candidates
+        if cand.id not in claimed_post_ids
+        and (
+            cand.draft.title
+            if (not cand.is_published and cand.draft is not None)
+            else cand.title
+        ) == title
+        and _normalize_dt_seconds(cand.timestamp) == target_ts
+    ]
+
+    if by_id is not None:
+        if not _post_diff_fields(by_id, planned_fields):
+            return by_id
+        # If an already-imported identical copy exists under a shifted ID (e.g. after
+        # importing into a wiped DB), reuse it idempotently instead of colliding with by_id.
+        for cand in exact_matches:
+            if not _post_diff_fields(cand, planned_fields):
+                return cand
+        return by_id
+
+    if exact_matches:
+        for cand in exact_matches:
+            if not _post_diff_fields(cand, planned_fields):
+                return cand
+        return exact_matches[0]
     return None
 
 
@@ -677,6 +712,10 @@ def _post_diff_fields(existing: Post, planned_fields: dict[str, Any]) -> list[st
         diffs.append('updated_at')
     if _normalize_dt_seconds(existing.scheduled_at) != _normalize_dt_seconds(planned_fields['scheduled_at']):
         diffs.append('scheduled_at')
+    existing_language = (source.language or '').strip() or None
+    planned_language = (planned_fields.get('language') or '').strip() or None
+    if existing_language != planned_language:
+        diffs.append('language')
     return diffs
 
 
@@ -745,7 +784,9 @@ def import_posts_bundle(
     planned_posts: list[_PlannedPost] = []
     seen_slugs: dict[str, str] = {}
     seen_legacy_ids: dict[int, str] = {}
+    seen_post_ids: dict[int, str] = {}
     seen_title_ts: dict[tuple[str, datetime], str] = {}
+    claimed_post_ids: set[int] = set()
 
     # Stage 1: full read-only validation and planning.
     for md_path in md_files:
@@ -767,8 +808,9 @@ def import_posts_bundle(
             continue
 
         raw_slug = metadata.get('slug')
-        slug = (raw_slug.strip() if isinstance(raw_slug, str) and raw_slug.strip()
-                else md_path.stem.lower())
+        explicit_slug = raw_slug.strip() if isinstance(raw_slug, str) else ''
+        has_explicit_slug = bool(explicit_slug)
+        slug = explicit_slug or md_path.stem.lower()
         if not _SAFE_SLUG_RE.match(slug):
             diagnostics.append(f'{rel_label}: invalid slug {slug!r}')
             continue
@@ -777,6 +819,25 @@ def import_posts_bundle(
                 f'{rel_label}: duplicate slug {slug!r} (already in {seen_slugs[slug]})')
             continue
         seen_slugs[slug] = rel_label
+
+        raw_id = metadata.get('id')
+        if raw_id is not None and (isinstance(raw_id, bool) or not isinstance(raw_id, int) or raw_id < 1):
+            diagnostics.append(f'{rel_label}: id must be a positive integer')
+            continue
+        slug_match = _NATIVE_POST_SLUG_RE.match(slug)
+        slug_post_id = int(slug_match.group(1)) if slug_match else None
+        if raw_id is not None and slug_post_id is not None and raw_id != slug_post_id:
+            diagnostics.append(
+                f'{rel_label}: id {raw_id} disagrees with slug {slug!r}')
+            continue
+        source_post_id = raw_id if raw_id is not None else slug_post_id
+        if source_post_id is not None:
+            if source_post_id in seen_post_ids:
+                diagnostics.append(
+                    f'{rel_label}: duplicate post id {source_post_id} '
+                    f'(already in {seen_post_ids[source_post_id]})')
+                continue
+            seen_post_ids[source_post_id] = rel_label
 
         legacy_id = metadata.get('legacy_id')
         if legacy_id is not None:
@@ -789,6 +850,18 @@ def import_posts_bundle(
                     f'(already in {seen_legacy_ids[legacy_id]})')
                 continue
             seen_legacy_ids[legacy_id] = rel_label
+
+        raw_language = metadata.get('language')
+        if raw_language is not None:
+            if not isinstance(raw_language, str):
+                diagnostics.append(f'{rel_label}: language must be a string or null')
+                continue
+            language = raw_language.strip() or None
+            if language is not None and len(language) > 5:
+                diagnostics.append(f'{rel_label}: language exceeds 5 characters')
+                continue
+        else:
+            language = None
 
         raw_tags = metadata.get('tags', [])
         if raw_tags is not None:
@@ -843,13 +916,19 @@ def import_posts_bundle(
                 diagnostics.append(f'{rel_label}: category exceeds 120 characters')
                 continue
 
-        title_ts_key = (title, timestamp)
-        if title_ts_key in seen_title_ts:
-            diagnostics.append(
-                f'{rel_label}: duplicate post title+published_at '
-                f'(already in {seen_title_ts[title_ts_key]})')
-            continue
-        seen_title_ts[title_ts_key] = rel_label
+        has_stable_identity = (
+            legacy_id is not None
+            or source_post_id is not None
+            or has_explicit_slug
+        )
+        if not has_stable_identity:
+            title_ts_key = (title, timestamp)
+            if title_ts_key in seen_title_ts:
+                diagnostics.append(
+                    f'{rel_label}: duplicate post title+published_at '
+                    f'(already in {seen_title_ts[title_ts_key]})')
+                continue
+            seen_title_ts[title_ts_key] = rel_label
 
         # Collect media declarations from front matter and references from body.
         fm_media_raw = metadata.get('media') or []
@@ -1036,22 +1115,27 @@ def import_posts_bundle(
             diagnostics.append(str(exc))
             continue
 
-        existing_post = _find_existing_post(legacy_id, title, timestamp)
+        planned_fields = {
+            'title': title,
+            'body': rewritten_body,
+            'body_format': body_format,
+            'category_name': category_name,
+            'is_published': is_published,
+            'comments_enabled': comments_enabled,
+            'timestamp': timestamp,
+            'updated_at': updated_at,
+            'scheduled_at': scheduled_at,
+            'language': language,
+        }
+        existing_post = _find_existing_post(
+            legacy_id, source_post_id, title, timestamp, planned_fields, claimed_post_ids
+        )
         post_action = 'create'
         existing_post_id: int | None = None
         if existing_post is not None:
             existing_post_id = existing_post.id
-            diffs = _post_diff_fields(existing_post, {
-                'title': title,
-                'body': rewritten_body,
-                'body_format': body_format,
-                'category_name': category_name,
-                'is_published': is_published,
-                'comments_enabled': comments_enabled,
-                'timestamp': timestamp,
-                'updated_at': updated_at,
-                'scheduled_at': scheduled_at,
-            })
+            claimed_post_ids.add(existing_post.id)
+            diffs = _post_diff_fields(existing_post, planned_fields)
             if not diffs:
                 post_action = 'skip'
             elif overwrite:
@@ -1076,8 +1160,7 @@ def import_posts_bundle(
             scheduled_at=scheduled_at,
             is_published=is_published,
             comments_enabled=comments_enabled,
-            language=(metadata.get('language')
-                      if isinstance(metadata.get('language'), str) else None),
+            language=language,
             action=post_action,
             existing_post_id=existing_post_id,
         ))

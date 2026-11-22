@@ -436,3 +436,163 @@ def test_import_rejects_undated_markdown_to_preserve_idempotency(application, us
             import_posts_bundle(bundle, default_author='author')
         assert 'published_at' in '\n'.join(exc_info.value.diagnostics)
         assert db.session.scalar(sa.select(sa.func.count()).select_from(Post)) == before
+
+
+def test_reimport_native_post_with_renamed_title_conflicts_or_overwrites_without_duplicating(
+    application, users, tmp_path
+):
+    with application.app_context():
+        native = db.session.get(Post, users['post'])
+        assert native is not None and native.legacy_id is None
+        native_id = native.id
+        native.title = '原生旧标题'
+        native.body = '原生文章正文'
+        native.body_format = 'markdown'
+        native.timestamp = datetime(2026, 5, 10, 8, 0, 0)
+        db.session.commit()
+
+        bundle = tmp_path / 'native-rename'
+        export_posts_bundle(bundle)
+        md_file = next((bundle / 'posts').glob('*.md'))
+        original_md = md_file.read_text(encoding='utf-8')
+        assert f'id: {native_id}' in original_md
+        assert f'slug: "post-{native_id}"' in original_md
+
+        # 1) Change only the title (keeping id + slug): must conflict without --overwrite, never duplicate.
+        md_file.write_text(
+            original_md.replace('title: "原生旧标题"', 'title: "原生新标题"'),
+            encoding='utf-8',
+        )
+        with pytest.raises(ContentImportError) as exc_info:
+            import_posts_bundle(bundle)
+        assert 'differs in: title' in '\n'.join(exc_info.value.diagnostics)
+        assert db.session.scalar(sa.select(sa.func.count()).select_from(Post)) == 1
+        assert db.session.get(Post, native_id).title == '原生旧标题'
+
+        # With --overwrite, updates the existing native post in place (no duplicate created).
+        updated = import_posts_bundle(bundle, overwrite=True)
+        assert updated.updated_posts == 1
+        assert updated.created_posts == 0
+        assert db.session.scalar(sa.select(sa.func.count()).select_from(Post)) == 1
+        assert db.session.get(Post, native_id).title == '原生新标题'
+
+        # 2) Strip `id:` so only `slug: "post-<id>"` identifies the post, rename again.
+        slug_only_md = '\n'.join(
+            line for line in md_file.read_text(encoding='utf-8').splitlines()
+            if not line.startswith('id:')
+        ) + '\n'
+        md_file.write_text(
+            slug_only_md.replace('title: "原生新标题"', 'title: "仅凭Slug改标题"'),
+            encoding='utf-8',
+        )
+        with pytest.raises(ContentImportError) as exc_info:
+            import_posts_bundle(bundle)
+        assert 'differs in: title' in '\n'.join(exc_info.value.diagnostics)
+        assert db.session.scalar(sa.select(sa.func.count()).select_from(Post)) == 1
+
+        updated_slug = import_posts_bundle(bundle, overwrite=True)
+        assert updated_slug.updated_posts == 1
+        assert updated_slug.created_posts == 0
+        assert db.session.scalar(sa.select(sa.func.count()).select_from(Post)) == 1
+        assert db.session.get(Post, native_id).title == '仅凭Slug改标题'
+
+
+def test_same_title_same_second_posts_with_distinct_ids_and_one_second_apart(
+    application, users, tmp_path
+):
+    with application.app_context():
+        author = db.session.get(User, users['author'])
+        cat = db.session.scalar(sa.select(Category))
+        assert author is not None and cat is not None
+        same_ts = datetime(2026, 6, 1, 4, 0, 0)
+        p1 = Post(
+            title='同标题文章', body='第一篇正文', body_format='markdown',
+            is_published=True, timestamp=same_ts, author=author, category=cat,
+        )
+        p2 = Post(
+            title='同标题文章', body='第二篇正文', body_format='markdown',
+            is_published=True, timestamp=same_ts, author=author, category=cat,
+        )
+        db.session.add_all([p1, p2])
+        db.session.commit()
+
+        # Export bundle containing two posts with identical title and identical second,
+        # differentiated by distinct id / slug.
+        bundle = tmp_path / 'same-title-same-sec'
+        exported = export_posts_bundle(bundle)
+        assert exported.exported_posts == 3
+
+        # Re-importing into same DB is idempotent (0 errors, 3 skipped).
+        same_db_res = import_posts_bundle(bundle)
+        assert same_db_res.skipped_posts == 3
+        assert same_db_res.created_posts == 0
+
+        # Wiping and importing into clean DB recreates all 3, and repeat import is idempotent.
+        _wipe_content_and_uploads(application)
+        rebuilt = import_posts_bundle(bundle)
+        assert rebuilt.created_posts == 3
+        repeat = import_posts_bundle(bundle)
+        assert repeat.skipped_posts == 3
+        assert repeat.created_posts == 0
+
+        # External Markdown without id/slug: same title 1 second apart succeeds.
+        one_sec_bundle = tmp_path / 'one-sec-apart'
+        (one_sec_bundle / 'posts').mkdir(parents=True)
+        (one_sec_bundle / 'posts' / 'a.md').write_text(
+            '---\ntitle: "差一秒同标题"\npublished_at: "2026-07-01T10:00:00+08:00"\n---\n\nA\n',
+            encoding='utf-8',
+        )
+        (one_sec_bundle / 'posts' / 'b.md').write_text(
+            '---\ntitle: "差一秒同标题"\npublished_at: "2026-07-01T10:00:01+08:00"\n---\n\nB\n',
+            encoding='utf-8',
+        )
+        apart = import_posts_bundle(one_sec_bundle, default_author='author')
+        assert apart.created_posts == 2
+
+        # Truly ambiguous duplicate: same title, same second, NO id/legacy_id/explicit slug -> rejected.
+        dup_bundle = tmp_path / 'ambiguous-dup'
+        (dup_bundle / 'posts').mkdir(parents=True)
+        (dup_bundle / 'posts' / 'x.md').write_text(
+            '---\ntitle: "无身份重复"\npublished_at: "2026-07-02T10:00:00+08:00"\n---\n\nX\n',
+            encoding='utf-8',
+        )
+        (dup_bundle / 'posts' / 'y.md').write_text(
+            '---\ntitle: "无身份重复"\npublished_at: "2026-07-02T10:00:00+08:00"\n---\n\nY\n',
+            encoding='utf-8',
+        )
+        with pytest.raises(ContentImportError) as exc_info:
+            import_posts_bundle(dup_bundle, default_author='author')
+        assert 'duplicate post title+published_at' in '\n'.join(exc_info.value.diagnostics)
+
+
+def test_reimport_with_only_language_changed_conflicts_and_overwrites(
+    application, users, tmp_path
+):
+    with application.app_context():
+        post = db.session.get(Post, users['post'])
+        assert post is not None
+        post_id = post.id
+        post.body_format = 'markdown'
+        post.language = 'zh-cn'
+        post.timestamp = datetime(2026, 5, 20, 6, 0, 0)
+        db.session.commit()
+
+        bundle = tmp_path / 'lang-diff'
+        export_posts_bundle(bundle)
+        md_file = next((bundle / 'posts').glob('*.md'))
+        md_file.write_text(
+            md_file.read_text(encoding='utf-8').replace('language: "zh-cn"', 'language: "en"'),
+            encoding='utf-8',
+        )
+
+        # Without --overwrite, language-only diff must be reported as conflict (not skipped).
+        with pytest.raises(ContentImportError) as exc_info:
+            import_posts_bundle(bundle)
+        assert 'differs in: language' in '\n'.join(exc_info.value.diagnostics)
+        assert db.session.get(Post, post_id).language == 'zh-cn'
+
+        # With --overwrite, updates language cleanly.
+        updated = import_posts_bundle(bundle, overwrite=True)
+        assert updated.updated_posts == 1
+        assert updated.skipped_posts == 0
+        assert db.session.get(Post, post_id).language == 'en'
