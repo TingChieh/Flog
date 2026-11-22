@@ -11,7 +11,27 @@ const source = fs.readFileSync(
 const normalize = (value) => JSON.parse(JSON.stringify(value));
 const CDN = '/static/vendor/vditor/4.0.1';
 
+function createClassList() {
+  const names = new Set();
+  return {
+    add(...items) { items.forEach((item) => names.add(item)); },
+    remove(...items) { items.forEach((item) => names.delete(item)); },
+    toggle(item, force) {
+      if (force === undefined) {
+        if (names.has(item)) { names.delete(item); return false; }
+        names.add(item); return true;
+      }
+      if (force) names.add(item);
+      else names.delete(item);
+      return Boolean(force);
+    },
+    contains(item) { return names.has(item); },
+    toArray() { return [...names]; },
+  };
+}
+
 function createFakeElement(tagName) {
+  const styleProps = {};
   return {
     tagName,
     attributes: {},
@@ -19,14 +39,43 @@ function createFakeElement(tagName) {
     dataset: {},
     listeners: {},
     removed: false,
+    hidden: false,
+    disabled: false,
+    focused: false,
+    classList: createClassList(),
+    style: {
+      setProperty(name, value) { styleProps[name] = String(value); },
+      getPropertyValue(name) { return styleProps[name] || ''; },
+      props: styleProps,
+    },
     append(...elements) {
       elements.forEach((element) => { element.parentNode = this; });
       this.children.push(...elements);
     },
+    before(element) {
+      this.preceding = element;
+      element.parentNode = this.parentNode;
+    },
     after(element) { this.following = element; },
-    addEventListener(eventName, listener) { this.listeners[eventName] = listener; },
+    remove() {
+      this.removed = true;
+      if (this.parentNode?.children) {
+        const index = this.parentNode.children.indexOf(this);
+        if (index > -1) this.parentNode.children.splice(index, 1);
+      }
+    },
+    focus() { this.focused = true; },
+    addEventListener(eventName, listener) {
+      if (!this.listeners[eventName]) this.listeners[eventName] = [];
+      this.listeners[eventName].push(listener);
+    },
+    dispatch(eventName, event = {}) {
+      (this.listeners[eventName] || []).forEach((listener) => listener(event));
+    },
     setAttribute(name, value) { this.attributes[name] = String(value); },
+    getAttribute(name) { return this.attributes[name] ?? null; },
     querySelector() { return null; },
+    querySelectorAll() { return []; },
   };
 }
 
@@ -40,11 +89,15 @@ function createHarness({
   withPicker = true,
   emojiPicker = false,
   theme = 'light',
+  initialValue = '# source',
+  withSvDom = false,
+  lineHeightPx = 24,
+  wrapAtChars = 0,
   uploadResponses = [{ ok: true, payload: { uploaded: 1, url: '/files/abc.png' } }],
 } = {}) {
   let instances = 0;
   let instance;
-  let editorValue = '# source';
+  let editorValue = initialValue;
   const readyCallbacks = [];
   const requests = [];
   const pendingUploads = [];
@@ -53,11 +106,40 @@ function createHarness({
   const submitListeners = [];
   const themeCalls = [];
   const insertCalls = [];
+  const previewModeCalls = [];
+  const renderPreviewCalls = [];
   const observers = [];
+  const resizeObservers = [];
   let uploadResponseIndex = 0;
   const wysiwygButton = { removed: false, remove() { this.removed = true; } };
   const pickerCalls = [];
   const emojiCalls = [];
+  const boldButton = createFakeElement('button');
+  boldButton.dataset.type = 'bold';
+  const fullscreenButton = createFakeElement('button');
+  fullscreenButton.dataset.type = 'fullscreen';
+  const toolbarPanel = createFakeElement('div');
+  toolbarPanel.style.display = 'block';
+  const toolbarElement = createFakeElement('div');
+  toolbarElement.className = 'vditor-toolbar';
+  toolbarElement.querySelectorAll = (selector) => {
+    if (selector === '.vditor-toolbar__item > button') return [boldButton, fullscreenButton];
+    if (selector === '.vditor-panel') return [toolbarPanel];
+    return [];
+  };
+  const svElement = createFakeElement('textarea');
+  svElement.className = 'vditor-sv vditor-reset';
+  svElement.value = initialValue;
+  svElement.selectionStart = 0;
+  svElement.scrollTop = 0;
+  svElement.clientWidth = withSvDom ? 480 : 0;
+  svElement.clientHeight = 400;
+  svElement.scrollHeight = 1200;
+  const previewElement = createFakeElement('div');
+  previewElement.className = 'vditor-preview';
+  previewElement.scrollTop = 0;
+  previewElement.clientHeight = 400;
+  previewElement.scrollHeight = 1600;
 
   const form = {
     dataset: {
@@ -75,7 +157,7 @@ function createHarness({
   };
   const field = {
     dataset: { vditorCdn: CDN },
-    value: '# source',
+    value: initialValue,
     hidden: false,
     form,
     after(element) { this.following = element; },
@@ -88,16 +170,24 @@ function createHarness({
       instance = this;
       this.host = host;
       this.options = options;
-      host.querySelector = (selector) => (
-        selector === 'button[data-mode="wysiwyg"]' ? wysiwygButton : null);
+      host.querySelector = (selector) => {
+        if (selector === 'button[data-mode="wysiwyg"]') return wysiwygButton;
+        if (withSvDom && selector === '.vditor-toolbar') return toolbarElement;
+        if (withSvDom && selector === 'textarea.vditor-sv') return svElement;
+        if (withSvDom && selector === '.vditor-preview') return previewElement;
+        return null;
+      };
     }
 
     getValue() { return editorValue; }
     insertValue(markdown) {
       insertCalls.push(markdown);
       editorValue = `${editorValue}${markdown}`;
+      svElement.value = editorValue;
     }
     setTheme(...args) { themeCalls.push(args); }
+    setPreviewMode(mode) { previewModeCalls.push(mode); }
+    renderPreview(value) { renderPreviewCalls.push(value); }
   }
 
   class FakeFormData {
@@ -110,6 +200,10 @@ function createHarness({
     MutationObserver: class {
       constructor(callback) { this.callback = callback; observers.push(this); }
       observe(target, options) { this.target = target; this.options = options; }
+    },
+    ResizeObserver: class {
+      constructor(callback) { this.callback = callback; resizeObservers.push(this); }
+      observe(target) { this.target = target; }
     },
     fetch(url, options) {
       requests.push({ url, ...options });
@@ -124,6 +218,29 @@ function createHarness({
     },
     ...(progressHelper ? { XMLHttpRequest: function XMLHttpRequest() {} } : {}),
     window: {
+      ...(withSvDom ? {
+        getComputedStyle() {
+          return {
+            paddingTop: '16px',
+            paddingBottom: '16px',
+            paddingLeft: '14px',
+            paddingRight: '18px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontWeight: '400',
+            fontStyle: 'normal',
+            letterSpacing: 'normal',
+            lineHeight: `${lineHeightPx}px`,
+            tabSize: '4',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            wordWrap: 'break-word',
+            fontVariantLigatures: 'none',
+          };
+        },
+        requestAnimationFrame(callback) { callback(); return 1; },
+      } : {}),
       ...(libraryUrl && withPicker ? { FlogImagePicker: { open: (options) => pickerCalls.push(options) } } : {}),
       ...(emojiPicker ? { FlogEmojiPicker: { open: (options) => emojiCalls.push(options) } } : {}),
       ...(progressHelper ? {
@@ -156,6 +273,21 @@ function createHarness({
       },
       createElement(tagName) {
         const element = createFakeElement(tagName);
+        if (withSvDom) {
+          element.getBoundingClientRect = () => {
+            if (element.className === 'markdown-editor__mirror-line' && element.parentNode) {
+              let top = 0;
+              for (const child of element.parentNode.children) {
+                const text = child.textContent === '\u200b' ? '' : (child.textContent || '');
+                const rows = wrapAtChars > 0 ? Math.max(1, Math.ceil(text.length / wrapAtChars)) : 1;
+                const height = rows * lineHeightPx;
+                if (child === element) return { top, height };
+                top += height;
+              }
+            }
+            return { top: 0, height: lineHeightPx };
+          };
+        }
         createdElements.push(element);
         return element;
       },
@@ -172,27 +304,43 @@ function createHarness({
     field,
     form,
     root,
+    svElement,
+    previewElement,
+    toolbarElement,
+    boldButton,
+    fullscreenButton,
+    toolbarPanel,
     pickerCalls,
     emojiCalls,
     requests,
     progressCalls,
     insertCalls,
     themeCalls,
+    previewModeCalls,
+    renderPreviewCalls,
     wysiwygButton,
     options() { return instance?.options; },
     instance() { return instance; },
     instanceCount() { return instances; },
     observer() { return observers[0]; },
+    resizeObserver() { return resizeObservers[0]; },
     typeInEditor(value) {
       editorValue = value;
+      svElement.value = value;
       instance.options.input(value);
     },
-    setEditorValue(value) { editorValue = value; },
+    setEditorValue(value) {
+      editorValue = value;
+      svElement.value = value;
+    },
     submit() { submitListeners.forEach((listener) => listener()); },
     status() {
       return createdElements.find((element) => element.attributes.role === 'status');
     },
     host() { return createdElements.find((element) => element.className === 'markdown-editor-host'); },
+    views() { return createdElements.find((element) => element.className === 'markdown-editor__views'); },
+    gutter() { return createdElements.find((element) => element.className === 'markdown-editor__gutter'); },
+    gutterLines() { return createdElements.find((element) => element.className === 'markdown-editor__gutter-lines'); },
     resolveNextUpload() {
       const resolve = pendingUploads.shift();
       assert.ok(resolve, 'expected a pending upload');
@@ -234,24 +382,28 @@ test('does not touch pages without a Markdown textarea', () => {
   assert.equal(harness.instanceCount(), 0);
 });
 
-test('configures instant rendering, local assets and the server-compatible feature set', () => {
+test('configures split view, local assets and the server-compatible feature set', () => {
   const harness = createHarness();
 
   harness.execute();
   const options = normalize(harness.options());
 
-  assert.equal(options.mode, 'ir');
+  assert.equal(options.mode, 'sv');
   assert.equal(options.lang, 'zh_CN');
   assert.equal(options.cdn, CDN);
   assert.equal(options.icon, 'ant');
   assert.equal(options.value, '# source');
   assert.equal(options.minHeight, 320);
+  assert.deepEqual(options.fullscreen, { index: 1050 });
   assert.deepEqual(options.cache, { enable: false });
+  assert.deepEqual(options.counter, { enable: true, type: 'markdown' });
   assert.deepEqual(options.toolbar, [
     'headings', 'bold', 'italic', '|', 'quote', 'list', 'ordered-list', '|',
     'code', 'inline-code', 'link', 'table', 'line', 'upload', '|',
-    'undo', 'redo', '|', 'edit-mode', 'fullscreen',
+    'undo', 'redo', '|', 'fullscreen',
   ]);
+  assert.equal(options.preview.mode, 'both');
+  assert.equal(options.preview.delay, 150);
   assert.equal(options.preview.hljs.enable, false);
   assert.deepEqual(options.preview.actions, []);
   assert.deepEqual(options.preview.markdown, {
@@ -260,7 +412,7 @@ test('configures instant rendering, local assets and the server-compatible featu
     footnotes: true, sanitize: true,
   });
   assert.equal(options.preview.theme.path, `${CDN}/dist/css/content-theme`);
-  for (const removed of ['strike', 'check', 'emoji', 'outline', 'export', 'preview']) {
+  for (const removed of ['strike', 'check', 'emoji', 'outline', 'export', 'preview', 'edit-mode']) {
     assert.equal(options.toolbar.includes(removed), false, removed);
   }
 });
@@ -1101,4 +1253,155 @@ test('picking an emoji inserts it into the editor and syncs the textarea', () =>
 
   assert.deepEqual(harness.insertCalls, ['😀']);
   assert.equal(harness.field.value, '# source😀');
+});
+
+test('mounts three keyboard-accessible view buttons and switches between split, source, and preview', () => {
+  const harness = createHarness({ withSvDom: true });
+  harness.execute();
+  harness.ready();
+
+  const views = harness.views();
+  assert.ok(views);
+  assert.equal(views.attributes.role, 'group');
+  assert.equal(views.attributes['aria-label'], '编辑器视图');
+  assert.deepEqual(
+    views.children.map((btn) => [btn.dataset.viewMode, btn.textContent, btn.attributes['aria-pressed']]),
+    [
+      ['split', '分屏预览', 'true'],
+      ['source', '源码', 'false'],
+      ['preview', '仅预览', 'false'],
+    ],
+  );
+  assert.equal(harness.host().dataset.editorView, 'split');
+  assert.equal(harness.svElement.style.display, 'block');
+  assert.equal(harness.previewElement.style.display, 'block');
+  assert.equal(harness.gutter().hidden, false);
+
+  // Switch to source code view
+  views.children[1].dispatch('click');
+  assert.equal(harness.field.markdownEditor.viewMode(), 'source');
+  assert.equal(harness.host().dataset.editorView, 'source');
+  assert.equal(views.children[1].attributes['aria-pressed'], 'true');
+  assert.equal(harness.svElement.style.display, 'block');
+  assert.equal(harness.previewElement.style.display, 'none');
+  assert.equal(harness.gutter().hidden, false);
+  assert.equal(harness.boldButton.disabled, false);
+
+  // Switch to preview-only view: disables edit toolbar, keeps fullscreen, hides source & gutter, preserves scrollTop
+  harness.svElement.scrollTop = 240;
+  views.children[2].dispatch('click');
+  assert.equal(harness.field.markdownEditor.viewMode(), 'preview');
+  assert.equal(harness.host().dataset.editorView, 'preview');
+  assert.equal(views.children[2].attributes['aria-pressed'], 'true');
+  assert.equal(harness.svElement.style.display, 'none');
+  assert.equal(harness.gutter().hidden, true);
+  assert.equal(harness.previewElement.style.display, 'block');
+  assert.equal(harness.boldButton.disabled, true);
+  assert.equal(harness.boldButton.attributes['aria-disabled'], 'true');
+  assert.equal(harness.fullscreenButton.disabled, false);
+  assert.equal(harness.toolbarPanel.style.display, 'none');
+  assert.ok(harness.renderPreviewCalls.length >= 2);
+
+  // Return to split view: re-enables toolbar, restores scrollTop and live preview
+  harness.svElement.scrollTop = 0;
+  views.children[0].dispatch('click');
+  assert.equal(harness.field.markdownEditor.viewMode(), 'split');
+  assert.equal(harness.boldButton.disabled, false);
+  assert.equal(harness.svElement.style.display, 'block');
+  assert.equal(harness.previewElement.style.display, 'block');
+  assert.equal(harness.gutter().hidden, false);
+  assert.equal(harness.svElement.scrollTop, 240);
+
+  // Unknown view mode is ignored safely
+  harness.field.markdownEditor.setViewMode('unknown');
+  assert.equal(harness.field.markdownEditor.viewMode(), 'split');
+
+  // Arrow/Home/End keyboard navigation moves focus between the 3 view buttons
+  views.dispatch('keydown', { key: 'ArrowRight', target: views.children[0], preventDefault() {} });
+  assert.equal(views.children[1].focused, true);
+  views.dispatch('keydown', { key: 'End', target: views.children[1], preventDefault() {} });
+  assert.equal(views.children[2].focused, true);
+  views.dispatch('keydown', { key: 'ArrowLeft', target: views.children[2], preventDefault() {} });
+  assert.equal(views.children[1].focused, true);
+  views.dispatch('keydown', { key: 'Home', target: views.children[1], preventDefault() {} });
+  assert.equal(views.children[0].focused, true);
+});
+
+test('computes accurate line numbers including empty docs, CRLF, long docs, wrapped rows, and scroll sync', () => {
+  const longWrappedLine = 'a'.repeat(55);
+  const initial = `# title\r\n\r\n${longWrappedLine}\r\nfinal line\r\n`;
+  const harness = createHarness({
+    withSvDom: true,
+    initialValue: initial,
+    lineHeightPx: 24,
+    wrapAtChars: 20,
+  });
+  harness.execute();
+  harness.ready();
+
+  const gutterLines = harness.gutterLines();
+  assert.equal(harness.field.markdownEditor.lineCount(), 5);
+  assert.deepEqual(
+    gutterLines.children.map((el) => el.textContent),
+    ['1', '2', '3', '4', '5'],
+  );
+  // Line 3 has 55 chars wrapping at 20 chars/row -> 3 visual rows = 72px; line 1 & 2 are 24px
+  assert.equal(gutterLines.children[0].style.height, '24px');
+  assert.equal(gutterLines.children[1].style.height, '24px');
+  assert.equal(gutterLines.children[2].style.height, '72px');
+  assert.equal(gutterLines.children[3].style.height, '24px');
+  assert.equal(gutterLines.children[4].style.height, '24px');
+
+  // Active line follows caret position
+  harness.svElement.selectionStart = initial.indexOf('final line');
+  harness.svElement.dispatch('keyup');
+  assert.equal(gutterLines.children[3].classList.contains('is-active'), true);
+  assert.equal(gutterLines.children[0].classList.contains('is-active'), false);
+
+  // Scroll sync moves gutter 1:1 and preview proportionally in split view
+  harness.svElement.scrollTop = 400; // 400 / (1200 - 400) = 0.5
+  harness.svElement.dispatch('scroll');
+  assert.equal(gutterLines.style.transform, 'translateY(-400px)');
+  assert.equal(harness.previewElement.scrollTop, 600); // 0.5 * (1600 - 400)
+
+  // Empty document keeps line 1
+  harness.typeInEditor('');
+  assert.equal(harness.field.markdownEditor.lineCount(), 1);
+  assert.deepEqual(gutterLines.children.map((el) => el.textContent), ['1']);
+
+  // Long 250-line document updates digit width to 3
+  const longDoc = Array.from({ length: 250 }, (_, i) => `line ${i + 1}`).join('\n');
+  harness.typeInEditor(longDoc);
+  assert.equal(harness.field.markdownEditor.lineCount(), 250);
+  assert.equal(harness.gutter().style.props['--line-digits'], '3');
+  assert.equal(gutterLines.children.length, 250);
+  assert.equal(gutterLines.children[249].textContent, '250');
+
+  // ResizeObserver re-measures without throwing
+  harness.svElement.clientWidth = 320;
+  harness.resizeObserver().callback();
+  assert.equal(gutterLines.children.length, 250);
+});
+
+test('switching editor views preserves unsaved drafts without triggering spurious saves', async () => {
+  const harness = createDraftHarness();
+  harness.execute();
+
+  // Mode switching alone does not mark the draft dirty or issue a save
+  harness.state().editor.setViewMode('source');
+  harness.state().editor.setViewMode('preview');
+  harness.state().editor.setViewMode('split');
+  await harness.advance(1000);
+  assert.equal(harness.requests.length, 0);
+  assert.equal(harness.state().dirty, false);
+
+  // Editing and switching views preserves the edited content for autosave
+  harness.changeBody('## Draft heading\n\nUnsaved paragraph');
+  harness.state().editor.setViewMode('preview');
+  harness.state().editor.setViewMode('source');
+  await harness.advance(1000);
+
+  assert.equal(harness.requests.length, 1);
+  assert.equal(harness.requests[0].body.body, '## Draft heading\n\nUnsaved paragraph');
+  assert.equal(harness.status.textContent, '草稿已保存');
 });

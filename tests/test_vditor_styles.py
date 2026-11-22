@@ -74,3 +74,19 @@ def test_editor_blocks_keep_the_pre_wrap_of_the_editing_surface():
     section = vditor_section(STYLESHEET.read_text())
     bodies = rule_bodies(section, '.admin-form .vditor-reset p')
     assert any('white-space: inherit' in body for body in bodies)
+
+
+def test_editor_line_gutter_and_view_switcher_use_site_tokens_and_responsive_stacking():
+    section = vditor_section(STYLESHEET.read_text())
+    assert '.admin-form .markdown-editor__views' in section
+    assert '.admin-form .markdown-editor__view-btn:focus-visible' in section
+    assert '.admin-form .markdown-editor__gutter' in section
+    assert '.admin-form textarea.vditor-sv' in section
+    assert '.admin-form .form-control.is-invalid + .markdown-editor-host' in section
+    assert "content: '暂无预览内容';" in section
+    assert '.admin-form .markdown-editor-host:not(.vditor--fullscreen)' in section
+    assert '@media (width <= 640px)' in section
+    assert 'grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);' in section
+    # No hard-coded hex colors inside the Vditor section.
+    stripped = re.sub(r'/\*.*?\*/', '', section, flags=re.DOTALL)
+    assert '#' not in stripped

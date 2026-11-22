@@ -3296,6 +3296,11 @@ html[data-theme="dark"] body.public-site {
 .admin-site .flash-message { width: auto; margin-inline: 0; }
 
 /* Vditor: the editor follows the site tokens. */
+.admin-form:has(.markdown-editor-host) { width: 100%; }
+.admin-form:has(.markdown-editor-host) > .form-field:not(:has(.markdown-editor-host)),
+.admin-form:has(.markdown-editor-host) > .admin-notice { max-width: 720px; }
+.admin-form .markdown-editor-host:not(.vditor--fullscreen) { position: relative; min-width: 0; }
+.admin-form .markdown-editor-host.vditor--fullscreen { min-width: 0; }
 .admin-form .vditor {
     --border-color: var(--border);
     --second-color: var(--text-secondary);
@@ -3321,14 +3326,155 @@ html[data-theme="dark"] body.public-site {
     --ir-link-color: var(--link-color);
     --ir-bracket-color: var(--text-secondary);
     --ir-paren-color: var(--text-secondary);
+    height: clamp(440px, 66vh, 760px);
+    min-height: 320px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
 }
+.admin-form .form-control.is-invalid + .markdown-editor-host { border-color: var(--danger); }
 .admin-form .vditor-reset p,
 .admin-form .vditor-reset blockquote,
 .admin-form .vditor-reset li { white-space: inherit; } /* the global p rule's "normal" breaks the caret on Enter */
-.admin-form .vditor-toolbar { border-bottom: 1px solid var(--border); }
+.admin-form .vditor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 0;
+    height: auto;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+}
+.admin-form .vditor-toolbar__item > button:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; border-radius: 4px; }
+.admin-form .vditor-toolbar__item > button:disabled { opacity: .4; cursor: not-allowed; }
+.admin-form .markdown-editor__views {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-muted);
+}
+.admin-form .markdown-editor__view-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    padding: 6px 10px;
+    min-height: 30px;
+    border-radius: calc(var(--radius) - 2px);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.admin-form .markdown-editor__view-btn:hover { color: var(--text-primary); }
+.admin-form .markdown-editor__view-btn.is-active,
+.admin-form .markdown-editor__view-btn[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+.admin-form .markdown-editor__view-btn:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.admin-form .markdown-editor-host .vditor-content {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+.admin-form .markdown-editor-host[data-editor-view="source"] .vditor-content { grid-template-columns: auto minmax(0, 1fr); }
+.admin-form .markdown-editor-host[data-editor-view="preview"] .vditor-content { grid-template-columns: minmax(0, 1fr); }
+.admin-form .markdown-editor__gutter {
+    position: relative;
+    min-width: calc(var(--line-digits, 2) * 1ch + 20px);
+    overflow: hidden;
+    user-select: none;
+    background: var(--surface-muted);
+    border-right: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+.admin-form .markdown-editor__gutter[hidden] { display: none; }
+.admin-form .markdown-editor__gutter-lines {
+    box-sizing: border-box;
+    padding: 16px 10px 16px 8px;
+    will-change: transform;
+}
+.admin-form .markdown-editor__line-number { box-sizing: border-box; color: var(--text-secondary); }
+.admin-form .markdown-editor__line-number.is-active { color: var(--text-primary); font-weight: 600; }
+.admin-form .markdown-editor__mirror {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    contain: layout style;
+}
+.admin-form .markdown-editor__mirror-line { margin: 0; padding: 0; }
+.admin-form textarea.vditor-sv {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 16px 18px 16px 14px;
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Noto Sans Mono CJK SC', 'PingFang SC', monospace;
+    font-size: 14px;
+    line-height: 1.65;
+    tab-size: 4;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow-y: auto;
+    overflow-x: hidden;
+    resize: none;
+}
+.admin-form textarea.vditor-sv:focus-visible { outline: 2px solid var(--text-primary); outline-offset: -2px; }
+.admin-form .markdown-editor-host .vditor-preview {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--surface);
+}
+.admin-form .markdown-editor-host[data-editor-view="preview"] .vditor-preview { border-left: 0; }
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset {
+    max-width: var(--reading-width);
+    padding: 16px 24px;
+    margin: 0 auto;
+    overflow-wrap: break-word;
+}
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset:empty::before {
+    content: '暂无预览内容';
+    color: var(--text-secondary);
+    font-size: 15px;
+}
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset p { margin: 0 0 1em; }
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset p:last-child { margin-bottom: 0; }
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset pre { max-width: 100%; overflow-x: auto; padding: 14px 16px; border-radius: var(--radius); }
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset table { display: block; max-width: 100%; overflow-x: auto; }
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset img { max-width: 100%; height: auto; }
+.admin-form .markdown-editor-host .vditor-preview > .vditor-reset a { overflow-wrap: anywhere; }
 .admin-form .vditor-reset { color: var(--text-primary); font-family: 'Source Serif 4', 'Noto Serif SC', 'Songti SC', Georgia, serif; font-size: 17px; line-height: 1.75; }
 .admin-form .vditor-reset a { color: var(--link-color); }
 .admin-form .vditor-reset blockquote { border-left: 2px solid var(--text-secondary); }
@@ -3342,7 +3488,22 @@ html[data-theme="dark"] body.public-site {
 .admin-form .vditor-reset code:not(.hljs):not(.highlight-chroma) { background-color: var(--surface-muted); color: var(--text-primary); }
 .admin-form .vditor-reset pre { background-color: var(--surface-muted); }
 @media (width <= 768px) {
+    .admin-form .vditor { height: clamp(460px, 68vh, 680px); }
     .admin-form .vditor-reset { font-size: 16px; }
+    .admin-form .markdown-editor__views { width: 100%; margin-left: 0; margin-top: 6px; }
+    .admin-form .markdown-editor__view-btn { flex: 1 1 0; min-height: 36px; text-align: center; }
+    .admin-form .markdown-editor-host .vditor-preview > .vditor-reset { padding: 14px 16px; }
+}
+@media (width <= 640px) {
+    .admin-form .markdown-editor-host[data-editor-view="split"] .vditor-content {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .admin-form .markdown-editor-host[data-editor-view="split"] .vditor-preview {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid var(--border);
+    }
 }
 
 /* Typography: search dialog, footer and publication controls share the serif. */
