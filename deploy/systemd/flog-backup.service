@@ -1,7 +1,8 @@
 # Template: runs scripts/backup_r2.sh once (see the README's backup section).
 # Runs as root: the script reads the root-only .env.backup and dumps the
-# database through mysqldump's socket login. Fix the path, then install it
-# together with flog-backup.timer.
+# database through mysqldump's socket login. On failure, backup_r2.sh triggers
+# BACKUP_ALERT_CMD or `flask backup alert` (email/webhook/log). Fix the path,
+# then install it together with flog-backup.timer.
 [Unit]
 Description=flog backup to Cloudflare R2
 After=mysql.service network-online.target

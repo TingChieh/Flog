@@ -123,6 +123,8 @@ class Config:
     PODCAST_AUDIO_MAX_MB = int(os.environ.get('PODCAST_AUDIO_MAX_MB', '300'))
     # Live Photo clips are transcoded with ffmpeg; empty means look on PATH.
     FFMPEG = os.environ.get('FFMPEG_PATH')
+    # Optional HTTP(S) webhook URL notified when scripts/backup_r2.sh fails.
+    BACKUP_ALERT_WEBHOOK = os.environ.get('BACKUP_ALERT_WEBHOOK', '').strip() or None
     # Keep the request guard high enough for camera exports and article
     # screenshots while still bounding multipart requests.
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024

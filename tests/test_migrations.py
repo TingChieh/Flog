@@ -281,7 +281,7 @@ def test_post_like_emoji_revision_is_the_only_head():
     config.set_main_option('script_location', str(migrations))
 
     assert ScriptDirectory.from_config(config).get_heads() == [
-        'c9f1a3b8d204']
+        'd4e8f1a2b305']
 
 
 def test_podcast_nav_order_migration_round_trip(tmp_path, monkeypatch):

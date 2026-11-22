@@ -19,10 +19,11 @@ from app.forms import PostDraftForm, PostForm
 from app.models import Category, Post, PostRevision
 from app.seo import preview_response
 from app.timezones import later_update, to_display
-from app.post_drafts import (DraftValues, PostDraftError, discard_draft,
-                             invalidate_editor_writes, publish_draft,
-                             restore_revision, save_draft,
-                             save_editor_draft, snapshot_draft, unpublish_post)
+from app.post_drafts import (DraftValues, PostDraftError, cancel_schedule,
+                             discard_draft, invalidate_editor_writes,
+                             publish_draft, restore_revision, save_draft,
+                             save_editor_draft, schedule_post, snapshot_draft,
+                             unpublish_post)
 
 
 def draft_values_from_json(payload):
@@ -332,6 +333,44 @@ def unpublish(post_id):
     unpublish_post(current_user, post_id)
     _commit_post_change('文章取消发布失败，请重试。')
     flash('文章已取消发布。')
+    return _after_publication_change(post_id)
+
+
+@bp.route('/posts/<int:post_id>/schedule', methods=['POST'])
+@login_required
+def schedule(post_id):
+    if not ToggleForm().validate_on_submit():
+        abort(400)
+    raw_when = (request.form.get('scheduled_at') or '').strip()
+    if not raw_when:
+        flash('请选择定时发布时间。')
+        return _after_publication_change(post_id)
+    if raw_when.endswith('Z'):
+        raw_when = raw_when[:-1] + '+00:00'
+    try:
+        parsed_when = datetime.fromisoformat(raw_when)
+    except ValueError:
+        flash('定时发布时间格式无效。')
+        return _after_publication_change(post_id)
+    try:
+        post = schedule_post(current_user, post_id, parsed_when)
+    except PostDraftError as exc:
+        flash(str(exc))
+        return _after_publication_change(post_id)
+    _commit_post_change('定时发布设置失败，请重试。')
+    local_label = to_display(post.scheduled_at).strftime('%Y-%m-%d %H:%M')
+    flash(f'已设定定时发布（{local_label}）。')
+    return _after_publication_change(post_id)
+
+
+@bp.route('/posts/<int:post_id>/cancel-schedule', methods=['POST'])
+@login_required
+def cancel_post_schedule(post_id):
+    if not ToggleForm().validate_on_submit():
+        abort(400)
+    cancel_schedule(current_user, post_id)
+    _commit_post_change('取消定时发布失败，请重试。')
+    flash('已取消定时发布。')
     return _after_publication_change(post_id)
 
 

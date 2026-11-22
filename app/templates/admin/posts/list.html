@@ -15,7 +15,7 @@
       <div class="admin-list__subline">
         <span>{{ post.author.username }}</span>
         <span>{{ post.local_timestamp.strftime('%Y-%m-%d') }}</span>
-        <span>{% if post.draft and post.is_published %}有未发布修改{% elif post.draft %}草稿{% elif post.is_published %}已发布{% else %}未发布{% endif %}</span>
+        <span>{% if post.draft and post.is_published %}有未发布修改{% elif not post.is_published and post.scheduled_at %}定时发布 {{ post.local_scheduled_at.strftime('%Y-%m-%d %H:%M') }}{% elif post.draft %}草稿{% elif post.is_published %}已发布{% else %}未发布{% endif %}</span>
       </div>
     </div>
     <div class="admin-list__actions">

@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import logging
 
 import sqlalchemy as sa
 from flask import abort
@@ -9,6 +10,28 @@ from app import db
 from app.authorization import owned_post_or_404
 from app.content import BODY_FORMAT_MARKDOWN, prepare_content_source, publication_body_error
 from app.models import Category, Post, PostDraft, PostRevision, get_site_settings
+from app.timezones import from_display
+
+
+logger = logging.getLogger(__name__)
+
+
+def utc_now_naive() -> datetime:
+    """Current UTC time as a naive datetime, matching how SQLAlchemy stores columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def normalize_utc_naive(value: datetime) -> datetime:
+    """Convert an aware datetime to naive UTC; treat naive input as DISPLAY_TIMEZONE."""
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return from_display(value)
+
+
+@dataclass(frozen=True)
+class PublishDueResult:
+    published_ids: list[int] = field(default_factory=list)
+    failed: list[tuple[int, str]] = field(default_factory=list)
 
 
 DEFAULT_POST_REVISION_LIMIT = 20
@@ -161,6 +184,7 @@ def publish_draft(actor, post_id, values=None):
     post.category_id = category_id
     post.language = draft.language
     post.is_published = True
+    post.scheduled_at = None
     post.draft = None
     return post
 
@@ -172,7 +196,81 @@ def unpublish_post(actor, post_id):
         save_draft(actor, post, DraftValues(
             post.title, post.body, post.category_id))
     post.is_published = False
+    post.scheduled_at = None
     return post
+
+
+def schedule_post(actor, post_id: int, scheduled_at: datetime, *,
+                  now: datetime | None = None,
+                  allow_past: bool = False) -> Post:
+    """Schedule an unpublished post to go live at ``scheduled_at``.
+
+    Aware datetimes are converted to UTC; naive datetimes are interpreted in
+    ``DISPLAY_TIMEZONE``. Already-published posts must be unpublished first so
+    live visibility is never altered implicitly.
+    """
+    post = owned_post_or_404(post_id, actor)
+    if post.is_published:
+        raise PostDraftError('Already published posts cannot be scheduled; unpublish first.')
+    target_utc = normalize_utc_naive(scheduled_at).replace(microsecond=0)
+    current_utc = (normalize_utc_naive(now) if now is not None
+                   else utc_now_naive()).replace(microsecond=0)
+    if not allow_past and target_utc <= current_utc:
+        raise PostDraftError('Scheduled publish time must be in the future.')
+    source = post.draft or post
+    _validate_publication(source, post.body_format)
+    invalidate_editor_writes(post)
+    if post.draft is None:
+        save_draft(actor, post, DraftValues(
+            post.title, post.body, post.category_id))
+    post.scheduled_at = target_utc
+    return post
+
+
+def cancel_schedule(actor, post_id: int) -> Post:
+    """Clear a pending publish schedule, returning the post to a plain draft."""
+    post = owned_post_or_404(post_id, actor)
+    post.scheduled_at = None
+    return post
+
+
+def publish_due_posts(now: datetime | None = None) -> PublishDueResult:
+    """Publish all unpublished posts whose ``scheduled_at`` is <= ``now`` (UTC).
+
+    Safe to call repeatedly: each post is claimed by clearing ``scheduled_at``
+    and setting ``is_published = True`` in a single transaction boundary.
+    """
+    cutoff = normalize_utc_naive(now) if now is not None else utc_now_naive()
+    due_posts = db.session.scalars(
+        sa.select(Post).where(
+            Post.is_published.is_(False),
+            Post.scheduled_at.is_not(None),
+            Post.scheduled_at <= cutoff,
+        ).order_by(Post.scheduled_at.asc(), Post.id.asc())
+    ).all()
+
+    result = PublishDueResult()
+    for post in due_posts:
+        source = post.draft or post
+        try:
+            _validate_publication(source, post.body_format)
+        except PostDraftError as exc:
+            logger.warning('Skipping scheduled post %s: %s', post.id, exc)
+            result.failed.append((post.id, str(exc)))
+            continue
+        scheduled_time = post.scheduled_at or cutoff
+        invalidate_editor_writes(post)
+        post.title = source.title.strip()
+        post.body = source.body
+        post.category_id = source.category_id  # type: ignore[assignment]
+        post.language = source.language
+        post.timestamp = scheduled_time
+        post.updated_at = None
+        post.is_published = True
+        post.scheduled_at = None
+        post.draft = None
+        result.published_ids.append(post.id)
+    return result
 
 
 def discard_draft(actor, post_id):
