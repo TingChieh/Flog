@@ -513,8 +513,9 @@ def test_markdown_editor_line_numbers_and_three_views(browser, live_server, widt
         assert page.locator('.vditor-preview .vditor-reset pre code').count() == 1
         assert page.locator('.vditor-preview .vditor-reset table').count() == 1
 
-        # Scroll sync moves both gutter and preview in split view.
+        # Scroll sync moves both gutter and preview in split view, and stacked mobile panes never clip.
         scroll_state = page.evaluate("""() => {
+            const content = document.querySelector('.vditor-content');
             const sv = document.querySelector('textarea.vditor-sv');
             const preview = document.querySelector('.vditor-preview');
             const gutterLines = document.querySelector('[data-line-gutter-lines]');
@@ -526,18 +527,39 @@ def test_markdown_editor_line_numbers_and_three_views(browser, live_server, widt
                 svScrollTop: sv.scrollTop,
                 previewScrollTop: preview.scrollTop,
                 gutterTransform: gutterLines.style.transform,
+                previewBottomDelta: preview.getBoundingClientRect().bottom - content.getBoundingClientRect().bottom,
             };
         }""")
         assert scroll_state['target'] > 0
         assert scroll_state['previewScrollTop'] > 0
         assert scroll_state['gutterTransform'] == f"translateY(-{scroll_state['svScrollTop']}px)"
+        assert scroll_state['previewBottomDelta'] <= 1.0
 
-        # Keyboard-accessible switching: split -> source -> preview -> split.
+        # Fullscreen keeps fixed viewport positioning and view switcher accessible.
+        fullscreen_btn = page.locator('.vditor-toolbar__item > button[data-type="fullscreen"]')
+        fullscreen_btn.click()
+        fs_state = page.evaluate("""() => {
+            const host = document.querySelector('.markdown-editor-host');
+            const rect = host.getBoundingClientRect();
+            return {
+                isFullscreen: host.classList.contains('vditor--fullscreen'),
+                position: getComputedStyle(host).position,
+                top: Math.round(rect.top),
+                left: Math.round(rect.left),
+            };
+        }""")
+        assert fs_state == {'isFullscreen': True, 'position': 'fixed', 'top': 0, 'left': 0}
+        fullscreen_btn.click()
+        assert not page.locator('.markdown-editor-host').evaluate(
+            "(el) => el.classList.contains('vditor--fullscreen')",
+        )
+
+        # Keyboard-accessible switching: Tab into switcher -> split -> source -> preview -> split.
         split_btn = page.locator('button[data-view-mode="split"]')
         source_btn = page.locator('button[data-view-mode="source"]')
         preview_btn = page.locator('button[data-view-mode="preview"]')
-        split_btn.focus()
-        assert split_btn.evaluate('(el) => el.matches(":focus-visible")')
+        page.keyboard.press('Tab')
+        assert split_btn.evaluate('(el) => el === document.activeElement && el.matches(":focus-visible")')
 
         page.keyboard.press('ArrowRight')
         assert source_btn.evaluate('(el) => el === document.activeElement')

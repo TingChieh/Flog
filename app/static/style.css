@@ -3299,7 +3299,8 @@ html[data-theme="dark"] body.public-site {
 .admin-form:has(.markdown-editor-host) { width: 100%; }
 .admin-form:has(.markdown-editor-host) > .form-field:not(:has(.markdown-editor-host)),
 .admin-form:has(.markdown-editor-host) > .admin-notice { max-width: 720px; }
-.admin-form .markdown-editor-host { position: relative; min-width: 0; }
+.admin-form .markdown-editor-host:not(.vditor--fullscreen) { position: relative; min-width: 0; }
+.admin-form .markdown-editor-host.vditor--fullscreen { min-width: 0; }
 .admin-form .vditor {
     --border-color: var(--border);
     --second-color: var(--text-secondary);
@@ -3496,7 +3497,7 @@ html[data-theme="dark"] body.public-site {
 @media (width <= 640px) {
     .admin-form .markdown-editor-host[data-editor-view="split"] .vditor-content {
         grid-template-columns: auto minmax(0, 1fr);
-        grid-template-rows: minmax(200px, 1fr) minmax(200px, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     }
     .admin-form .markdown-editor-host[data-editor-view="split"] .vditor-preview {
         grid-column: 1 / -1;

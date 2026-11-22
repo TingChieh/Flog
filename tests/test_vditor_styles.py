@@ -84,7 +84,9 @@ def test_editor_line_gutter_and_view_switcher_use_site_tokens_and_responsive_sta
     assert '.admin-form textarea.vditor-sv' in section
     assert '.admin-form .form-control.is-invalid + .markdown-editor-host' in section
     assert "content: '暂无预览内容';" in section
+    assert '.admin-form .markdown-editor-host:not(.vditor--fullscreen)' in section
     assert '@media (width <= 640px)' in section
+    assert 'grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);' in section
     # No hard-coded hex colors inside the Vditor section.
     stripped = re.sub(r'/\*.*?\*/', '', section, flags=re.DOTALL)
     assert '#' not in stripped

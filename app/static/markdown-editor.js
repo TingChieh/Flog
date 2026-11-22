@@ -485,6 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
       value: initialValue,
       minHeight: 320,
       theme: isDark() ? 'dark' : 'classic',
+      fullscreen: { index: 1050 },
       cache: { enable: false },
       counter: { enable: true, type: 'markdown' },
       toolbar: TOOLBAR.map((item) => {

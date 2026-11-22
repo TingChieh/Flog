@@ -394,6 +394,7 @@ test('configures split view, local assets and the server-compatible feature set'
   assert.equal(options.icon, 'ant');
   assert.equal(options.value, '# source');
   assert.equal(options.minHeight, 320);
+  assert.deepEqual(options.fullscreen, { index: 1050 });
   assert.deepEqual(options.cache, { enable: false });
   assert.deepEqual(options.counter, { enable: true, type: 'markdown' });
   assert.deepEqual(options.toolbar, [
