@@ -2,11 +2,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const TOOLBAR = [
     'headings', 'bold', 'italic', '|', 'quote', 'list', 'ordered-list', '|',
     'code', 'inline-code', 'link', 'table', 'line', 'emoji-picker', 'upload', 'image-library', '|',
-    'undo', 'redo', '|', 'edit-mode', 'fullscreen',
+    'undo', 'redo', '|', 'fullscreen',
+  ];
+  const VIEW_MODES = [
+    { id: 'split', label: '分屏预览' },
+    { id: 'source', label: '源码' },
+    { id: 'preview', label: '仅预览' },
+  ];
+  const VIEW_MODE_IDS = new Set(VIEW_MODES.map((mode) => mode.id));
+  const MIRROR_STYLE_PROPS = [
+    'paddingLeft', 'paddingRight', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle',
+    'letterSpacing', 'lineHeight', 'tabSize', 'whiteSpace', 'wordBreak',
+    'overflowWrap', 'wordWrap', 'fontVariantLigatures',
   ];
   const IMAGE_TYPES = 'image/gif,image/jpeg,image/png';
 
   const isDark = () => document.documentElement.dataset.theme === 'dark';
+  const splitLines = (text) => String(text ?? '').replace(/\r\n?/g, '\n').split('\n');
 
   const initializeEditors = () => {
     if (typeof Vditor === 'undefined') return;
@@ -31,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const host = document.createElement('div');
     host.className = 'markdown-editor-host';
+    host.dataset.editorView = 'split';
     field.after(host);
     field.hidden = true;
 
@@ -45,9 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let ready = false;
     let baseline = null;
     let vditor = null;
+    let currentView = 'split';
+    let lastLineCount = splitLines(initialValue).length;
+    let lastMeasuredWidth = -1;
+    let savedScrollTop = 0;
+    let resizeRaf = null;
+    let svElement = null;
+    let previewElement = null;
+    let gutterElement = null;
+    let gutterLinesElement = null;
+    let mirrorElement = null;
+    let viewButtons = [];
 
     const currentValue = () => {
       if (!ready) return field.value;
+      if (svElement) return svElement.value;
       const value = vditor.getValue();
       // Vditor may normalise the text (for example a trailing newline) on load.
       // That is not an edit, so report the original until the reader changes it.
@@ -56,6 +81,297 @@ document.addEventListener('DOMContentLoaded', () => {
     const sync = (value) => {
       field.value = value;
       listeners.forEach((listener) => listener(value));
+    };
+
+    const getSourceText = () => (svElement ? svElement.value : currentValue());
+
+    const activeLineNumber = () => {
+      if (!svElement) return 1;
+      const pos = typeof svElement.selectionStart === 'number' ? svElement.selectionStart : 0;
+      return splitLines(svElement.value.slice(0, pos)).length;
+    };
+
+    const syncGutterScroll = () => {
+      if (!svElement || !gutterLinesElement?.style) return;
+      gutterLinesElement.style.transform = `translateY(${-svElement.scrollTop}px)`;
+    };
+
+    const syncPreviewScroll = () => {
+      if (currentView !== 'split' || !svElement || !previewElement) return;
+      const sourceMax = svElement.scrollHeight - svElement.clientHeight;
+      const previewMax = previewElement.scrollHeight - previewElement.clientHeight;
+      if (sourceMax <= 0 || previewMax <= 0) {
+        previewElement.scrollTop = 0;
+        return;
+      }
+      const ratio = Math.min(1, Math.max(0, svElement.scrollTop / sourceMax));
+      previewElement.scrollTop = ratio * previewMax;
+    };
+
+    const syncActiveLine = () => {
+      if (!gutterLinesElement) return;
+      const active = activeLineNumber();
+      const nodes = gutterLinesElement.children || [];
+      for (let i = 0; i < nodes.length; i += 1) {
+        nodes[i].classList?.toggle('is-active', i + 1 === active);
+      }
+    };
+
+    const updateLineNumbers = () => {
+      const lines = splitLines(getSourceText());
+      const lineCount = lines.length;
+      lastLineCount = lineCount;
+      if (!gutterElement || !gutterLinesElement) return;
+
+      const digits = Math.max(2, String(lineCount).length);
+      gutterElement.style?.setProperty?.('--line-digits', String(digits));
+
+      let heights = null;
+      const canMeasure = Boolean(
+        svElement
+        && mirrorElement
+        && currentView !== 'preview'
+        && svElement.clientWidth > 0
+        && typeof window.getComputedStyle === 'function'
+        && typeof mirrorElement.getBoundingClientRect === 'function',
+      );
+
+      if (canMeasure) {
+        const computed = window.getComputedStyle(svElement);
+        lastMeasuredWidth = svElement.clientWidth;
+        mirrorElement.style.boxSizing = 'border-box';
+        mirrorElement.style.width = `${svElement.clientWidth}px`;
+        MIRROR_STYLE_PROPS.forEach((prop) => {
+          mirrorElement.style[prop] = computed[prop];
+        });
+        if (gutterLinesElement.style) {
+          gutterLinesElement.style.paddingTop = computed.paddingTop;
+          gutterLinesElement.style.paddingBottom = computed.paddingBottom;
+          gutterLinesElement.style.fontSize = computed.fontSize;
+          gutterLinesElement.style.lineHeight = computed.lineHeight;
+        }
+
+        const mirrorChildren = mirrorElement.children;
+        while (mirrorChildren.length < lineCount) {
+          const lineEl = document.createElement('div');
+          lineEl.className = 'markdown-editor__mirror-line';
+          mirrorElement.append(lineEl);
+        }
+        while (mirrorChildren.length > lineCount) {
+          mirrorChildren[mirrorChildren.length - 1].remove();
+        }
+        for (let i = 0; i < lineCount; i += 1) {
+          const text = lines[i].length > 0 ? lines[i] : '\u200b';
+          if (mirrorChildren[i].textContent !== text) {
+            mirrorChildren[i].textContent = text;
+          }
+        }
+
+        const rects = [];
+        for (let i = 0; i < lineCount; i += 1) {
+          rects.push(mirrorChildren[i].getBoundingClientRect());
+        }
+        heights = [];
+        for (let i = 0; i < lineCount; i += 1) {
+          const height = i + 1 < lineCount
+            ? Math.max(0, rects[i + 1].top - rects[i].top)
+            : rects[i].height;
+          heights.push(height);
+        }
+      }
+
+      const active = activeLineNumber();
+      const gutterChildren = gutterLinesElement.children;
+      while (gutterChildren.length < lineCount) {
+        const num = gutterChildren.length + 1;
+        const item = document.createElement('div');
+        item.className = 'markdown-editor__line-number';
+        item.dataset.line = String(num);
+        item.textContent = String(num);
+        gutterLinesElement.append(item);
+      }
+      while (gutterChildren.length > lineCount) {
+        gutterChildren[gutterChildren.length - 1].remove();
+      }
+      for (let i = 0; i < lineCount; i += 1) {
+        const item = gutterChildren[i];
+        if (heights && item.style) {
+          const px = `${heights[i]}px`;
+          if (item.style.height !== px) item.style.height = px;
+        } else if (item.style?.height) {
+          item.style.height = '';
+        }
+        item.classList?.toggle('is-active', i + 1 === active);
+      }
+
+      syncGutterScroll();
+    };
+
+    const scheduleLineUpdate = () => {
+      if (typeof window.requestAnimationFrame !== 'function') {
+        updateLineNumbers();
+        return;
+      }
+      if (resizeRaf !== null) return;
+      resizeRaf = window.requestAnimationFrame(() => {
+        resizeRaf = null;
+        updateLineNumbers();
+      });
+    };
+
+    const setEditToolbarDisabled = (disabled) => {
+      const toolbar = host.querySelector?.('.vditor-toolbar');
+      if (!toolbar?.querySelectorAll) return;
+      toolbar.querySelectorAll('.vditor-toolbar__item > button').forEach((button) => {
+        if (button.dataset?.type === 'fullscreen') return;
+        button.disabled = disabled;
+        button.classList?.toggle('vditor-menu--disabled', disabled);
+        button.setAttribute('aria-disabled', String(disabled));
+      });
+      if (disabled) {
+        toolbar.querySelectorAll('.vditor-panel').forEach((panel) => {
+          if (panel.style) panel.style.display = 'none';
+        });
+      }
+    };
+
+    const updateViewButtons = (mode) => {
+      viewButtons.forEach((button) => {
+        const active = button.dataset.viewMode === mode;
+        button.setAttribute('aria-pressed', String(active));
+        button.classList?.toggle('is-active', active);
+      });
+    };
+
+    const setViewMode = (mode, { focusEditor = false } = {}) => {
+      if (!VIEW_MODE_IDS.has(mode)) return;
+      const previous = currentView;
+      if (previous !== 'preview' && mode === 'preview' && svElement) {
+        savedScrollTop = svElement.scrollTop || 0;
+      }
+      currentView = mode;
+      host.dataset.editorView = mode;
+      updateViewButtons(mode);
+      if (!ready) return;
+
+      if (mode === 'split') {
+        vditor.setPreviewMode?.('both');
+        if (svElement?.style) svElement.style.display = 'block';
+        if (previewElement?.style) previewElement.style.display = 'block';
+        if (gutterElement) gutterElement.hidden = false;
+        setEditToolbarDisabled(false);
+        if (previous === 'preview' && svElement) svElement.scrollTop = savedScrollTop;
+        vditor.renderPreview?.();
+        updateLineNumbers();
+        syncPreviewScroll();
+        if (focusEditor) svElement?.focus?.();
+      } else if (mode === 'source') {
+        vditor.setPreviewMode?.('editor');
+        if (svElement?.style) svElement.style.display = 'block';
+        if (previewElement?.style) previewElement.style.display = 'none';
+        if (gutterElement) gutterElement.hidden = false;
+        setEditToolbarDisabled(false);
+        if (previous === 'preview' && svElement) svElement.scrollTop = savedScrollTop;
+        updateLineNumbers();
+        if (focusEditor) svElement?.focus?.();
+      } else {
+        vditor.setPreviewMode?.('both');
+        if (svElement?.style) svElement.style.display = 'none';
+        if (gutterElement) gutterElement.hidden = true;
+        if (previewElement?.style) previewElement.style.display = 'block';
+        setEditToolbarDisabled(true);
+        vditor.renderPreview?.();
+      }
+    };
+
+    const mountViewSwitcher = () => {
+      const views = document.createElement('div');
+      views.className = 'markdown-editor__views';
+      views.setAttribute('role', 'group');
+      views.setAttribute('aria-label', '编辑器视图');
+
+      viewButtons = VIEW_MODES.map((entry) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'markdown-editor__view-btn';
+        button.dataset.viewMode = entry.id;
+        button.textContent = entry.label;
+        button.setAttribute('aria-pressed', String(entry.id === currentView));
+        if (entry.id === currentView) button.classList?.add('is-active');
+        button.addEventListener('click', () => setViewMode(entry.id));
+        views.append(button);
+        return button;
+      });
+
+      views.addEventListener('keydown', (event) => {
+        const index = viewButtons.indexOf(event.target);
+        if (index === -1) return;
+        let next = -1;
+        if (event.key === 'ArrowRight') next = (index + 1) % viewButtons.length;
+        else if (event.key === 'ArrowLeft') next = (index - 1 + viewButtons.length) % viewButtons.length;
+        else if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = viewButtons.length - 1;
+        if (next !== -1) {
+          event.preventDefault?.();
+          viewButtons[next].focus?.();
+        }
+      });
+
+      const toolbar = host.querySelector?.('.vditor-toolbar');
+      if (toolbar?.append) toolbar.append(views);
+      else host.append?.(views);
+    };
+
+    const mountLineNumbers = () => {
+      svElement = host.querySelector?.('textarea.vditor-sv') || null;
+      previewElement = host.querySelector?.('.vditor-preview') || null;
+      if (!svElement) return;
+
+      gutterElement = document.createElement('div');
+      gutterElement.className = 'markdown-editor__gutter';
+      gutterElement.setAttribute('aria-hidden', 'true');
+      gutterElement.dataset.lineGutter = '';
+
+      gutterLinesElement = document.createElement('div');
+      gutterLinesElement.className = 'markdown-editor__gutter-lines';
+      gutterLinesElement.dataset.lineGutterLines = '';
+      gutterElement.append(gutterLinesElement);
+
+      mirrorElement = document.createElement('div');
+      mirrorElement.className = 'markdown-editor__mirror';
+      mirrorElement.setAttribute('aria-hidden', 'true');
+
+      if (typeof svElement.before === 'function') svElement.before(gutterElement);
+      else host.append?.(gutterElement);
+      host.append?.(mirrorElement);
+
+      svElement.addEventListener('input', () => updateLineNumbers());
+      svElement.addEventListener('keyup', syncActiveLine);
+      svElement.addEventListener('click', syncActiveLine);
+      svElement.addEventListener('select', syncActiveLine);
+      svElement.addEventListener('focus', syncActiveLine);
+      svElement.addEventListener('scroll', () => {
+        if (svElement.clientWidth > 0 && svElement.clientWidth !== lastMeasuredWidth) {
+          updateLineNumbers();
+        } else {
+          syncGutterScroll();
+        }
+        syncPreviewScroll();
+      });
+
+      gutterElement.addEventListener('wheel', (event) => {
+        if (!svElement || svElement.scrollHeight <= svElement.clientHeight) return;
+        svElement.scrollTop += event.deltaY || 0;
+        syncGutterScroll();
+        syncPreviewScroll();
+      }, { passive: true });
+
+      if (typeof ResizeObserver === 'function') {
+        new ResizeObserver(() => scheduleLineUpdate()).observe(svElement);
+      }
+      if (document.fonts?.ready?.then) {
+        document.fonts.ready.then(() => updateLineNumbers()).catch(() => {});
+      }
     };
 
     // With the shared helper the status line also carries a progress bar.
@@ -106,7 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
           snippets.push(`![图片](${payload.url})`);
         }
         vditor.insertValue(snippets.join('\n\n'));
-        sync(vditor.getValue());
+        sync(currentValue());
+        updateLineNumbers();
+        if (currentView === 'preview') vditor.renderPreview?.();
         setStatus('success', '图片已插入');
       } catch (_error) {
         setStatus('error', '上传失败：无法上传图片');
@@ -127,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
           url: libraryUrl,
           onSelect: (markdown) => {
             vditor.insertValue(markdown);
-            sync(vditor.getValue());
+            sync(currentValue());
+            updateLineNumbers();
             setStatus('success', '图片已插入');
           },
         }),
@@ -146,7 +465,8 @@ document.addEventListener('DOMContentLoaded', () => {
           anchor: event?.currentTarget || host,
           onPick: (chars) => {
             vditor.insertValue(chars);
-            sync(vditor.getValue());
+            sync(currentValue());
+            updateLineNumbers();
           },
         }),
       };
@@ -158,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     vditor = new Vditor(host, {
-      mode: 'ir',
+      mode: 'sv',
       lang: 'zh_CN',
       cdn,
       icon: 'ant',
@@ -166,13 +486,15 @@ document.addEventListener('DOMContentLoaded', () => {
       minHeight: 320,
       theme: isDark() ? 'dark' : 'classic',
       cache: { enable: false },
-      counter: { enable: true, type: 'text' },
+      counter: { enable: true, type: 'markdown' },
       toolbar: TOOLBAR.map((item) => {
         if (item === 'image-library') return libraryButton();
         if (item === 'emoji-picker') return emojiButton();
         return item;
       }).filter((item) => item && (canUpload || item !== 'upload')),
       preview: {
+        mode: 'both',
+        delay: 150,
         actions: [],
         hljs: { enable: false },
         theme: {
@@ -195,13 +517,21 @@ document.addEventListener('DOMContentLoaded', () => {
       ...(canUpload ? {
         upload: { accept: IMAGE_TYPES, multiple: true, handler: uploadImages },
       } : {}),
-      input: sync,
+      input: (value) => {
+        sync(svElement ? svElement.value : value);
+        updateLineNumbers();
+      },
       after: () => {
         ready = true;
         baseline = vditor.getValue();
+        // Let the stylesheet size the split/source/preview frame cleanly so panes scroll internally.
+        if (host.style) host.style.height = '';
         // Pure WYSIWYG would rewrite the Markdown source formatting.
         host.querySelector('button[data-mode="wysiwyg"]')?.remove();
+        mountViewSwitcher();
+        mountLineNumbers();
         applyTheme();
+        setViewMode(currentView);
       },
     });
 
@@ -209,6 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
       vditor,
       value: currentValue,
       onChange: (listener) => listeners.push(listener),
+      viewMode: () => currentView,
+      setViewMode,
+      lineCount: () => lastLineCount,
+      refreshLineNumbers: updateLineNumbers,
     };
 
     form?.addEventListener('submit', () => {

@@ -358,7 +358,7 @@ def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_
         page.locator('form button[type=submit], form input[type=submit]').first.click()
         page.wait_for_url(lambda url: not url.endswith('/login'))
         page.goto(f'{live_server}/admin/posts/new')
-        page.wait_for_function("document.querySelector('.vditor-ir [contenteditable=true]')")
+        page.wait_for_function("document.querySelector('textarea.vditor-sv')")
 
         with page.expect_popup() as empty_info:
             page.locator('[data-post-preview]').press('Enter')
@@ -366,7 +366,7 @@ def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_
         assert empty.locator('.article-body h1').inner_text() == '无标题'
         _close_preview_with_keyboard(empty)
 
-        field = page.locator('.vditor-ir [contenteditable=true]').first
+        field = page.locator('textarea.vditor-sv').first
         initial = '正文段落\n\n' * 32
         field.fill(initial)
         page.locator('[data-publish]').wait_for()
@@ -378,10 +378,10 @@ def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_
         assert '正文段落' in page.locator('#post').input_value()
         page.screenshot(path=tmp_path / 'article-validation.png')
 
-        page.wait_for_function("document.querySelector('.vditor-ir [contenteditable=true]')")
+        page.wait_for_function("document.querySelector('textarea.vditor-sv')")
         title = '一篇包含很长标题且没有封面图片的文章' * 5
         page.locator('#title').fill(title)
-        page.locator('.vditor-ir [contenteditable=true]').first.fill('最新正文\n\n' + initial)
+        page.locator('textarea.vditor-sv').first.fill('最新正文\n\n' + initial)
         with page.expect_popup() as info:
             page.locator('[data-post-preview]').press('Enter')
         preview = info.value
@@ -395,7 +395,7 @@ def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_
         _close_preview_with_keyboard(preview)
 
         # A second immediate edit must be published even if autosave is pending.
-        page.locator('.vditor-ir [contenteditable=true]').first.fill('立即发布的正文\n\n' + initial)
+        page.locator('textarea.vditor-sv').first.fill('立即发布的正文\n\n' + initial)
         with page.expect_navigation() as published:
             page.locator('[data-publish]').press('Enter')
         assert published.value.status == 200
@@ -411,11 +411,11 @@ def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_
         page.screenshot(path=tmp_path / 'article-public.png')
 
         page.goto(f'{live_server}/admin/pages/new')
-        page.wait_for_function("document.querySelector('.vditor-ir [contenteditable=true]')")
+        page.wait_for_function("document.querySelector('textarea.vditor-sv')")
         page.locator('#title').fill('页面草稿')
-        page.locator('.vditor-ir [contenteditable=true]').first.fill('尚未保存的内容')
+        page.locator('textarea.vditor-sv').first.fill('尚未保存的内容')
         with page.expect_popup() as page_info:
-            page.get_by_role('button', name='预览').press('Enter')
+            page.get_by_role('button', name='预览', exact=True).press('Enter')
         page_preview = page_info.value
         assert page_preview.locator('.public-page h1').inner_text() == '页面草稿'
         assert page_preview.locator('.page-body').inner_text() == '尚未保存的内容'
@@ -424,5 +424,192 @@ def test_editor_publish_validation_and_public_preview(browser, live_server, tmp_
         page_preview.screenshot(path=tmp_path / 'page-preview.png')
         assert errors == preview_errors == preview_failed == []
         assert all('400 (BAD REQUEST)' in message for message in console_errors)
+    finally:
+        context.close()
+
+
+def _login_admin(page, live_server):
+    page.goto(f'{live_server}/login')
+    page.locator('#username').fill('admin')
+    page.locator('#password').fill('password')
+    page.locator('form button[type=submit], form input[type=submit]').first.click()
+    page.wait_for_url(lambda url: not url.endswith('/login'))
+
+
+@pytest.mark.parametrize(('width', 'height'), [(1440, 900), (768, 1024), (390, 844)])
+@pytest.mark.parametrize('theme', ['light', 'dark'])
+def test_markdown_editor_line_numbers_and_three_views(browser, live_server, width, height, theme):
+    context = browser.new_context(viewport={'width': width, 'height': height}, color_scheme=theme)
+    page = context.new_page()
+    page_errors, failed_requests = _attach_guards(page)
+    console_errors = []
+    page.on('console', lambda message: console_errors.append(message.text)
+            if message.type == 'error' else None)
+    try:
+        _login_admin(page, live_server)
+        page.goto(f'{live_server}/admin/posts/new', wait_until='networkidle')
+        page.wait_for_function("document.querySelector('textarea.vditor-sv')")
+        assert page.locator('html').get_attribute('data-theme') == theme
+
+        # Empty editor starts in split view with line 1 and quiet empty preview.
+        assert page.locator('.markdown-editor-host').get_attribute('data-editor-view') == 'split'
+        assert page.locator('[data-line-gutter] .markdown-editor__line-number').count() == 1
+        assert page.locator('button[data-view-mode="split"]').get_attribute('aria-pressed') == 'true'
+
+        long_title = '一篇包含超长标题与折行代码段的三视图行号回归测试文章' * 4
+        long_code = 'const veryLongIdentifier = ' + '"segment/" + '.join(['"abc"'] * 14) + ';'
+        long_wrapped = (
+            '这是一段用于验证折行行号像素对齐的长段落，' * 6
+            + 'https://example.com/very/long/unbroken/path/for/wrap-alignment-test'
+        )
+        markdown_doc = '\n'.join([
+            '# 编辑器主标题',
+            '',
+            long_wrapped,
+            '',
+            '## 代码与表格',
+            '',
+            '```javascript',
+            long_code,
+            '```',
+            '',
+            '| 项目 | 状态 |',
+            '| --- | --- |',
+            '| 行号 | 精确 |',
+            '',
+            '<script>window.__editor_xss = true;</script>',
+            '',
+            *[f'第 {i:02d} 行长文档滚动联动内容。' for i in range(1, 45)],
+        ])
+        expected_lines = len(markdown_doc.split('\n'))
+
+        page.locator('#title').fill(long_title[:120])
+        sv = page.locator('textarea.vditor-sv')
+        sv.fill(markdown_doc)
+        page.wait_for_function("() => Boolean(document.querySelector('.vditor-preview .vditor-reset h1'))")
+
+        # Line numbers match exact logical line count and wrapped line 3 is taller than single line 1.
+        metrics = page.evaluate("""() => {
+            const lines = [...document.querySelectorAll('[data-line-gutter] .markdown-editor__line-number')];
+            const mirrorLines = [...document.querySelectorAll('.markdown-editor__mirror-line')];
+            const line1H = lines[0].getBoundingClientRect().height;
+            const line3H = lines[2].getBoundingClientRect().height;
+            const mirror3H = mirrorLines[2].getBoundingClientRect().height;
+            return {
+                count: lines.length,
+                lastLabel: lines[lines.length - 1].textContent,
+                line1H,
+                line3H,
+                mirror3H,
+                xss: Boolean(window.__editor_xss),
+            };
+        }""")
+        assert metrics['count'] == expected_lines
+        assert metrics['lastLabel'] == str(expected_lines)
+        assert metrics['line3H'] >= metrics['line1H'] * 2 - 1
+        assert abs(metrics['line3H'] - metrics['mirror3H']) <= 1.0
+        assert metrics['xss'] is False
+        assert page.locator('.vditor-preview .vditor-reset h1').inner_text() == '编辑器主标题'
+        assert page.locator('.vditor-preview .vditor-reset pre code').count() == 1
+        assert page.locator('.vditor-preview .vditor-reset table').count() == 1
+
+        # Scroll sync moves both gutter and preview in split view.
+        scroll_state = page.evaluate("""() => {
+            const sv = document.querySelector('textarea.vditor-sv');
+            const preview = document.querySelector('.vditor-preview');
+            const gutterLines = document.querySelector('[data-line-gutter-lines]');
+            const target = Math.floor((sv.scrollHeight - sv.clientHeight) * 0.5);
+            sv.scrollTop = target;
+            sv.dispatchEvent(new Event('scroll'));
+            return {
+                target,
+                svScrollTop: sv.scrollTop,
+                previewScrollTop: preview.scrollTop,
+                gutterTransform: gutterLines.style.transform,
+            };
+        }""")
+        assert scroll_state['target'] > 0
+        assert scroll_state['previewScrollTop'] > 0
+        assert scroll_state['gutterTransform'] == f"translateY(-{scroll_state['svScrollTop']}px)"
+
+        # Keyboard-accessible switching: split -> source -> preview -> split.
+        split_btn = page.locator('button[data-view-mode="split"]')
+        source_btn = page.locator('button[data-view-mode="source"]')
+        preview_btn = page.locator('button[data-view-mode="preview"]')
+        split_btn.focus()
+        assert split_btn.evaluate('(el) => el.matches(":focus-visible")')
+
+        page.keyboard.press('ArrowRight')
+        assert source_btn.evaluate('(el) => el === document.activeElement')
+        page.keyboard.press('Enter')
+        assert page.locator('.markdown-editor-host').get_attribute('data-editor-view') == 'source'
+        assert source_btn.get_attribute('aria-pressed') == 'true'
+        assert not page.locator('.vditor-preview').is_visible()
+        assert page.locator('[data-line-gutter]').is_visible()
+        assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 1
+
+        page.keyboard.press('ArrowRight')
+        assert preview_btn.evaluate('(el) => el === document.activeElement')
+        page.keyboard.press('Space')
+        assert page.locator('.markdown-editor-host').get_attribute('data-editor-view') == 'preview'
+        assert preview_btn.get_attribute('aria-pressed') == 'true'
+        assert not sv.is_visible()
+        assert not page.locator('[data-line-gutter]').is_visible()
+        assert page.locator('.vditor-preview').is_visible()
+        assert page.locator('.vditor-toolbar__item > button[data-type="bold"]').is_disabled()
+        assert not page.locator('.vditor-toolbar__item > button[data-type="fullscreen"]').is_disabled()
+        assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 1
+
+        # Returning to split preserves content and scroll position and re-enables toolbar.
+        page.keyboard.press('Home')
+        page.keyboard.press('Enter')
+        assert page.locator('.markdown-editor-host').get_attribute('data-editor-view') == 'split'
+        assert not page.locator('.vditor-toolbar__item > button[data-type="bold"]').is_disabled()
+        assert sv.input_value() == markdown_doc
+        assert page.evaluate('document.documentElement.scrollWidth - innerWidth') <= 1
+
+        # Draft autosave preserves content across reload.
+        page.wait_for_function("() => document.querySelector('[data-draft-save-status]')?.textContent === '草稿已保存'")
+        page.reload(wait_until='networkidle')
+        page.wait_for_function("document.querySelector('textarea.vditor-sv')")
+        assert '编辑器主标题' in page.locator('textarea.vditor-sv').input_value()
+        assert page.locator('[data-line-gutter] .markdown-editor__line-number').count() == expected_lines
+
+        assert page_errors == failed_requests == console_errors == []
+    finally:
+        context.close()
+
+
+def test_markdown_editor_pages_podcast_and_legacy_html_fallback(browser, live_server):
+    context = browser.new_context(viewport={'width': 1280, 'height': 850})
+    page = context.new_page()
+    page_errors, failed_requests = _attach_guards(page)
+    console_errors = []
+    page.on('console', lambda message: console_errors.append(message.text)
+            if message.type == 'error' else None)
+    try:
+        _login_admin(page, live_server)
+
+        for path in ('/admin/pages/new', '/admin/podcast/new'):
+            page.goto(f'{live_server}{path}', wait_until='networkidle')
+            page.wait_for_function("document.querySelector('textarea.vditor-sv')")
+            sv = page.locator('textarea.vditor-sv')
+            sv.fill('## 小节标题\n\n正文与 **加粗**')
+            page.wait_for_function("() => Boolean(document.querySelector('.vditor-preview .vditor-reset h2'))")
+            assert page.locator('[data-line-gutter] .markdown-editor__line-number').count() == 3
+            page.locator('button[data-view-mode="preview"]').click()
+            assert page.locator('.vditor-preview .vditor-reset strong').inner_text() == '加粗'
+            page.locator('button[data-view-mode="source"]').click()
+            assert sv.is_visible()
+            assert page.locator('[data-line-gutter]').is_visible()
+
+        # Seeded post #2 uses legacy HTML format and must keep the plain textarea fallback.
+        page.goto(f'{live_server}/admin/posts/2/edit', wait_until='networkidle')
+        assert page.locator('textarea#post').is_visible()
+        assert page.locator('.markdown-editor-host').count() == 0
+        assert page.locator('[data-line-gutter]').count() == 0
+        assert page.locator('button[data-view-mode]').count() == 0
+
+        assert page_errors == failed_requests == console_errors == []
     finally:
         context.close()
