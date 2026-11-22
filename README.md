@@ -136,6 +136,7 @@ flask run                            # http://127.0.0.1:5000
 | `PODCAST_REDIRECT_HOSTS` | 否 | 以前是播客独立站的域名，逗号分隔；访问它们会 301 到 `SITE_URL` 下的 `/podcast/`，旧单集地址和旧 RSS 地址也会对应跳转 |
 | `PODCAST_AUDIO_MAX_MB` | 否 | 后台上传单集音频的大小上限（MB），默认 `300` |
 | `DISPLAY_TIMEZONE` | 否 | 页面上日期的显示时区，默认 `Asia/Shanghai`；数据库里统一存 UTC |
+| `BACKUP_ALERT_WEBHOOK` | 否 | `scripts/backup_r2.sh` 失败时发送 JSON 告警的 HTTP(S) Webhook 地址；配置了 `MAIL_SERVER` 与 `ADMIN_EMAILS` 时同时发送邮件告警 |
 | `GTM_ID` | 否 | Google Tag Manager 容器 ID（形如 `GTM-XXXXXXX`），不设置则不加载 |
 | `GA_MEASUREMENT_ID` | 否 | Google Analytics 测量 ID（形如 `G-XXXXXXXXXX`），不设置则不加载 |
 
@@ -185,10 +186,11 @@ Caddy 配置不由脚本修改；让 Caddy 直接发图的配置见 [docs/caddy-
 | --- | --- | --- |
 | 数据库 | `db/flog-<时间戳>.sql.gz` | 每次一份 `mysqldump`，写入前校验压缩包完整且非空 |
 | `.env` | `env/env-<时间戳>` | 每次一份 |
+| 校验清单 | `manifests/manifest-<时间戳>.json` | 每次一份，记录数据库、`.env` 与 `uploads/` 的 SHA-256 校验和及保留参数 |
 | 上传目录（图片、Live Photo 视频、播客音频） | `uploads/` | 镜像同步，只传新增或变化的文件，重复运行很快 |
 | 服务器上已删除的上传文件 | `uploads-removed/<时间戳>/` | 不直接销毁，先移到这里 |
 
-`db/`、`env/` 和 `uploads-removed/` 超过 `BACKUP_KEEP_DAYS`（默认 30 天）后自动清理。`.env` 含密钥，请把存储桶设为私有，并给脚本用只限这一个桶的 R2 API 令牌。
+`db/`、`env/`、`manifests/` 和 `uploads-removed/` 按保留策略清理：始终至少保留最新 `BACKUP_MIN_KEEP` 份（默认 7 份），超出该数量且超过 `BACKUP_KEEP_DAYS`（默认 30 天）的旧备份自动清理。备份失败时通过 `ERR` trap 自动调用 `BACKUP_ALERT_CMD` 或 `flask backup alert`（记录日志，并通过已配置的 `MAIL_SERVER`/`ADMIN_EMAILS` 及可选 `BACKUP_ALERT_WEBHOOK` 告警）。`.env` 含密钥，请把存储桶设为私有，并给脚本用只限这一个桶的 R2 API 令牌。
 
 **准备**
 
@@ -206,14 +208,24 @@ BACKUP_ENV_FILE=/path/to/flog/.env
 # 可选：BACKUP_PREFIX（默认 flog）、BACKUP_KEEP_DAYS（默认 30）、BACKUP_DB_NAME（默认 flog）
 ```
 
-**运行**
+**运行与恢复校验**
 
 ```bash
-scripts/backup_r2.sh --dry-run   # 只显示会传什么、删什么
-scripts/backup_r2.sh
+scripts/backup_r2.sh --dry-run                             # 只显示会传什么、删什么
+scripts/backup_r2.sh                                       # 执行备份并生成 SHA-256 manifest
+scripts/restore_r2.sh --target-dir /tmp/flog-restore       # 下载并校验 SHA-256 后还原到隔离目录
 ```
 
-确认能跑后每天执行一次：`deploy/systemd/` 里有 `flog-backup.service` 和 `flog-backup.timer` 模板（默认每天 03:30），把其中的路径改成服务器上的检出目录，用 `systemctl link` 装上，再 `systemctl enable --now flog-backup.timer`。**恢复**：从 R2 下载最新的 `db/` 转储用 `gunzip -c … | mysql flog` 导回，`uploads/` 同步回上传目录，`env/` 里取回 `.env`。
+确认能跑后每天执行一次：`deploy/systemd/` 里有 `flog-backup.service` 和 `flog-backup.timer` 模板（默认每天 03:30），把其中的路径改成服务器上的检出目录，用 `systemctl link` 装上，再 `systemctl enable --now flog-backup.timer`。`scripts/restore_r2.sh` 默认只恢复并校验到显式指定的隔离目录，不会自动覆写生产数据库。
+
+## 内容导出/导入、定时发布与统计
+
+```bash
+flask content export <目录> [--published-only] [--allow-missing-media]   # 导出 Markdown + front matter + 成对媒体
+flask content import <目录> [--author <用户名>] [--dry-run] [--overwrite] # 校验、暂存并幂等导入（冲突默认拒绝，失败全量回滚）
+flask posts publish-due                                                  # 发布已到期的定时文章（可配 deploy/systemd/flog-publish.timer）
+flask stats [--top 10] [--days 30] [--json]                              # 查看全站聚合统计（后台亦提供 /admin/stats）
+```
 
 ## Markdown 编辑器
 

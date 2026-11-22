@@ -1,0 +1,12 @@
+# Template: checks every minute for due scheduled posts.
+# Enable with `systemctl enable --now flog-publish.timer`.
+[Unit]
+Description=Publish due scheduled Flog posts every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

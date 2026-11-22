@@ -168,6 +168,8 @@ class Post(BaseModel):
         index=True, default=lambda: datetime.now(timezone.utc))
     # When a live post last had an update published; None until then.
     updated_at: so.Mapped[Optional[datetime]] = so.mapped_column()
+    # Optional UTC time when an unpublished post should automatically go live.
+    scheduled_at: so.Mapped[Optional[datetime]] = so.mapped_column(index=True)
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id),
                                                index=True)
     editor_session_key: so.Mapped[Optional[str]] = so.mapped_column(
@@ -202,6 +204,11 @@ class Post(BaseModel):
     def local_updated_at(self):
         from app.timezones import later_update
         return later_update(self.timestamp, self.updated_at)
+
+    @property
+    def local_scheduled_at(self):
+        from app.timezones import to_display
+        return to_display(self.scheduled_at)
 
     def likes_count(self):
         return db.session.scalar(sa.select(sa.func.count()).select_from(

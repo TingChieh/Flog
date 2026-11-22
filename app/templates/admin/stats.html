@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}数据统计{% endblock %}
+
+{% block admin_content %}
+<section class="admin-dashboard" aria-label="核心统计">
+  <div class="admin-metric">
+    <span class="admin-metric__label">累计阅读</span>
+    <span class="admin-metric__value">{{ stats.total_views }}</span>
+    <span class="admin-metric__note">已发布 {{ stats.published_views }}</span>
+  </div>
+  <div class="admin-metric">
+    <span class="admin-metric__label">文章分布</span>
+    <span class="admin-metric__value">{{ stats.published_posts }}</span>
+    <span class="admin-metric__note">草稿 {{ stats.draft_posts }} · 定时 {{ stats.scheduled_posts }}</span>
+  </div>
+  <div class="admin-metric">
+    <span class="admin-metric__label">近 {{ stats.recent_days }} 天评论</span>
+    <span class="admin-metric__value">{{ stats.recent_comments }}</span>
+    <span class="admin-metric__note">共 {{ stats.total_comments }} 条（待审 {{ stats.pending_comments }}）</span>
+  </div>
+  <div class="admin-metric">
+    <span class="admin-metric__label">近 {{ stats.recent_days }} 天回应</span>
+    <span class="admin-metric__value">{{ stats.recent_likes }}</span>
+    <span class="admin-metric__note">共 {{ stats.total_likes }} 次</span>
+  </div>
+</section>
+
+<section class="admin-list" aria-label="热门文章">
+  <h2>热门文章</h2>
+  {% for item in stats.top_posts %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <a href="{{ url_for('admin.edit_post', post_id=item.id) }}"><strong>{{ item.title }}</strong></a>
+      <div class="admin-list__subline">
+        <span>阅读 {{ item.view_count }}</span>
+        <span>评论 {{ item.comment_count }}</span>
+        <span>回应 {{ item.like_count }}</span>
+        <span>{{ (item.published_at|localtime).strftime('%Y-%m-%d') }}</span>
+      </div>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>暂无已发布文章。</p></div>
+  {% endfor %}
+</section>
+
+<section class="admin-list" aria-label="分类统计">
+  <h2>分类分布</h2>
+  {% for cat in stats.categories %}
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <strong>{{ cat.name }}</strong>
+      <div class="admin-list__subline">
+        <span>已发布 {{ cat.published_posts }} 篇</span>
+        <span>累计阅读 {{ cat.total_views }}</span>
+      </div>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty-state"><p>暂无分类。</p></div>
+  {% endfor %}
+</section>
+{% endblock %}

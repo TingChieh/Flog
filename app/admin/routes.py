@@ -1,10 +1,12 @@
 import sqlalchemy as sa
-from flask import render_template
+from flask import render_template, request
 from flask_login import current_user, login_required
 
 from app import db
 from app.admin import bp
 from app.models import Page, Post, PostComment, User
+from app.security import admin_required
+from app.stats import collect_site_stats
 from app.version import version_info
 
 
@@ -42,3 +44,12 @@ def dashboard():
              'value': str(_count(User))},
         ]
     return render_template('admin/dashboard.html', metrics=metrics)
+
+
+@bp.route('/stats', methods=['GET'])
+@login_required
+@admin_required
+def stats():
+    days = request.args.get('days', 30, type=int) or 30
+    site_stats = collect_site_stats(top_limit=10, recent_days=days)
+    return render_template('admin/stats.html', stats=site_stats)

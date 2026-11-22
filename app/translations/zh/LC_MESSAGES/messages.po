@@ -683,3 +683,22 @@ msgstr "下一篇"
 
 msgid "Related articles"
 msgstr "相关文章"
+
+msgid "Already published posts cannot be scheduled; unpublish first."
+msgstr "已公开文章不能直接设定定时发布，请先取消公开。"
+
+msgid "Scheduled publish time must be in the future."
+msgstr "定时发布时间必须晚于当前时间。"
+
+msgid "Please choose a scheduled publish time."
+msgstr "请选择定时发布时间。"
+
+msgid "Invalid scheduled publish time format."
+msgstr "定时发布时间格式无效。"
+
+#, python-format
+msgid "Scheduled publish time saved (%(when)s)."
+msgstr "已设定定时发布（%(when)s）。"
+
+msgid "Scheduled publication canceled."
+msgstr "已取消定时发布。"

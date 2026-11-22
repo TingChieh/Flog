@@ -1,0 +1,18 @@
+# Template: publishes scheduled Flog posts whose scheduled_at has arrived.
+# Adjust paths for the server checkout, then link together with flog-publish.timer.
+[Unit]
+Description=Publish due scheduled Flog posts
+After=mysql.service
+
+[Service]
+Type=oneshot
+User=flog
+Group=flog
+WorkingDirectory=/srv/flog/app
+Environment=FLASK_APP=flog.py
+ExecStart=/srv/flog/app/.venv/bin/flask posts publish-due
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/flog/app/logs

@@ -89,6 +89,36 @@
   </div>
 </form>
 {% if post %}
+{% if not post.is_published %}
+<section class="admin-list" aria-label="定时发布" data-schedule-section>
+  <article class="admin-list__row">
+    <div class="admin-list__main">
+      <strong>定时发布</strong>
+      <div class="admin-list__subline">
+        {% if post.scheduled_at %}
+        <span>已预约：{{ post.local_scheduled_at.strftime('%Y-%m-%d %H:%M') }}（{{ config['DISPLAY_TIMEZONE'] }}）</span>
+        {% else %}
+        <span>时区：{{ config['DISPLAY_TIMEZONE'] }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="admin-list__actions">
+      <form method="post" action="{{ url_for('admin.schedule', post_id=post.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input class="form-control" type="datetime-local" name="scheduled_at" aria-label="定时发布时间"
+               value="{{ post.local_scheduled_at.strftime('%Y-%m-%dT%H:%M') if post.scheduled_at else '' }}">
+        <button class="button button--quiet" type="submit" data-schedule-submit>设定定时</button>
+      </form>
+      {% if post.scheduled_at %}
+      <form method="post" action="{{ url_for('admin.cancel_post_schedule', post_id=post.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button--quiet" type="submit" data-schedule-cancel>取消定时</button>
+      </form>
+      {% endif %}
+    </div>
+  </article>
+</section>
+{% endif %}
 {% if revisions %}
 <section class="admin-list" aria-label="历史版本">
   {% for revision in revisions %}
