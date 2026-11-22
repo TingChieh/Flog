@@ -275,7 +275,7 @@ def test_import_refuses_unconfirmed_post_and_media_conflicts_until_overwrite(
 
         # Modify exported post body to create a post conflict.
         post_files = sorted((bundle / 'posts').glob('*.md'))
-        pub_file = next(p for p in post_files if 'post-101' in p.name)
+        pub_file = next(p for p in post_files if 'legacy-101' in p.name)
         pub_file.write_text(
             pub_file.read_text(encoding='utf-8') + '\n新增冲突段落\n',
             encoding='utf-8',
@@ -381,3 +381,58 @@ def test_cli_content_export_and_import_commands(application, tmp_path):
     assert res_dry.exit_code == 0, res_dry.output
     assert '[dry-run]' in res_dry.output
     assert '2 skipped' in res_dry.output
+
+
+def test_export_gives_migrated_and_native_posts_distinct_slugs(application, users, tmp_path):
+    with application.app_context():
+        author = db.session.get(User, users['author'])
+        cat = db.session.scalar(sa.select(Category))
+        assert author is not None and cat is not None
+        native = Post(
+            id=42, title='原生 42 号文章', body='原生正文', body_format='markdown',
+            is_published=True, timestamp=datetime(2026, 2, 1, 10, 0, 0),
+            author=author, category=cat,
+        )
+        migrated = Post(
+            id=43, legacy_id=42, title='迁移 42 号文章', body='迁移正文',
+            body_format='markdown', is_published=True,
+            timestamp=datetime(2026, 2, 2, 10, 0, 0),
+            author=author, category=cat,
+        )
+        db.session.add_all([native, migrated])
+        db.session.commit()
+
+        bundle = tmp_path / 'distinct-slugs'
+        exported = export_posts_bundle(bundle)
+        assert exported.exported_posts == 3
+        slugs = [
+            parse_markdown_document((bundle / rel).read_text(encoding='utf-8'))[0]['slug']
+            for rel in exported.post_files
+        ]
+        assert 'post-42' in slugs
+        assert 'legacy-42' in slugs
+        assert len(slugs) == len(set(slugs))
+
+        _wipe_content_and_uploads(application)
+        imported = import_posts_bundle(bundle)
+        assert imported.created_posts == 3
+
+
+def test_import_rejects_undated_markdown_to_preserve_idempotency(application, users, tmp_path):
+    bundle = tmp_path / 'undated'
+    (bundle / 'posts').mkdir(parents=True)
+    (bundle / 'posts' / 'no-date.md').write_text(
+        '---\n'
+        'title: "缺少发布时间的文章"\n'
+        'slug: "no-date"\n'
+        '---\n\n'
+        '正文内容\n',
+        encoding='utf-8',
+    )
+
+    with application.app_context():
+        before = db.session.scalar(sa.select(sa.func.count()).select_from(Post))
+        with pytest.raises(ContentImportError) as exc_info:
+            import_posts_bundle(bundle, default_author='author')
+        assert 'published_at' in '\n'.join(exc_info.value.diagnostics)
+        assert db.session.scalar(sa.select(sa.func.count()).select_from(Post)) == before

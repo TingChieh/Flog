@@ -33,7 +33,7 @@ from app.images import (
 )
 from app.live_photos import has_video_signature, video_filename
 from app.models import Category, Image, Post, PostDraft, User
-from app.post_drafts import normalize_utc_naive, utc_now_naive
+from app.post_drafts import normalize_utc_naive
 from app.timezones import to_display
 
 
@@ -254,7 +254,7 @@ def parse_markdown_document(text: str, source_name: str = '<memory>') -> tuple[d
 
 def _post_slug(post: Post) -> str:
     if post.legacy_id is not None:
-        return f'post-{post.legacy_id}'
+        return f'legacy-{post.legacy_id}'
     return f'post-{post.id}'
 
 
@@ -810,7 +810,10 @@ def import_posts_bundle(
                 metadata.get('published_at') or metadata.get('date'),
                 'published_at',
                 rel_label,
-            ) or utc_now_naive().replace(microsecond=0)
+            )
+            if timestamp is None:
+                raise ContentImportError(
+                    f'{rel_label}: front matter "published_at" (or "date") is required for idempotent import')
             updated_at = _parse_datetime(metadata.get('updated_at'), 'updated_at', rel_label)
             scheduled_at = _parse_datetime(metadata.get('scheduled_at'), 'scheduled_at', rel_label)
         except ContentImportError as exc:

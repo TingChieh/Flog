@@ -10,8 +10,8 @@
 #   db/flog-<stamp>.sql.gz          database dump per run (gzip + size verified)
 #   env/env-<stamp>                 copy of .env per run
 #   manifests/manifest-<stamp>.json SHA-256 checksums + retention metadata
-#   uploads/                        mirror of the upload folder; deleted files
-#                                   move to uploads-removed/<stamp>/
+#   uploads/                        mirror of the upload folder; replaced or
+#                                   deleted files move to uploads-removed/<stamp>/
 #
 # Retention policy:
 #   Always keep at least BACKUP_MIN_KEEP (default 7) newest snapshots even if
@@ -19,9 +19,9 @@
 #   are pruned once older than BACKUP_KEEP_DAYS.
 #
 # Failure alerting:
-#   On error, triggers BACKUP_ALERT_CMD (if set) or `.venv/bin/flask backup alert`
-#   (which logs and sends email/webhook via Flog's configured alert channels).
-#   Set BACKUP_ALERT_DISABLE=1 to suppress alerting in manual local runs.
+#   On any preflight or runtime error, triggers BACKUP_ALERT_CMD (if set) or
+#   `.venv/bin/flask backup alert` (which logs and sends email/webhook via Flog's
+#   configured alert channels). Set BACKUP_ALERT_DISABLE=1 to suppress alerting.
 #
 # Settings: in .env.backup at the repository root (git-ignored; override path
 # with FLOG_BACKUP_ENV). Environment variables override the settings file.
@@ -56,58 +56,12 @@ for arg in "$@"; do
     esac
 done
 
-STORAGE=${BACKUP_STORAGE:-rclone}
-DB_BACKEND=${BACKUP_DB_BACKEND:-mysql}
-BUCKET=${R2_BUCKET:?set R2_BUCKET in $settings}
-UPLOADS=${BACKUP_UPLOADS:?set BACKUP_UPLOADS in $settings}
-ENV_FILE=${BACKUP_ENV_FILE:?set BACKUP_ENV_FILE in $settings}
-PREFIX=${BACKUP_PREFIX:-flog}
-KEEP_DAYS=${BACKUP_KEEP_DAYS:-30}
-MIN_KEEP=${BACKUP_MIN_KEEP:-7}
-DB_NAME=${BACKUP_DB_NAME:-flog}
-DB_PATH=${BACKUP_DB_PATH:-}
-PYTHON_BIN=${BACKUP_PYTHON:-}
-if [[ -z "$PYTHON_BIN" ]]; then
-    if [[ -x "$root/.venv/bin/python" ]]; then
-        PYTHON_BIN="$root/.venv/bin/python"
-    else
-        PYTHON_BIN=$(command -v python3 || true)
-    fi
-fi
-
-[[ -n "$PYTHON_BIN" ]] || { echo "python3 is required for manifest and retention calculations" >&2; exit 1; }
-[[ "$KEEP_DAYS" =~ ^[1-9][0-9]*$ ]] || { echo "BACKUP_KEEP_DAYS must be a positive integer" >&2; exit 2; }
-[[ "$MIN_KEEP" =~ ^[1-9][0-9]*$ ]] || { echo "BACKUP_MIN_KEEP must be a positive integer" >&2; exit 2; }
-[[ -d "$UPLOADS" ]] || { echo "BACKUP_UPLOADS is not a directory: $UPLOADS" >&2; exit 1; }
-[[ -f "$ENV_FILE" ]] || { echo "BACKUP_ENV_FILE is not a file: $ENV_FILE" >&2; exit 1; }
-
-if [[ "$STORAGE" == "rclone" ]]; then
-    : "${R2_ACCOUNT_ID:?set R2_ACCOUNT_ID in $settings}"
-    : "${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID in $settings}"
-    : "${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY in $settings}"
-    command -v rclone >/dev/null || { echo "rclone is not installed" >&2; exit 1; }
-    export RCLONE_CONFIG_R2_TYPE=s3
-    export RCLONE_CONFIG_R2_PROVIDER=Cloudflare
-    export RCLONE_CONFIG_R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID
-    export RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY
-    export RCLONE_CONFIG_R2_ENDPOINT="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
-    export RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true
-    remote="R2:$BUCKET/$PREFIX"
-elif [[ "$STORAGE" == "local" ]]; then
-    LOCAL_ROOT=${BACKUP_LOCAL_ROOT:?set BACKUP_LOCAL_ROOT when BACKUP_STORAGE=local}
-    remote="$LOCAL_ROOT/$BUCKET/$PREFIX"
-else
-    echo "Unsupported BACKUP_STORAGE: $STORAGE (expected rclone or local)" >&2
-    exit 2
-fi
-
-log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
-
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
-work=$(mktemp -d)
-chmod 700 "$work"
-CURRENT_STAGE="init"
+work=""
+remote="${R2_BUCKET:-unconfigured}/${BACKUP_PREFIX:-flog}"
+CURRENT_STAGE="preflight"
 ALERT_SENT=0
+LAST_ERROR_CMD=""
 
 send_failure_alert() {
     local stage="$1" rc="$2" detail="$3"
@@ -138,14 +92,15 @@ send_failure_alert() {
     fi
 }
 
-LAST_ERROR_CMD=""
 on_error() {
     LAST_ERROR_CMD="${BASH_COMMAND:-unknown}"
 }
 
 on_exit() {
     local rc=$?
-    rm -rf "$work"
+    if [[ -n "$work" ]]; then
+        rm -rf "$work"
+    fi
     if [[ "$rc" -ne 0 && "$CURRENT_STAGE" != "done" ]]; then
         local detail="Stage '$CURRENT_STAGE' exited with code $rc"
         if [[ -n "$LAST_ERROR_CMD" ]]; then
@@ -158,6 +113,57 @@ on_exit() {
 }
 trap on_error ERR
 trap on_exit EXIT
+
+STORAGE=${BACKUP_STORAGE:-rclone}
+DB_BACKEND=${BACKUP_DB_BACKEND:-mysql}
+BUCKET=${R2_BUCKET:?set R2_BUCKET in $settings}
+UPLOADS=${BACKUP_UPLOADS:?set BACKUP_UPLOADS in $settings}
+ENV_FILE=${BACKUP_ENV_FILE:?set BACKUP_ENV_FILE in $settings}
+PREFIX=${BACKUP_PREFIX:-flog}
+KEEP_DAYS=${BACKUP_KEEP_DAYS:-30}
+MIN_KEEP=${BACKUP_MIN_KEEP:-7}
+DB_NAME=${BACKUP_DB_NAME:-flog}
+DB_PATH=${BACKUP_DB_PATH:-}
+PYTHON_BIN=${BACKUP_PYTHON:-}
+if [[ -z "$PYTHON_BIN" ]]; then
+    if [[ -x "$root/.venv/bin/python" ]]; then
+        PYTHON_BIN="$root/.venv/bin/python"
+    else
+        PYTHON_BIN=$(command -v python3 || true)
+    fi
+fi
+
+[[ -n "$PYTHON_BIN" ]] || { echo "python3 is required for manifest and retention calculations" >&2; exit 1; }
+[[ "$KEEP_DAYS" =~ ^[1-9][0-9]*$ ]] || { echo "BACKUP_KEEP_DAYS must be a positive integer" >&2; exit 2; }
+[[ "$MIN_KEEP" =~ ^[1-9][0-9]*$ ]] || { echo "BACKUP_MIN_KEEP must be a positive integer" >&2; exit 2; }
+
+if [[ "$STORAGE" == "rclone" ]]; then
+    remote="R2:$BUCKET/$PREFIX"
+    : "${R2_ACCOUNT_ID:?set R2_ACCOUNT_ID in $settings}"
+    : "${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID in $settings}"
+    : "${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY in $settings}"
+    command -v rclone >/dev/null || { echo "rclone is not installed" >&2; exit 1; }
+    export RCLONE_CONFIG_R2_TYPE=s3
+    export RCLONE_CONFIG_R2_PROVIDER=Cloudflare
+    export RCLONE_CONFIG_R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID
+    export RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY
+    export RCLONE_CONFIG_R2_ENDPOINT="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+    export RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true
+elif [[ "$STORAGE" == "local" ]]; then
+    LOCAL_ROOT=${BACKUP_LOCAL_ROOT:?set BACKUP_LOCAL_ROOT when BACKUP_STORAGE=local}
+    remote="$LOCAL_ROOT/$BUCKET/$PREFIX"
+else
+    echo "Unsupported BACKUP_STORAGE: $STORAGE (expected rclone or local)" >&2
+    exit 2
+fi
+
+[[ -d "$UPLOADS" ]] || { echo "BACKUP_UPLOADS is not a directory: $UPLOADS" >&2; exit 1; }
+[[ -f "$ENV_FILE" ]] || { echo "BACKUP_ENV_FILE is not a file: $ENV_FILE" >&2; exit 1; }
+
+log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+
+work=$(mktemp -d)
+chmod 700 "$work"
 
 CURRENT_STAGE="db_dump"
 if [[ "$DB_BACKEND" == "mysql" ]]; then
@@ -256,10 +262,20 @@ dst_files = ({p.relative_to(dst_root).as_posix(): p for p in dst_root.rglob('*')
 
 for rel, src_path in sorted(src_files.items()):
     dst_path = dst_root / rel
-    if rel not in dst_files or not filecmp.cmp(src_path, dst_path, shallow=False):
+    if rel not in dst_files:
         if dry:
             print(f'[dry-run] sync {rel}')
         else:
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_path, dst_path)
+    elif not filecmp.cmp(src_path, dst_path, shallow=False):
+        if dry:
+            print(f'[dry-run] archive replaced and sync {rel}')
+        else:
+            # Match rclone sync --backup-dir: archive previous version before overwriting.
+            archive_path = removed_root / rel
+            archive_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(dst_path), str(archive_path))
             dst_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_path, dst_path)
 

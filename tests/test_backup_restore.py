@@ -326,3 +326,82 @@ def test_backup_script_triggers_failure_alert_and_preserves_exit_code(tmp_path):
     assert recorded['stage'] == 'db_dump'
     assert int(recorded['code']) == result.returncode
     assert 'flog-drill-bucket/nonprod-drill' in recorded['target']
+
+
+def test_backup_script_alerts_on_preflight_failure_missing_uploads(tmp_path):
+    env_file = tmp_path / 'source.env'
+    env_file.write_text('SECRET_KEY=drill\n', encoding='utf-8')
+    alert_log = tmp_path / 'preflight-alert.json'
+
+    env = os.environ.copy()
+    env.update({
+        'BACKUP_STORAGE': 'local',
+        'BACKUP_DB_BACKEND': 'sqlite',
+        'BACKUP_LOCAL_ROOT': str(tmp_path / 'r2-mock'),
+        'R2_BUCKET': 'flog-drill-bucket',
+        'BACKUP_PREFIX': 'nonprod-drill',
+        'BACKUP_DB_PATH': str(tmp_path / 'source.sqlite3'),
+        'BACKUP_UPLOADS': str(tmp_path / 'missing-uploads-dir'),
+        'BACKUP_ENV_FILE': str(env_file),
+        'BACKUP_ALERT_DISABLE': '0',
+        'BACKUP_ALERT_CMD': (
+            f'printf \'{{"stage":"%s","code":"%s"}}\\n\' '
+            f'"$BACKUP_ALERT_STAGE" "$BACKUP_ALERT_EXIT_CODE" '
+            f'> "{alert_log}"'
+        ),
+    })
+
+    result = subprocess.run([str(BACKUP_SCRIPT)], env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert alert_log.is_file()
+    recorded = json.loads(alert_log.read_text(encoding='utf-8'))
+    assert recorded['stage'] == 'preflight'
+    assert int(recorded['code']) == result.returncode
+
+
+def test_restore_historical_stamp_reconstructs_added_modified_and_deleted_uploads(tmp_path):
+    import time
+
+    db_path = tmp_path / 'source.sqlite3'
+    _create_fixture_sqlite_db(db_path)
+    env_file = tmp_path / 'source.env'
+    env_file.write_text('SECRET_KEY=v1\n', encoding='utf-8')
+    uploads = tmp_path / 'uploads'
+    uploads.mkdir()
+    (uploads / 'keep.png').write_bytes(b'unchanged-v1')
+    (uploads / 'modify.png').write_bytes(b'original-version-1')
+    (uploads / 'remove.png').write_bytes(b'will-be-deleted-later')
+    local_r2 = tmp_path / 'r2-mock'
+    env = _base_drill_env(tmp_path, db_path, env_file, uploads, local_r2)
+
+    # Snapshot 1
+    subprocess.run([str(BACKUP_SCRIPT)], env=env, capture_output=True, text=True, check=True)
+    prefix_dir = local_r2 / 'flog-drill-bucket' / 'nonprod-drill'
+    manifests_1 = sorted(p.name for p in (prefix_dir / 'manifests').iterdir())
+    assert len(manifests_1) == 1
+    stamp_1 = manifests_1[0].removeprefix('manifest-').removesuffix('.json')
+
+    # Wait >1s so Snapshot 2 gets a strictly newer second-level UTC stamp.
+    time.sleep(1.1)
+
+    # Mutate uploads: add a new file, modify one, and delete one.
+    (uploads / 'added-later.png').write_bytes(b'added-in-v2')
+    (uploads / 'modify.png').write_bytes(b'modified-version-2')
+    (uploads / 'remove.png').unlink()
+    env_file.write_text('SECRET_KEY=v2\n', encoding='utf-8')
+
+    # Snapshot 2
+    subprocess.run([str(BACKUP_SCRIPT)], env=env, capture_output=True, text=True, check=True)
+
+    # Restore historical Snapshot 1 and confirm exact S1 state is reconstructed.
+    restore_v1 = tmp_path / 'restored-v1'
+    res = subprocess.run(
+        [str(RESTORE_SCRIPT), '--target-dir', str(restore_v1), '--stamp', stamp_1],
+        env=env, capture_output=True, text=True, check=True,
+    )
+    assert 'Restore verification completed' in res.stdout
+    assert (restore_v1 / 'env' / '.env').read_text(encoding='utf-8') == 'SECRET_KEY=v1\n'
+    assert (restore_v1 / 'uploads' / 'keep.png').read_bytes() == b'unchanged-v1'
+    assert (restore_v1 / 'uploads' / 'modify.png').read_bytes() == b'original-version-1'
+    assert (restore_v1 / 'uploads' / 'remove.png').read_bytes() == b'will-be-deleted-later'
+    assert not (restore_v1 / 'uploads' / 'added-later.png').exists()

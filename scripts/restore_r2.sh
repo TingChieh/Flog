@@ -3,6 +3,11 @@
 # mirror) into an explicit target directory. Never overwrites live production
 # databases or upload folders automatically.
 #
+# Historical snapshots (--stamp <stamp>) are reconstructed strictly from the
+# selected manifest: files still matching the live uploads/ mirror are fetched
+# from uploads/, while files later overwritten or removed are recovered from
+# uploads-removed/<later_stamp>/ in chronological order.
+#
 # Usage:
 #   scripts/restore_r2.sh --target-dir <dir> [--stamp <YYYYMMDDTHHMMSSZ>] [--dry-run] [--skip-db-import]
 #
@@ -31,7 +36,7 @@ while [[ $# -gt 0 ]]; do
         --stamp) REQ_STAMP="${2:-}"; shift 2 ;;
         --dry-run) DRY_RUN=1; shift ;;
         --skip-db-import) SKIP_DB_IMPORT=1; shift ;;
-        -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
     esac
 done
@@ -95,14 +100,14 @@ fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 chmod 700 "$work"
-mkdir -p "$work/uploads"
+mkdir -p "$work/uploads" "$work/probe"
 
-log "Fetching snapshot artifacts into staging directory"
+log "Fetching snapshot metadata, database dump, and .env"
 if [[ "$STORAGE" == "rclone" ]]; then
     rclone copyto "$remote/manifests/manifest-$stamp.json" "$work/manifest-$stamp.json"
     rclone copyto "$remote/db/flog-$stamp.sql.gz" "$work/flog-$stamp.sql.gz"
     rclone copyto "$remote/env/env-$stamp" "$work/env-$stamp"
-    rclone sync "$remote/uploads" "$work/uploads"
+    removed_stamps=$(rclone lsf --dirs-only "$remote/uploads-removed" 2>/dev/null || true)
 else
     [[ -f "$remote/manifests/manifest-$stamp.json" ]] || { echo "Missing manifest-$stamp.json" >&2; exit 1; }
     [[ -f "$remote/db/flog-$stamp.sql.gz" ]] || { echo "Missing flog-$stamp.sql.gz" >&2; exit 1; }
@@ -110,10 +115,96 @@ else
     cp -p "$remote/manifests/manifest-$stamp.json" "$work/manifest-$stamp.json"
     cp -p "$remote/db/flog-$stamp.sql.gz" "$work/flog-$stamp.sql.gz"
     cp -p "$remote/env/env-$stamp" "$work/env-$stamp"
-    if [[ -d "$remote/uploads" ]]; then
-        cp -a "$remote/uploads/." "$work/uploads/"
-    fi
+    removed_stamps=$([[ -d "$remote/uploads-removed" ]] && ls -1 "$remote/uploads-removed" || true)
 fi
+
+log "Reconstructing uploads for snapshot $stamp"
+"$PYTHON_BIN" - "$STORAGE" "$remote" "$stamp" "$work/manifest-$stamp.json" \
+    "$work/uploads" "$work/probe" "$removed_stamps" <<'PY'
+import hashlib, json, re, shutil, subprocess, sys
+from pathlib import Path
+
+storage, remote, stamp, manifest_p, out_uploads_p, probe_p, raw_removed = sys.argv[1:]
+manifest = json.loads(Path(manifest_p).read_text(encoding='utf-8'))
+out_uploads = Path(out_uploads_p)
+probe_dir = Path(probe_p)
+
+stamp_re = re.compile(r'^[0-9]{8}T[0-9]{6}Z$')
+later_stamps = sorted(
+    s.strip().rstrip('/')
+    for s in raw_removed.splitlines()
+    if stamp_re.match(s.strip().rstrip('/')) and s.strip().rstrip('/') > stamp
+)
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda: f.read(65536), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+def matches(path: Path, expected: dict) -> bool:
+    return (
+        path.is_file()
+        and path.stat().st_size == expected.get('size')
+        and sha256(path) == expected.get('sha256')
+    )
+
+def fetch_candidate(rel_remote: str, dest: Path) -> bool:
+    if storage == 'local':
+        src = Path(remote) / rel_remote
+        if not src.is_file():
+            return False
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        return True
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.run(
+        ['rclone', 'copyto', f'{remote}/{rel_remote}', str(dest)],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    return proc.returncode == 0 and dest.is_file()
+
+for idx, entry in enumerate(manifest.get('uploads', [])):
+    rel = entry['path']
+    # Guard against unsafe paths inside a crafted manifest.
+    target = (out_uploads / rel).resolve()
+    if not target.is_relative_to(out_uploads.resolve()):
+        print(f'ERROR: unsafe upload path in manifest: {rel}', file=sys.stderr)
+        sys.exit(1)
+
+    # Try historical archives created right after `stamp` first only if live copy differs,
+    # keeping normal latest-snapshot restores fast with a single fetch per file.
+    live_probe = probe_dir / f'live-{idx}'
+    fallback_mismatch = None
+    if fetch_candidate(f'uploads/{rel}', live_probe):
+        if matches(live_probe, entry):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(live_probe), str(target))
+            continue
+        fallback_mismatch = live_probe
+
+    recovered = False
+    for later in later_stamps:
+        hist_probe = probe_dir / f'hist-{idx}-{later}'
+        if fetch_candidate(f'uploads-removed/{later}/{rel}', hist_probe):
+            if matches(hist_probe, entry):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(hist_probe), str(target))
+                recovered = True
+                break
+            hist_probe.unlink(missing_ok=True)
+    if recovered:
+        if fallback_mismatch is not None:
+            fallback_mismatch.unlink(missing_ok=True)
+        continue
+
+    # No matching historical copy existed: place the mismatched live copy (if any)
+    # so the manifest verifier reports the exact checksum mismatch.
+    if fallback_mismatch is not None and fallback_mismatch.is_file():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(fallback_mismatch), str(target))
+PY
 
 log "Verifying gzip integrity and SHA-256 manifest checksums"
 gzip -t "$work/flog-$stamp.sql.gz"

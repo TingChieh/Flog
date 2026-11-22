@@ -343,23 +343,24 @@ def schedule(post_id):
         abort(400)
     raw_when = (request.form.get('scheduled_at') or '').strip()
     if not raw_when:
-        flash('请选择定时发布时间。')
+        flash(_('Please choose a scheduled publish time.'))
         return _after_publication_change(post_id)
     if raw_when.endswith('Z'):
         raw_when = raw_when[:-1] + '+00:00'
     try:
         parsed_when = datetime.fromisoformat(raw_when)
     except ValueError:
-        flash('定时发布时间格式无效。')
+        flash(_('Invalid scheduled publish time format.'))
         return _after_publication_change(post_id)
     try:
         post = schedule_post(current_user, post_id, parsed_when)
     except PostDraftError as exc:
-        flash(str(exc))
+        db.session.rollback()
+        flash(_(str(exc)))
         return _after_publication_change(post_id)
     _commit_post_change('定时发布设置失败，请重试。')
     local_label = to_display(post.scheduled_at).strftime('%Y-%m-%d %H:%M')
-    flash(f'已设定定时发布（{local_label}）。')
+    flash(_('Scheduled publish time saved (%(when)s).', when=local_label))
     return _after_publication_change(post_id)
 
 
@@ -370,7 +371,7 @@ def cancel_post_schedule(post_id):
         abort(400)
     cancel_schedule(current_user, post_id)
     _commit_post_change('取消定时发布失败，请重试。')
-    flash('已取消定时发布。')
+    flash(_('Scheduled publication canceled.'))
     return _after_publication_change(post_id)
 
 

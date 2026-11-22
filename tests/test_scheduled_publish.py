@@ -162,6 +162,16 @@ def test_admin_schedule_routes_and_cli_publish_due(client, application, users):
 
     client.post('/logout')
     login(client, 'author')
+    # Past scheduling time flashes translated Chinese error (not raw English).
+    past_resp = client.post(
+        f'/admin/posts/{post_id}/schedule',
+        data={'scheduled_at': '2020-01-01T08:00'},
+        follow_redirects=True,
+    )
+    past_html = past_resp.get_data(as_text=True)
+    assert '定时发布时间必须晚于当前时间。' in past_html
+    assert 'Scheduled publish time must be in the future.' not in past_html
+
     resp = client.post(
         f'/admin/posts/{post_id}/schedule',
         data={'scheduled_at': '2099-01-02T09:30'},
