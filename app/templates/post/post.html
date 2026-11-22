@@ -31,6 +31,33 @@
             {% endfor %}
         </form>
     </div>
+
+    {% if previous_article or next_article %}
+    <nav class="article-neighbors" aria-label="{{ _('Adjacent articles') }}">
+        {% if previous_article %}
+        <a href="{{ url_for('post', post_id=previous_article.id) }}" rel="prev">
+            <span class="article-neighbors__label">{{ _('Previous article') }}</span>
+            <span class="article-neighbors__title">{{ previous_article.title or _('Untitled') }}</span>
+        </a>
+        {% endif %}
+        {% if next_article %}
+        <a href="{{ url_for('post', post_id=next_article.id) }}" rel="next">
+            <span class="article-neighbors__label">{{ _('Next article') }}</span>
+            <span class="article-neighbors__title">{{ next_article.title or _('Untitled') }}</span>
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
+    {% if related_articles %}
+    <section class="article-related" aria-labelledby="related-articles-heading">
+        <h2 id="related-articles-heading">{{ _('Related articles') }}</h2>
+        <ul>
+            {% for article in related_articles %}
+            <li><a href="{{ url_for('post', post_id=article.id) }}">{{ article.title or _('Untitled') }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
 </article>
 
 {% include '_comments.html' %}
