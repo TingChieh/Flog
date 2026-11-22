@@ -162,7 +162,7 @@ rollback_hint() {
     cat >&2 <<EOF
 
 To roll back:
-  ssh $HOST "cd $DIR && sudo -u $APP_USER git reset --hard ${current:0:7} && sudo -u $APP_USER $VENV/bin/flask db downgrade ${db_before:-base} && systemctl restart $SERVICE"
+  ssh $HOST "cd $DIR && systemctl stop $SERVICE && sudo -u $APP_USER $VENV/bin/flask db downgrade ${db_before:-base} && sudo -u $APP_USER git reset --hard ${current:0:7} && systemctl restart $SERVICE"
 Full backup: $backup (database dump, uploads, .env)
 EOF
 }

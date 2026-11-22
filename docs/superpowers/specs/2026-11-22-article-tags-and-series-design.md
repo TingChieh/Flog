@@ -21,7 +21,20 @@ An article can have many tags and belong to one series. Gaps in positions are va
 
 1. Add a reviewed Alembic revision creating `tag` and `series` before `post_tag` and `series_post`. Give constraints and indexes explicit names. Leave existing article, category, draft, and revision rows intact. Start with empty taxonomy tables and assign memberships explicitly.
 2. Rehearse upgrade, constraints, and downgrade against disposable copies of the current schema on SQLite (with foreign keys enabled) and MariaDB. Verify duplicate memberships, duplicate series positions, invalid references, cascades, and survival of legacy post IDs and bodies. Check MySQL/MariaDB DDL failure recovery because individual DDL statements can commit independently.
-3. For rollback after taxonomy writes begin, first disable writers, export taxonomy and memberships, and roll the application back to a build that does not use them. The Alembic downgrade drops both association tables and then their parents. A downgrade removes taxonomy data, so keep the export or verified backup for recovery.
+3. For rollback after taxonomy writes begin, run the Alembic downgrade while still on the build that contains the taxonomy revision, before resetting the application checkout:
+   - Stop writers (for example, `systemctl stop <service>` or enter a maintenance window) and export taxonomy tables and memberships, or confirm a verified database backup is in place.
+   - From the current (new) build whose `migrations/versions/` still contains the taxonomy revision, downgrade the database to the pre-taxonomy revision (`<db_before>`):
+     ```bash
+     flask db downgrade <db_before>
+     ```
+     The Alembic downgrade drops both association tables (`post_tag`, `series_post`) before their parents (`tag`, `series`). Do not `git reset` to the older build first: the older build lacks the taxonomy revision file, so Alembic cannot locate the database's current revision and `downgrade` fails.
+   - Roll the application back to the pre-taxonomy build (`<old_commit>`), confirm `flask db current` matches `<db_before>`, and restart the service:
+     ```bash
+     git reset --hard <old_commit>
+     flask db current
+     systemctl restart <service>
+     ```
+   A downgrade removes taxonomy data, so keep the export or verified backup for recovery.
 
 ## Public and admin behavior
 
